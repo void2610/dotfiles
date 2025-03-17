@@ -4,5 +4,5 @@
 	process = git-lfs filter-process
 	required = true
 [user]
-	name = Shuya Izumi
+	name = void2610
 	email = izumisan2610@gmail.com
