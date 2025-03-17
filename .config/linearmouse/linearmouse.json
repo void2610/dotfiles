@@ -1,0 +1,63 @@
+{
+  "schemes" : [
+    {
+      "if" : {
+        "device" : {
+          "productID" : "0x200",
+          "category" : "mouse",
+          "productName" : "Keyball39",
+          "vendorID" : "0x5957"
+        }
+      },
+      "scrolling" : {
+        "reverse" : {
+          "vertical" : true
+        }
+      },
+      "pointer" : {
+        "speed" : 0.03
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "productName" : "ROCCAT Kova Aimo",
+          "vendorID" : "0x1e7d",
+          "category" : "mouse",
+          "productID" : "0x2cf1"
+        }
+      },
+      "scrolling" : {
+        "reverse" : {
+          "vertical" : true
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "vendorID" : "0x46d",
+          "serialNumber" : "F48DE3125455A87F",
+          "productID" : "0xb027",
+          "productName" : "ERGO M575"
+        }
+      },
+      "scrolling" : {
+        "speed" : {
+          "vertical" : 0
+        },
+        "reverse" : {
+          "vertical" : true
+        },
+        "acceleration" : {
+          "vertical" : 1
+        },
+        "distance" : {
+          "vertical" : 3
+        }
+      }
+    }
+  ],
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.0"
+}
