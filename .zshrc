@@ -7,6 +7,7 @@ eval "$(pyenv init -)"
 eval "$(uv generate-shell-completion zsh)"
 
 alias ur='uv run python'
+alias vi='nvim'
 
 # >>> conda initialize >>>
 # !! Contents within this block are managed by 'conda init' !!
