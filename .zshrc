@@ -100,7 +100,8 @@ alias vi='nvim'
 alias sftp='sftp -P 25288 shuya@nitfccuda.mydns.jp'
 alias pp='poetry run python'
 
-
+autoload -U compinit
+compinit
 eval "$(starship init zsh)"
 eval "(neofetch)"
 eval "$(uv generate-shell-completion zsh)"
