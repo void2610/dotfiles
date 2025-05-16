@@ -105,3 +105,6 @@ compinit
 eval "$(starship init zsh)"
 eval "(neofetch)"
 eval "$(uv generate-shell-completion zsh)"
+
+# path to java sdk
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
