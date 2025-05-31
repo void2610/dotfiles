@@ -17,11 +17,16 @@ export DYLD_LIBRARY_PATH="/Users/shuya/opt/homebrew/Cellar/libusb/1.0.26/lib:$DY
 export LDFLAGS="-L/usr/local/opt/zlib/lib"
 export CPPFLAGS="-I/usr/local/opt/zlib/include"
 export PKG_CONFIG_PATH="/usr/local/opt/zlib/lib/pkgconfig"
+# NVM (Node Version Manager) configuration
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# Ensure nvm-controlled node is used
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    nvm use default --silent
+fi
 
-PATH=”${PATH}:$HOME/.nodebrew/current/bin”
+# PATH=”${PATH}:$HOME/.nodebrew/current/bin”
 SPACESHIP_PROMPT_ASYNC=FALSE
 
 
@@ -32,7 +37,6 @@ if command -v pyenv 1>/dev/null 2>&1; then
 fi
 
 eval "$(direnv hook zsh)"
-. "$HOME/.local/bin/env"
 
 
 
