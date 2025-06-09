@@ -112,3 +112,6 @@ eval "$(uv generate-shell-completion zsh)"
 
 # path to java sdk
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+
+alias bell='afplay /System/Library/Sounds/Hero.aiff'
+
