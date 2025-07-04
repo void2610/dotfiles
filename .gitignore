@@ -2,3 +2,6 @@
 .config/raycast/extensions
 .config/nvim/lazy-lock.json
 .config/github-copilot
+.claude/projects/
+.claude/statsig/
+.claude/todos/

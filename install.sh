@@ -15,6 +15,7 @@ FILES=(
   ".gitconfig"
   ".tmux.conf"
   ".zshrc"
+  ".claude"
 )
 
 for file in "${FILES[@]}"; do
@@ -23,6 +24,11 @@ for file in "${FILES[@]}"; do
 
   # ホームディレクトリに同名のファイルまたはディレクトリが存在する場合、バックアップディレクトリに移動
   if [ -e "${TARGET}" ] || [ -L "${TARGET}" ]; then
+    BACKUP_TARGET="${BACKUP_DIR}/${file}"
+    if [ -e "${BACKUP_TARGET}" ]; then
+      echo "既存の ${BACKUP_TARGET} を削除します..."
+      rm -rf "${BACKUP_TARGET}"
+    fi
     echo "既存の ${TARGET} を ${BACKUP_DIR} に移動します..."
     mv "${TARGET}" "${BACKUP_DIR}"
   fi
