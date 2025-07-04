@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "curl -H \"Title: Claude Code\" -d \"タスクが完了しました！\" ntfy.sh/void2610"
+            "command": "~/.claude/notify.sh Stop success"
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "curl -H \"Title: Claude Code\" -d \"許可待機中...\" ntfy.sh/void2610"
+            "command": "~/.claude/notify.sh Notification"
           }
         ]
       }
