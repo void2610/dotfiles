@@ -7,3 +7,6 @@
 .claude/todos/
 /.claude/ide
 /.claude/shell-snapshots
+/.claude/file-history
+/.claude/debug
+.claude/history.jsonl
