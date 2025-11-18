@@ -1,0 +1,16 @@
+[
+  {
+    "context": "Editor && vim_mode == insert",
+    "bindings": {
+      "j j": ["vim::SwitchMode", "Normal"],
+      "j k": ["vim::SwitchMode", "Normal"]
+    }
+  },
+  {
+    "context": "Editor && vim_mode == normal && vim_operator == none && !VimWaiting",
+    "bindings": {
+      "space": "workspace::Save",
+      ", n t": "workspace::ToggleLeftDock"
+    }
+  }
+]
