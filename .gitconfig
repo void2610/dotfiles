@@ -6,3 +6,5 @@
 [user]
 	name = void2610
 	email = izumisan2610@gmail.com
+[alias]
+  unstage = reset HEAD
