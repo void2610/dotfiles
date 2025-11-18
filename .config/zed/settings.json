@@ -7,6 +7,15 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "autosave": {
+    "after_delay": {
+      "milliseconds": 1000
+    }
+  },
+  "agent_ui_font_size": 17.0,
+  "ui_font_weight": 400.0,
+  "buffer_font_weight": 400.0,
+  "when_closing_with_no_tabs": "keep_window_open",
   "context_servers": {
     "serena-context-server": {
       "source": "extension",
@@ -24,13 +33,9 @@
   },
   "base_keymap": "VSCode",
   "icon_theme": "Zed (Default)",
-  "ui_font_size": 16,
-  "buffer_font_size": 15,
-  "theme": {
-    "mode": "dark",
-    "light": "One Light",
-    "dark": "One Dark"
-  },
+  "ui_font_size": 16.0,
+  "buffer_font_size": 15.0,
+  "theme": "Ayu Dark",
   "languages": {
     "Python": {
       "language_servers": [
