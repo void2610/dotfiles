@@ -43,6 +43,7 @@ cd ~/dotfiles
 - `Brewfile`: Homebrewでインストールするパッケージ一覧
 - `brew-setup.sh`: Homebrewパッケージの自動インストールスクリプト
 - `install.sh`: dotfilesのシンボリックリンク作成スクリプト
+- `MANUAL_APPS.md`: 手動インストールが必要なアプリケーション一覧
 - `.config/`: 各種アプリケーションの設定ファイル
 - `.zshrc`: Zshシェルの設定
 - `.gitconfig`: Git設定
