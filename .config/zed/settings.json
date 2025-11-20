@@ -40,7 +40,7 @@
   "indent_guides": {
     "enabled": true
   },
-  "soft_wrap": "editor_width",
+  "soft_wrap": "prefer_line",
   "tab_size": 2,
   "autosave": {
     "after_delay": {
