@@ -11,3 +11,4 @@
 /.claude/debug
 .claude/history.jsonl
 /.config/zed/prompts/prompts-library-db.0.mdb
+Brewfile.lock.json
