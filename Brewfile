@@ -1,8 +1,9 @@
 tap "homebrew/services"
-brew "openssl@3"
 brew "ffmpeg"
 brew "go"
 brew "jq"
+brew "mas"
+brew "openssl@3"
 brew "ripgrep"
 brew "terminal-notifier"
 brew "uv"
@@ -28,3 +29,5 @@ cask "spotify"
 cask "the-unarchiver"
 cask "warp"
 cask "zed"
+mas "Amphetamine", id: 937984704
+mas "RunCat", id: 1429033973
