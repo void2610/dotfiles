@@ -27,6 +27,7 @@ cask "notchnook"
 cask "obs"
 cask "orbstack"
 cask "raycast"
+cask "rider"
 cask "spotify"
 cask "steam"
 cask "the-unarchiver"
@@ -34,5 +35,7 @@ cask "unity-hub"
 cask "visual-studio-code"
 cask "warp"
 cask "zed"
+
+
 mas "Amphetamine", id: 937984704
 mas "RunCat", id: 1429033973
