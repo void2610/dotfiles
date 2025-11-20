@@ -1,10 +1,6 @@
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
 export PATH="$PATH:/Applications/platform-tools"
 export PATH="/Users/shuya/opt/homebrew/bin:$PATH"
 export PATH="/opt/homebrew/bin:$PATH"
-export PYENV_ROOT="$HOME/.pyenv"
-export PATH="$PYENV_ROOT/bin:$PATH"
 export PATH=$PATH:/Users/shuya/Documents
 export PATH="/Users/shuya/.local/bin:$PATH"
 export PATH=$PATH:~/.yarn/bin
@@ -29,35 +25,7 @@ fi
 # PATH=”${PATH}:$HOME/.nodebrew/current/bin”
 SPACESHIP_PROMPT_ASYNC=FALSE
 
-
-
-
-if command -v pyenv 1>/dev/null 2>&1; then
-  eval "$(pyenv init -)"
-fi
-
 eval "$(direnv hook zsh)"
-
-
-
-
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/opt/homebrew/Caskroom/miniconda/base/bin/conda' 'shell.zsh' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh" ]; then
-        . "/opt/homebrew/Caskroom/miniconda/base/etc/profile.d/conda.sh"
-    else
-        export PATH="/opt/homebrew/Caskroom/miniconda/base/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
-
-
-
 
 ### Added by Zinit's installer
 if [[ ! -f $HOME/.local/share/zinit/zinit.git/zinit.zsh ]]; then
@@ -102,7 +70,6 @@ zinit light zdharma/history-search-multi-word
 alias ur='uv run python'
 alias vi='nvim'
 alias sftp='sftp -P 25288 shuya@nitfccuda.mydns.jp'
-alias pp='poetry run python'
 
 autoload -U compinit
 compinit
