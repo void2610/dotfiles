@@ -1,63 +1,79 @@
 {
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.2",
   "schemes" : [
     {
       "if" : {
         "device" : {
-          "productID" : "0x200",
           "category" : "mouse",
+          "productID" : "0x200",
           "productName" : "Keyball39",
           "vendorID" : "0x5957"
         }
       },
+      "pointer" : {
+        "speed" : 0.03
+      },
       "scrolling" : {
         "reverse" : {
           "vertical" : true
+        }
+      }
+    },
+    {
+      "buttons" : {
+        "universalBackForward" : true
+      },
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0x2cf1",
+          "productName" : "ROCCAT Kova Aimo",
+          "vendorID" : "0x1e7d"
         }
       },
       "pointer" : {
-        "speed" : 0.03
-      }
-    },
-    {
-      "if" : {
-        "device" : {
-          "productName" : "ROCCAT Kova Aimo",
-          "vendorID" : "0x1e7d",
-          "category" : "mouse",
-          "productID" : "0x2cf1"
-        }
+        "acceleration" : 0.7,
+        "disableAcceleration" : true
       },
       "scrolling" : {
-        "reverse" : {
-          "vertical" : true
-        }
-      }
-    },
-    {
-      "if" : {
-        "device" : {
-          "category" : "mouse",
-          "vendorID" : "0x46d",
-          "serialNumber" : "F48DE3125455A87F",
-          "productID" : "0xb027",
-          "productName" : "ERGO M575"
-        }
-      },
-      "scrolling" : {
-        "speed" : {
-          "vertical" : 0
-        },
-        "reverse" : {
-          "vertical" : true
-        },
         "acceleration" : {
           "vertical" : 1
         },
         "distance" : {
           "vertical" : 3
+        },
+        "reverse" : {
+          "vertical" : true
+        },
+        "speed" : {
+          "vertical" : 0
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0xb027",
+          "productName" : "ERGO M575",
+          "serialNumber" : "F48DE3125455A87F",
+          "vendorID" : "0x46d"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1
+        },
+        "distance" : {
+          "vertical" : 3
+        },
+        "reverse" : {
+          "vertical" : true
+        },
+        "speed" : {
+          "vertical" : 0
         }
       }
     }
-  ],
-  "$schema" : "https:\/\/schema.linearmouse.app\/0.10.0"
+  ]
 }
