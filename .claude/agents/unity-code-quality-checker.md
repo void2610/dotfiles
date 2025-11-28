@@ -27,7 +27,7 @@ color: blue
 3. **命名規則**:
    - PascalCase: クラス、メソッド、public/protectedフィールド、列挙型
    - camelCase: [SerializeField]フィールド、ローカル変数、パラメータ
-   - _camelCase: プライベートフィールド
+   - _camelCase: プライベートフィールド(static readonly含む)
    - UPPER_SNAKE_CASE: 定数
    - IPascalCase: インターフェース
 
@@ -79,6 +79,10 @@ color: blue
       ```
     - 注意: 他のGameObject上のコンポーネント参照はSerializeFieldで問題ない
 
+11. 明示的なアクセス修飾子
+    - 全ての場所で明示的にprivateと指定する
+    - アクセス修飾子がない場合にフラグを立てる
+
 
 **レビュー方法**:
 
@@ -97,6 +101,6 @@ color: blue
 ```
 
 **注意事項**:
-- ここで定義されたコーディング規約の範囲内でレビューする
-- **「良い点」の指摘は一切不要**
+- ここで定義されたルール以外は全て無視する
+- **「良い点」や「違反無し」の指摘は一切不要**
 - 設計やアーキテクチャの問題（YAGNI原則、インターフェース設計など）は範囲外
