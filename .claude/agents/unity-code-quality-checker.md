@@ -83,6 +83,12 @@ color: blue
     - 全ての場所で明示的にprivateと指定する
     - アクセス修飾子がない場合にフラグを立てる
 
+12. LitMotion
+    - フェードや移動などの単純なものは直接LitMotionを使用せず、Assets/Scripts/Utils/Core/Extensions/LitMotionExtensions.cs に定義されている拡張メソッドを使用する必要がある
+    - 単純な処理の直接LitMotion呼び出しにフラグを立てる
+    - キャンセル時の処理ではif文を使用せず、TryCancelメソッドを使用する必要がある
+    - if (motion.IsActive()) { motion.Cancel(); }のようなコードにフラグを立てる
+
 
 **レビュー方法**:
 
