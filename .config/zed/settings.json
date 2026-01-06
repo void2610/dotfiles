@@ -42,6 +42,13 @@
   },
   "soft_wrap": "prefer_line",
   "tab_size": 2,
+  "agent": {
+    "inline_assistant_model": {
+      "provider": "copilot_chat",
+      "model": "claude-sonnet-4"
+    },
+    "model_parameters": []
+  },
   "autosave": {
     "after_delay": {
       "milliseconds": 1000

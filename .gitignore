@@ -13,3 +13,4 @@
 /.config/zed/prompts/prompts-library-db.0.mdb
 Brewfile.lock.json
 /.claude/plans
+.claude/stats-cache.json
