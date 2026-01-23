@@ -16,3 +16,4 @@ Brewfile.lock.json
 /.claude/telemetry
 .claude/stats-cache.json
 /.claude/cache
+/.claude/tasks
