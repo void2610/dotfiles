@@ -1,7 +1,21 @@
 {
-  "statusLine": {
-    "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c:*)",
+      "Bash(make:*)",
+      "Bash(git log:*)",
+      "Bash(python3:*)",
+      "Bash(find:*)",
+      "Bash(cmake:*)",
+      "WebSearch",
+      "Bash(gh api:*)",
+      "Bash(ninja:*)",
+      "Bash(git checkout:*)",
+      "Bash(grep:*)"
+    ],
+    "deny": [],
+    "ask": [],
+    "defaultMode": "plan"
   },
   "hooks": {
     "Stop": [
@@ -27,5 +41,9 @@
       }
     ]
   },
-  "alwaysThinkingEnabled": false
+  "statusLine": {
+    "type": "command",
+    "command": "bash ~/.claude/statusline.sh"
+  },
+  "language": "日本語"
 }
