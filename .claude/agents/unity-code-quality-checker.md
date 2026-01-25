@@ -23,14 +23,7 @@ color: blue
    - SerializeField → public properties → constants → private fields → public methods(one line) → public methods(multi line) → private methods → Unity events → cleanup
    - 不正な順序を報告する
 
-3. **命名規則**:
-   - PascalCase: クラス、メソッド、public/protectedフィールド、列挙型
-   - camelCase: [SerializeField]フィールド、ローカル変数、パラメータ
-   - _camelCase: プライベートフィールド(static readonly含む)
-   - UPPER_SNAKE_CASE: 定数
-   - IPascalCase: インターフェース
-   
-4. **アクセス修飾子**:
+3. **アクセス修飾子**:
    - 全ての場所に明示的にアクセス修飾子をつける必要がある
    - アクセス修飾子がない場合にフラグを立てる
 
@@ -43,45 +36,17 @@ color: blue
    - すべてのコメントは日本語である必要がある
    - 自明で冗長コメントにフラグを立てる
 
-6. **Unity Object nullチェック**:
-   - Unity objectsは暗黙的なboolean変換を使用する必要がある
-   - Unity objectsに対する`!= null`の使用を報告する
-   - 正: `if (titleText)` / 誤: `if (titleText != null)`
-
-7. **型推論（var使用）**:
+6. **型推論（var使用）**:
    - varが使用できる場所での明示的な型宣言にフラグを立てる
    - 違反例: `Dictionary<TileData, TileBase> tileMapping = new Dictionary<TileData, TileBase>();`
    - 正: `var tileMapping = new Dictionary<TileData, TileBase>();`
 
-8. **イベントシステム**:
+7. **イベントシステム**:
    - C#のAction/eventキーワードを絶対に許可しない
    - すべてのイベントはR3のSubject/Observableを使用する必要がある
    - `event`、`Action<>`、`Func<>`の使用にフラグを立てる
 
-9. **#region禁止**:
-   - `#region`/`#endregion`の使用を絶対に許可しない
-   - コードの折りたたみはクラス設計の問題を隠蔽する
-   - `#region`が必要と感じる場合はクラス分割を検討すべき
-
-10. **同一オブジェクト内コンポーネント参照**:
-    - 同じGameObject上のコンポーネントをSerializeFieldで参照することを禁止
-    - RequireComponent属性でコンポーネントの存在を保証し、AwakeでGetComponentする
-    - 違反例:
-      ```csharp
-      [SerializeField] Rigidbody rigidbody; // 同じオブジェクトのコンポーネント
-      ```
-    - 正しいアプローチ:
-      ```csharp
-      [RequireComponent(typeof(Rigidbody))]
-      public class MyClass : MonoBehaviour
-      {
-          Rigidbody _rigidbody;
-          void Awake() => _rigidbody = GetComponent<Rigidbody>();
-      }
-      ```
-    - 注意: 他のGameObject上のコンポーネント参照はSerializeFieldで問題ない
-
-12. LitMotion
+8. **LitMotion**
     - フェードや移動などの単純なものは直接LitMotionを使用せず、Assets/Scripts/Utils/Core/Extensions/LitMotionExtensions.cs に定義されている拡張メソッドを使用する必要がある
     - 単純な処理の直接LitMotion呼び出しにフラグを立てる
     - キャンセル時の処理ではif文を使用せず、TryCancelメソッドを使用する必要がある
