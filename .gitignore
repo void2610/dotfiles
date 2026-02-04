@@ -17,3 +17,4 @@ Brewfile.lock.json
 .claude/stats-cache.json
 /.claude/cache
 /.claude/tasks
+/.claude/paste-cache

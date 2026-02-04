@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "plugins": {
+    "clangd-lsp@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "/Users/shuya.izumi/.claude/plugins/cache/claude-plugins-official/clangd-lsp/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-02T13:28:53.373Z",
+        "lastUpdated": "2026-02-02T13:28:53.373Z",
+        "gitCommitSha": "27d2b86d72da27c64585150857cee8472ad47abb"
+      }
+    ]
+  }
+}

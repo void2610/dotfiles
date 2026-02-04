@@ -45,5 +45,8 @@
     "type": "command",
     "command": "bash ~/.claude/statusline.sh"
   },
-  "language": "日本語"
+  "language": "日本語",
+  "enabledPlugins": {
+    "clangd-lsp@claude-plugins-official": true
+  }
 }
