@@ -18,3 +18,4 @@ Brewfile.lock.json
 /.claude/cache
 /.claude/tasks
 /.claude/paste-cache
+/.claude/plugins/marketplaces/claude-plugins-official
