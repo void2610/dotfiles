@@ -83,3 +83,7 @@ export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 alias bell='afplay /System/Library/Sounds/Hero.aiff'
 
 export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+
+# .NET 8 SDK
+export PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"
+export DOTNET_ROOT="/opt/homebrew/opt/dotnet@8/libexec"
