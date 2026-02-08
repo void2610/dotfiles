@@ -19,3 +19,6 @@ Brewfile.lock.json
 /.claude/tasks
 /.claude/paste-cache
 /.claude/plugins/marketplaces/claude-plugins-official
+/.claude/image-cache
+/.claude/usage-data
+/.claude/plugins/cache
