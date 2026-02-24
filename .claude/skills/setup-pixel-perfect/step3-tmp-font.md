@@ -72,6 +72,36 @@ else
 return sb.ToString();
 ```
 
+## `execute-dynamic-code`用コード（TMPデフォルトフォント設定）
+
+TMP Settingsのデフォルトフォントを変更し、新規TextMeshProコンポーネントに自動適用されるようにします。
+
+```csharp
+using TMPro;
+using UnityEditor;
+using UnityEngine;
+
+// TMP Settingsのデフォルトフォントを変更
+var settings = AssetDatabase.LoadAssetAtPath<TMP_Settings>("Assets/TextMesh Pro/Resources/TMP Settings.asset");
+if (settings == null) return "エラー: TMP Settingsが見つかりません";
+
+var fontAsset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("$FONT_ASSET_PATH");
+if (fontAsset == null) return "エラー: フォントアセットが見つかりません: $FONT_ASSET_PATH";
+
+// SerializedObjectで設定を変更
+var so = new SerializedObject(settings);
+var defaultFontProp = so.FindProperty("m_defaultFontAsset");
+if (defaultFontProp == null) return "エラー: m_defaultFontAssetプロパティが見つかりません";
+
+var previousFont = defaultFontProp.objectReferenceValue;
+defaultFontProp.objectReferenceValue = fontAsset;
+so.ApplyModifiedProperties();
+EditorUtility.SetDirty(settings);
+AssetDatabase.SaveAssets();
+
+return $"デフォルトフォントを変更: {(previousFont != null ? previousFont.name : "なし")} → {fontAsset.name}";
+```
+
 ## フォントサイズの制約
 
 ゲーム内で使用するフォントサイズは**Sampling Point Sizeの整数倍のみ**にしてください。
