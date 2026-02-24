@@ -3,6 +3,7 @@
 ## 必ず守ること
 
 - **PPUは全アセットで統一**: スプライト、RenderTexture、Pixel Perfect Cameraすべてで同じPPU値を使用
+- **RenderTexture解像度 = Pixel Perfect Camera参照解像度 = CanvasScaler参照解像度**: これら3つは必ず一致させる。不一致だとUIのスケールが壊れる
 - **フォントサイズはSampling Point Sizeの整数倍のみ**: 非整数倍はボケの原因
 - **スプライトのTransform Scale/Rotationに注意**: 非整数スケールや45度以外の回転はジャギの原因。アニメーション等で回転する場合はスプライトシートで対応
 

@@ -21,9 +21,37 @@ RenderTextureの内容を実画面に整数倍でアップスケーリング表�
 |---|---|
 | Render Mode | Screen Space - Camera |
 | Render Camera | 合成カメラ |
+| Pixel Perfect | **true** |
 | Layer | UI |
 
-Canvas直下にRawImageを配置し、RenderTextureを表示します。UI要素はこのRawImageと同階層に配置します。
+### CanvasScaler設定
+
+**仮想解像度に合わせて設定する。** RenderTextureの解像度ではなく、Pixel Perfect Cameraの参照解像度を使用する。
+
+| 項目 | 値 |
+|---|---|
+| UI Scale Mode | **Scale With Screen Size** |
+| Reference Resolution | **仮想解像度と同じ**（例: 320×180） |
+| Screen Match Mode | **Expand** |
+
+### UI配置ルール
+
+Canvas直下にRawImageを配置し、RenderTextureを表示する。UI要素はRawImageの**後（下）**に配置する。
+
+```
+PixelPerfectCanvas
+  ├── RTDisplay (RawImage) ← ゲーム画面表示
+  ├── UIテキスト等...       ← RawImageより後に配置
+  └── ...
+```
+
+### 既存UIの統合
+
+既存のCanvasがある場合、子要素をPixelPerfectCanvasに移動し、旧Canvasを削除する。
+
+### フォントサイズの注意
+
+仮想解像度（例: 320×180）基準でフォントサイズを設定する。1920×1080向けのサイズをそのまま使うとテキストが巨大になる。Sampling Point Sizeの整数倍のみ使用可能（例: SPSが16なら16, 32, 48...）。
 
 ## `execute-dynamic-code`用コード
 
@@ -62,7 +90,11 @@ canvasGO.layer = LayerMask.NameToLayer("UI");
 var canvas = canvasGO.AddComponent<Canvas>();
 canvas.renderMode = RenderMode.ScreenSpaceCamera;
 canvas.worldCamera = compositeCam;
-canvasGO.AddComponent<CanvasScaler>();
+canvas.pixelPerfect = true;
+var scaler = canvasGO.AddComponent<CanvasScaler>();
+scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+scaler.referenceResolution = new Vector2($VIRTUAL_WIDTH, $VIRTUAL_HEIGHT);
+scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 canvasGO.AddComponent<GraphicRaycaster>();
 
 // RawImageでRenderTextureを表示
