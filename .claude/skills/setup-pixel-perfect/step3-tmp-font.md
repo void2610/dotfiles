@@ -58,15 +58,15 @@ else
     sb.AppendLine("→ フィルターモードOK");
 }
 
-// レンダーモード警告
-var renderMode = fontAsset.atlasRenderMode;
-if (renderMode != AtlasRenderMode.RASTER && renderMode != AtlasRenderMode.RASTER_HINTED)
+// レンダーモード警告（GlyphRasterModesはinternalのため文字列で判定）
+var renderModeStr = fontAsset.atlasRenderMode.ToString();
+if (renderModeStr.Contains("RASTER"))
 {
-    sb.AppendLine($"警告: レンダーモードが{renderMode}です。RASTER or RASTER_HINTEDに変更してください");
+    sb.AppendLine("→ レンダーモードOK");
 }
 else
 {
-    sb.AppendLine("→ レンダーモードOK");
+    sb.AppendLine($"警告: レンダーモードが{renderModeStr}です。RASTER or RASTER_HINTEDに変更してください");
 }
 
 return sb.ToString();
