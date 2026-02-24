@@ -12,7 +12,7 @@
 | Source Font File | 使用するフォントファイル（.ttf / .otf） |
 | Render Mode | **RASTER** または **RASTER_HINTED** |
 | Sampling Point Size | 指定値（整数。例: 8, 16） |
-| Padding | 0〜最小値 |
+| Padding | **Sampling Point Sizeと同じ値**（小さすぎると文字が正しく描画されない） |
 
 3. 「Generate Font Atlas」→「Save」でアセット保存
 
