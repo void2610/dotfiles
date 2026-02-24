@@ -21,12 +21,13 @@ $ARGUMENTS
 - `com.unity.2d.pixel-perfect` パッケージがインストール済み
   - 未インストールの場合: Package Managerから「2D Pixel Perfect」を追加
 
-## Step 1: スプライト設定
+## Step 1: スプライト設定（Presetベース）
 
 See [step1-sprite-settings.md](./step1-sprite-settings.md) for:
-- TextureImporterの一括設定（Point filter / 圧縮なし / PPU統一 / Full Rect）
+- TextureImporterのPreset作成（Point filter / 圧縮なし / PPU統一 / Full Rect）
+- Preset Managerへのデフォルト登録（新規インポート時に自動適用）
+- 既存スプライトへのPreset一括適用
 - SpriteAtlasの設定
-- `execute-dynamic-code`用コード例
 
 ## Step 2: RenderTexture + メインカメラ設定
 
@@ -66,7 +67,7 @@ See [verification.md](./verification.md) for:
 ## 実行手順まとめ
 
 1. パラメータ（仮想解像度・PPU）を確認
-2. **Step 1**: スプライトのインポート設定を一括変更
+2. **Step 1**: TextureImporterのPreset作成 → Preset Managerに登録（→ 既存スプライトがあれば一括適用）
 3. **Step 2**: RenderTexture作成 → メインカメラ設定
 4. **Step 3**: TMPフォントアセットの検証・修正（フォントがある場合のみ）
 5. **Step 4**: 合成カメラ + Canvas + RawImage作成
