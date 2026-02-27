@@ -23,3 +23,4 @@ Brewfile.lock.json
 /.claude/usage-data
 /.claude/plugins/cache
 /.claude/backups
+/.claude/skills/discord-comm

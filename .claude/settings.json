@@ -49,5 +49,6 @@
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true
   },
-  "language": "日本語"
+  "language": "日本語",
+  "skipDangerousModePermissionPrompt": true
 }
