@@ -8,54 +8,47 @@
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
   "features": {
-    "edit_prediction_provider": "copilot"
+    "edit_prediction_provider": "copilot",
   },
   "terminal": {
     "shell": {
-      "program": "zsh"
+      "program": "zsh",
     },
     "font_size": 16.0,
     "font_family": "Fira Code",
-    "copy_on_select": true
+    "copy_on_select": true,
   },
   "preview_tabs": {
-    "enabled": false
+    "enabled": false,
   },
   "current_line_highlight": "all",
   "cursor_blink": true,
-  "buffer_font_fallbacks": [
-    "Courier New",
-    "monospace"
-  ],
+  "buffer_font_fallbacks": ["Courier New", "monospace"],
   "buffer_font_family": "Fira Code",
   "file_types": {
-    "csharp": [
-      "*.cs"
-    ],
-    "Ruby": [
-      "*.ks"
-    ]
+    "csharp": ["*.cs"],
+    "TyranoScript": ["*.ks"],
   },
   "auto_indent_on_paste": true,
   "use_on_type_format": true,
   "show_edit_predictions": true,
   "ensure_final_newline_on_save": true,
   "indent_guides": {
-    "enabled": true
+    "enabled": true,
   },
   "soft_wrap": "prefer_line",
   "tab_size": 2,
   "agent": {
     "inline_assistant_model": {
       "provider": "copilot_chat",
-      "model": "claude-sonnet-4"
+      "model": "claude-sonnet-4",
     },
-    "model_parameters": []
+    "model_parameters": [],
   },
   "autosave": {
     "after_delay": {
-      "milliseconds": 1000
-    }
+      "milliseconds": 1000,
+    },
   },
   "agent_ui_font_size": 17.0,
   "ui_font_weight": 400.0,
@@ -65,16 +58,16 @@
     "serena-context-server": {
       "source": "extension",
       "enabled": true,
-      "settings": {}
-    }
+      "settings": {},
+    },
   },
   "telemetry": {
     "diagnostics": false,
-    "metrics": false
+    "metrics": false,
   },
   "vim_mode": true,
   "minimap": {
-    "show": "never"
+    "show": "never",
   },
   "base_keymap": "VSCode",
   "icon_theme": "Zed (Default)",
@@ -88,14 +81,11 @@
       "show_edit_predictions": true,
       "ensure_final_newline_on_save": true,
       "indent_guides": {
-        "enabled": true
+        "enabled": true,
       },
       "soft_wrap": "editor_width",
       "tab_size": 2,
-      "language_servers": [
-        "ty",
-        "!basedpyright",
-      ]
-    }
-  }
+      "language_servers": ["ty", "!basedpyright"],
+    },
+  },
 }
