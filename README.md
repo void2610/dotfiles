@@ -48,6 +48,8 @@ cd ~/dotfiles
 - `.zshrc`: Zshシェルの設定
 - `.gitconfig`: Git設定
 - `.tmux.conf`: tmux設定
+- `.claude/`: Claude Code の設定
+- `.codex/`: Codex の設定
 
 ## Brewfileの更新
 

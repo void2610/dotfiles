@@ -21,6 +21,7 @@ FILES=(
   ".tmux.conf"
   ".zshrc"
   ".claude"
+  ".codex"
 )
 
 for file in "${FILES[@]}"; do

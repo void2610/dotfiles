@@ -1,0 +1,13 @@
+auth.json
+history.jsonl
+log/
+models_cache.json
+sessions/
+shell_snapshots/
+state_*.sqlite
+state_*.sqlite-shm
+state_*.sqlite-wal
+tmp/
+version.json
+.personality_migration
+skills/.system/

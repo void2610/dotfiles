@@ -1,0 +1,7 @@
+[projects."/Users/shuya/Documents/GitHub"]
+trust_level = "trusted"
+
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[projects."/Users/shuya"]
+trust_level = "trusted"
