@@ -70,9 +70,6 @@ zinit light zdharma/history-search-multi-word
 alias ur='uv run python'
 alias vi='nvim'
 alias sftp='sftp -P 25288 shuya@nitfccuda.mydns.jp'
-function cc() {
-  claude --dangerously-skip-permissions "$@"
-}
 
 autoload -U compinit
 compinit
