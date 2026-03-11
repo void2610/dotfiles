@@ -70,6 +70,9 @@ zinit light zdharma/history-search-multi-word
 alias ur='uv run python'
 alias vi='nvim'
 alias sftp='sftp -P 25288 shuya@nitfccuda.mydns.jp'
+alias ls='eza --icons --group-directories-first'
+alias ll='eza -la --icons --group-directories-first'
+alias tree='eza --tree --icons'
 
 autoload -U compinit
 compinit

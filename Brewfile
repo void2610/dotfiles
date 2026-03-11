@@ -1,4 +1,5 @@
 tap "homebrew/services"
+brew "eza"
 brew "ffmpeg"
 brew "fzf"
 brew "go"
