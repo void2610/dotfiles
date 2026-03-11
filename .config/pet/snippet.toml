@@ -1,0 +1,6 @@
+
+[[Snippets]]
+  Description = "C#スクリプトの行数をカウントする"
+  Output = ""
+  Tag = []
+  command = "find . -name \"*.cs\" -print0 | xargs -0 wc -l"
