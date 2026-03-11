@@ -24,3 +24,6 @@ Brewfile.lock.json
 /.claude/plugins/cache
 /.claude/backups
 /.claude/skills/discord-comm
+/.codex/logs_*.sqlite
+/.codex/*.sqlite-shm
+/.codex/*.sqlite-wal
