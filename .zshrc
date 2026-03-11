@@ -74,6 +74,8 @@ alias sftp='sftp -P 25288 shuya@nitfccuda.mydns.jp'
 autoload -U compinit
 compinit
 eval "$(starship init zsh)"
+eval "$(zoxide init zsh --cmd cd)"
+source <(fzf --zsh)
 eval "(neofetch)"
 eval "$(uv generate-shell-completion zsh)"
 

@@ -1,7 +1,31 @@
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+
 [projects."/Users/shuya/Documents/GitHub"]
 trust_level = "trusted"
 
-project_doc_fallback_filenames = ["CLAUDE.md"]
-
 [projects."/Users/shuya"]
 trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/tyranoscript-zed"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/tyranoscript-lsp"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/color-recollection"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/the-garden-of-garden-gnome"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/unity1week-2026-03"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/void-red"]
+trust_level = "trusted"
+
+[notice.model_migrations]
+"gpt-5.3-codex" = "gpt-5.4"
