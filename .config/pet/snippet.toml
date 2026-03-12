@@ -4,3 +4,9 @@
   Output = ""
   Tag = []
   command = "find . -name \"*.cs\" -print0 | xargs -0 wc -l"
+
+[[Snippets]]
+  Description = "melchiorのビルドと起動"
+  Output = ""
+  Tag = []
+  command = "cmake .. -DMELCHIOR_TUTORIALS=OFF -DMELCHIOR_EXAMPLES=ON -DMELCHIOR_BINDING=ON && ninja melchior_main -j8 && ninja toadflax && ./melchior_main"
