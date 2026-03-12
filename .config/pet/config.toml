@@ -17,7 +17,7 @@
   Format = "[$description]: $command $tags"
   SelectCmd = "fzf --ansi --layout=reverse --border --height=90% --pointer=* --cycle --prompt=Snippets:"
   SnippetDirs = []
-  SnippetFile = "/Users/shuya/.config/pet/snippet.toml"
+  SnippetFile = "~/.config/pet/snippet.toml"
   SortBy = ""
 
 [Gist]
