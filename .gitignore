@@ -27,3 +27,4 @@ Brewfile.lock.json
 /.codex/logs_*.sqlite
 /.codex/*.sqlite-shm
 /.codex/*.sqlite-wal
+/.claude/sessions

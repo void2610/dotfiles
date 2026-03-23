@@ -4,7 +4,6 @@ model = "gpt-5.4"
 model_reasoning_effort = "medium"
 
 sandbox_mode = "danger-full-access"
-service_tier = "fast"
 
 [projects."/Users/shuya/Documents/GitHub"]
 trust_level = "trusted"
@@ -31,6 +30,9 @@ trust_level = "trusted"
 trust_level = "trusted"
 
 [projects."/Users/shuya/Documents/GitHub/the-garden-of-garden-gnome/tmp/UnityToolbarExtension"]
+trust_level = "trusted"
+
+[projects."/Users/shuya/Documents/GitHub/my-portfolio"]
 trust_level = "trusted"
 
 [notice.model_migrations]

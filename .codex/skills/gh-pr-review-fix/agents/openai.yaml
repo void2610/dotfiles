@@ -1,0 +1,7 @@
+interface:
+  display_name: "GH PR Review Fix"
+  short_description: "Classify PR comments and fix them"
+  default_prompt: "Use $gh-pr-review-fix to inspect the current branch PR comments, build a fix plan, and implement the approved changes."
+
+policy:
+  allow_implicit_invocation: true
