@@ -50,5 +50,6 @@
     "pyright-lsp@claude-plugins-official": true
   },
   "language": "日本語",
-  "skipDangerousModePermissionPrompt": true
+  "skipDangerousModePermissionPrompt": true,
+  "voiceEnabled": true
 }

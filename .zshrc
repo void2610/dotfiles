@@ -77,7 +77,6 @@ alias tree='eza --tree --icons'
 autoload -U compinit
 compinit
 eval "$(starship init zsh)"
-eval "$(zoxide init zsh --cmd cd)"
 source <(fzf --zsh)
 eval "(neofetch)"
 eval "$(uv generate-shell-completion zsh)"
@@ -96,3 +95,5 @@ export DOTNET_ROOT="/opt/homebrew/opt/dotnet@8/libexec"
 # omnara
 export OMNARA_INSTALL="$HOME/.omnara"
 export PATH="$OMNARA_INSTALL/bin:$PATH"
+
+eval "$(zoxide init zsh --cmd cd)"
