@@ -1,5 +1,4 @@
 # 手動インストールが必要なアプリケーション
 
-- Adobe製品
-- Microsoft Office
+- Adobe Creative Cloud
 - Amphetamine Enhancer
