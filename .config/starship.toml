@@ -1,0 +1,93 @@
+# Disable the newline at the start of the prompt
+add_newline = false
+
+# Wait 10 milliseconds for starship to check files under the current directory.
+scan_timeout = 10
+
+[battery]
+full_symbol = "🔥"
+charging_symbol = "🔌"
+discharging_symbol = "🔋"
+
+[[battery.display]]
+threshold = 100
+style = "bold green"
+
+[[battery.display]]
+threshold = 10
+style = "bold red"
+discharging_symbol = "💀"
+
+[[battery.display]]
+threshold = 30
+style = "bold yellow"
+discharging_symbol = "💦"
+
+[character]
+success_symbol = "[>>>](green)"
+error_symbol = "[☣](bold red)"
+
+[directory]
+style = "#ba55d3"
+truncation_length = 0
+truncate_to_repo = false
+
+[dotnet]
+symbol = "🥅 "
+style = "green"
+heuristic = false
+
+[env_var]
+disabled = false
+
+[git_branch]
+style = "#dda0dd"
+symbol = "♥:"
+truncation_length = 4
+truncation_symbol = ""
+
+[git_commit]
+disabled = false
+commit_hash_length = 4
+
+[git_state]
+cherry_pick = "🍒 PICKING"
+
+[git_status]
+conflicted = "🏳 "
+ahead = "🏎 💨"
+behind = "😰"
+diverged = "😵"
+untracked = "🤷<200d>"
+modified = "📝"
+renamed = "👅"
+deleted = "🗑 "
+
+[hostname]
+ssh_only = false
+prefix = "⟪"
+suffix = "⟫"
+trim_at = ".companyname.com"
+disabled = true
+
+[jobs]
+symbol = "+ "
+threshold = 4
+
+[memory_usage]
+disabled = false
+threshold = 10
+symbol = "👾"
+style = "green"
+format = "$symbol[${ram}]($style)"
+
+[nodejs]
+style = "#ffc0cb"
+
+[ruby]
+symbol = " "
+style = "#ffc0cb"
+
+[package]
+style = "#ffc0cb"
+symbol = " "
