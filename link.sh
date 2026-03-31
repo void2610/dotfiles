@@ -17,7 +17,6 @@ mkdir -p "${BACKUP_DIR}"
 # シンボリックリンクを作成する対象のdotfilesリスト
 FILES=(
   ".config"
-  ".gitconfig"
   ".tmux.conf"
   ".zshrc"
   ".claude"
