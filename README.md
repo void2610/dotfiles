@@ -1,6 +1,7 @@
 # dotfiles
 
 個人用のdotfiles設定リポジトリです。
+パッケージ管理と Homebrew 管理は別の `nix-config` リポジトリで行い、このリポジトリは主にシェルやアプリ設定を管理します。
 
 ## セットアップ手順
 
@@ -11,26 +12,14 @@ git clone https://github.com/yourusername/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ```
 
-### 2. Homebrewのインストール（未インストールの場合）
+### 2. Nix / nix-darwin 設定の適用
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+cd ~/nix-config
+darwin-rebuild switch --flake .#<nix-configで定義したホスト名>
 ```
 
-### 3. Homebrew パッケージのインストール
-
-`brew-setup.sh`を実行して、Brewfileに記載されたすべての依存関係をインストールします：
-
-```bash
-./brew-setup.sh
-```
-
-このスクリプトは以下を実行します：
-- Homebrewがインストールされているか確認
-- Brewfileの存在確認
-- 未インストールのパッケージを自動インストール
-
-### 4. dotfilesのシンボリックリンク作成
+### 3. dotfilesのシンボリックリンク作成
 
 ```bash
 ./install.sh
@@ -40,8 +29,6 @@ cd ~/dotfiles
 
 ## ファイル構成
 
-- `Brewfile`: Homebrewでインストールするパッケージ一覧
-- `brew-setup.sh`: Homebrewパッケージの自動インストールスクリプト
 - `install.sh`: dotfilesのシンボリックリンク作成スクリプト
 - `MANUAL_APPS.md`: 手動インストールが必要なアプリケーション一覧
 - `.config/`: 各種アプリケーションの設定ファイル
@@ -50,25 +37,3 @@ cd ~/dotfiles
 - `.tmux.conf`: tmux設定
 - `.claude/`: Claude Code の設定
 - `.codex/`: Codex の設定
-
-## Brewfileの更新
-
-新しいパッケージをインストールした後、Brewfileを更新する場合：
-
-```bash
-brew bundle dump --file=~/dotfiles/Brewfile --force
-```
-
-## トラブルシューティング
-
-### Brewfileの内容確認
-
-```bash
-brew bundle check --file=~/dotfiles/Brewfile
-```
-
-### 未インストールのパッケージ一覧表示
-
-```bash
-brew bundle check --file=~/dotfiles/Brewfile --verbose
-```

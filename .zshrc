@@ -1,18 +1,7 @@
 export PATH="$PATH:/Applications/platform-tools"
-export PATH="/Users/shuya/opt/homebrew/bin:$PATH"
-export PATH="/opt/homebrew/bin:$PATH"
 export PATH=$PATH:/Users/shuya/Documents
 export PATH="/Users/shuya/.local/bin:$PATH"
 export PATH=$PATH:~/.yarn/bin
-export PATH=$PATH:/Users/shuya/opt/homebrew/Cellar/opus/1.4/lib/
-export DYLD_LIBRARY_PATH=/Users/shuya/opt/homebrew/Cellar/opus/1.4/lib/:$DYLD_LIBRARY_PATH
-export LDFLAGS="-L/opt/homebrew/opt/zlib/lib"
-export CPPFLAGS="-I/opt/homebrew/opt/zlib/include"
-export PKG_CONFIG_PATH="/opt/homebrew/opt/zlib/lib/pkgconfig"
-export DYLD_LIBRARY_PATH="/Users/shuya/opt/homebrew/Cellar/libusb/1.0.26/lib:$DYLD_LIBRARY_PATH"
-export LDFLAGS="-L/usr/local/opt/zlib/lib"
-export CPPFLAGS="-I/usr/local/opt/zlib/include"
-export PKG_CONFIG_PATH="/usr/local/opt/zlib/lib/pkgconfig"
 # NVM (Node Version Manager) configuration
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -85,12 +74,6 @@ eval "$(uv generate-shell-completion zsh)"
 export JAVA_HOME=$(/usr/libexec/java_home -v 21)
 
 alias bell='afplay /System/Library/Sounds/Hero.aiff'
-
-export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
-
-# .NET 8 SDK
-export PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"
-export DOTNET_ROOT="/opt/homebrew/opt/dotnet@8/libexec"
 
 # omnara
 export OMNARA_INSTALL="$HOME/.omnara"
