@@ -11,3 +11,4 @@
 /.config/zed/prompts/prompts-library-db.0.mdb
 /.codex/*
 !/.codex/.gitignore
+.config/sops/age/keys.txt
