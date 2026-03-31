@@ -5,6 +5,7 @@
 .config/git/ignore
 .config/nvim/lazy-lock.json
 .config/github-copilot
+.config/tmux/tmux.conf
 /.claude/*
 !/.claude/.gitignore
 /.config/zed/prompts/prompts-library-db.0.mdb
