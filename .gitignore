@@ -27,3 +27,4 @@
 /.codex/*.sqlite-shm
 /.codex/*.sqlite-wal
 /.claude/sessions
+/.codex/.tmp

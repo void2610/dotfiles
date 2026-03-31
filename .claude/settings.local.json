@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(ls:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(nix --version)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": []
   }
