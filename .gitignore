@@ -1,7 +1,11 @@
 .DS_Store
 .config/raycast/extensions
+.config/direnv/
+.config/git/config
+.config/git/ignore
 .config/nvim/lazy-lock.json
 .config/github-copilot
+.config/starship.toml
 .claude/projects/
 .claude/statsig/
 .claude/todos/

@@ -18,7 +18,6 @@ mkdir -p "${BACKUP_DIR}"
 FILES=(
   ".config"
   ".tmux.conf"
-  ".zshrc"
   ".claude"
   ".codex"
 )
