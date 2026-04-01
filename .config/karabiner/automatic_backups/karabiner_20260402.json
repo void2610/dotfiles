@@ -55,23 +55,6 @@
                             "to": [{ "key_code": "left_control" }]
                         }
                     ]
-                },
-                {
-                    "identifiers": {
-                        "is_keyboard": true,
-                        "product_id": 34,
-                        "vendor_id": 1278
-                    },
-                    "simple_modifications": [
-                        {
-                            "from": { "key_code": "left_control" },
-                            "to": [{ "key_code": "left_command" }]
-                        },
-                        {
-                            "from": { "key_code": "left_command" },
-                            "to": [{ "key_code": "left_control" }]
-                        }
-                    ]
                 }
             ],
             "name": "Japanese-Macbook",
