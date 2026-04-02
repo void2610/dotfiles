@@ -6,7 +6,13 @@
   command = "find . -name \"*.cs\" -print0 | xargs -0 wc -l"
 
 [[Snippets]]
-  Description = "melchiorのビルドと起動"
+  Description = "melchiorのビルドと起動(python3.12を指定)"
   Output = ""
   Tag = []
-  command = "cmake .. -DMELCHIOR_TUTORIALS=OFF -DMELCHIOR_EXAMPLES=ON -DMELCHIOR_BINDING=ON && ninja melchior_main -j8 && ninja toadflax && ./melchior_main"
+  command = "cmake .. -GNinja -DMELCHIOR_TUTORIALS=OFF -DMELCHIOR_EXAMPLES=ON -DMELCHIOR_BINDING=ON -DPython_EXECUTABLE=/etc/profiles/per-user/shuya.izumi/bin/python3.12 && ninja melchior_main -j8 && ninja toadflax && ./melchior_main"
+
+[[Snippets]]
+  Description = "NixでMac環境をrebuildする"
+  Output = ""
+  Tag = []
+  command = "sudo darwin-rebuild switch --flake ."
