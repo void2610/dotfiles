@@ -16,3 +16,9 @@
   Output = ""
   Tag = []
   command = "sudo darwin-rebuild switch --flake ."
+
+[[Snippets]]
+  Description = "melchiorビルド(nix環境)"
+  Output = ""
+  Tag = []
+  command = "ninja melchior_main toadflax -j8 && ./melchior_main"
