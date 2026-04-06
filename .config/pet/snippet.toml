@@ -22,3 +22,15 @@
   Output = ""
   Tag = []
   command = "ninja melchior_main toadflax -j8 && ./melchior_main"
+
+[[Snippets]]
+  Description = "git blobless clone"
+  Output = ""
+  Tag = []
+  command = "git clone --filter=blob:none https://github.com/void2610/hoge.git"
+
+[[Snippets]]
+  Description = "git サブモジュールのクローン"
+  Output = ""
+  Tag = []
+  command = "git submodule update --init --recursive"
