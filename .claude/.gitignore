@@ -13,4 +13,5 @@
 !/skills/
 !/skills/**
 !/statusline.sh
+!/claude-remote-listener.sh
 **/.DS_Store
