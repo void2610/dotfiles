@@ -49,6 +49,9 @@
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true
   },
+  "env": {
+    "PATH": "/Users/shuya/.nix-profile/bin:/etc/profiles/per-user/shuya/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  },
   "language": "日本語",
   "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,

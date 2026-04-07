@@ -42,7 +42,7 @@ process_message() {
     fi
 
     # claude remote-control の引数を構築
-    local cmd_args=(remote-control)
+    local cmd_args=(remote-control --permission-mode bypassPermissions)
     if [ -n "$name" ]; then
         cmd_args+=(--name "$name")
     fi
@@ -53,7 +53,7 @@ process_message() {
     timestamp=$(date '+%Y%m%d_%H%M%S')
     local log_file="$LOG_DIR/${timestamp}.log"
 
-    # Claude リモートコントロール起動（バックグラウンドで実行し続ける）
+    # Claude リモートコントロール起動（全許可モード・バックグラウンドで実行し続ける）
     (cd "$dir" && "$CLAUDE_BIN" "${cmd_args[@]}") >> "$log_file" 2>&1 &
     log "リモートコントロール起動完了 (PID=$!): $log_file"
 }
