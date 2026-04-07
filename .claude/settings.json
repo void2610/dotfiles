@@ -15,7 +15,7 @@
     ],
     "deny": [],
     "ask": [],
-    "defaultMode": "plan"
+    "defaultMode": "auto"
   },
   "hooks": {
     "Stop": [
@@ -50,6 +50,7 @@
     "pyright-lsp@claude-plugins-official": true
   },
   "language": "日本語",
+  "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "voiceEnabled": true
+  "skipAutoPermissionPrompt": true
 }
