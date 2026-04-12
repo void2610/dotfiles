@@ -4,13 +4,18 @@
 # 起動: void2610-cmd トピックに {"dir":"~/projects/my-app"} を送信
 # 停止: void2610-cmd-stop トピックに任意のメッセージを送信（全インスタンス終了）
 
-set -euo pipefail
+set -u
 
 NTFY_CMD_TOPIC="https://ntfy.sh/void2610-cmd/json"
 NTFY_STOP_TOPIC="https://ntfy.sh/void2610-cmd-stop/json"
 LOG_DIR="${HOME}/.claude/remote-logs"
-CLAUDE_BIN="$(command -v claude)"
-JQ_BIN="$(command -v jq)"
+CLAUDE_BIN="$(command -v claude || echo "")"
+JQ_BIN="$(command -v jq || echo "")"
+
+if [ -z "$CLAUDE_BIN" ] || [ -z "$JQ_BIN" ]; then
+    echo "エラー: claude または jq が見つかりません (claude=$CLAUDE_BIN, jq=$JQ_BIN)" >&2
+    exit 1
+fi
 
 mkdir -p "$LOG_DIR"
 
@@ -37,8 +42,8 @@ process_message() {
     local dir name
 
     # JSONパース
-    dir=$("$JQ_BIN" -r '.dir // empty' <<< "$body")
-    name=$("$JQ_BIN" -r '.name // empty' <<< "$body")
+    dir=$("$JQ_BIN" -r '.dir // empty' <<< "$body" 2>/dev/null) || true
+    name=$("$JQ_BIN" -r '.name // empty' <<< "$body" 2>/dev/null) || true
 
     # チルダ展開
     dir="${dir/#\~/$HOME}"
@@ -73,14 +78,16 @@ process_message() {
 # 停止トピックを別プロセスで購読
 subscribe_stop() {
     while true; do
-        curl -sN "$NTFY_STOP_TOPIC" --connect-timeout 30 | while IFS= read -r line; do
+        curl -sfN "$NTFY_STOP_TOPIC" --connect-timeout 30 --max-time 0 2>/dev/null | while IFS= read -r line; do
+            [ -z "$line" ] && continue
             event=$("$JQ_BIN" -r '.event // empty' <<< "$line" 2>/dev/null) || continue
             if [ "$event" = "message" ]; then
                 log "停止メッセージ受信"
                 stop_all
             fi
         done
-        sleep 5
+        log "停止トピック接続切断。10秒後に再接続..."
+        sleep 10
     done
 }
 
@@ -91,19 +98,21 @@ log "リスナー開始"
 subscribe_stop &
 
 while true; do
-    curl -sN "$NTFY_CMD_TOPIC" --connect-timeout 30 | while IFS= read -r line; do
+    curl -sfN "$NTFY_CMD_TOPIC" --connect-timeout 30 --max-time 0 2>/dev/null | while IFS= read -r line; do
+        # 空行（keepalive）をスキップ
+        [ -z "$line" ] && continue
         # ntfy.shのJSONストリームからmessageイベントのみ処理
         event=$("$JQ_BIN" -r '.event // empty' <<< "$line" 2>/dev/null) || continue
         if [ "$event" = "message" ]; then
-            msg_body=$("$JQ_BIN" -r '.message // empty' <<< "$line")
+            msg_body=$("$JQ_BIN" -r '.message // empty' <<< "$line" 2>/dev/null) || continue
             if [ -n "$msg_body" ]; then
                 log "メッセージ受信: $msg_body"
-                process_message "$msg_body"
+                process_message "$msg_body" || log "エラー: メッセージ処理に失敗: $msg_body"
             fi
         fi
     done
 
-    # 接続切断時は5秒待って再接続
-    log "接続切断。5秒後に再接続..."
-    sleep 5
+    # 接続切断時は10秒待って再接続
+    log "接続切断。10秒後に再接続..."
+    sleep 10
 done
