@@ -1,4 +1,7 @@
 {
+  "env": {
+    "PATH": "/Users/shuya/.nix-profile/bin:/etc/profiles/per-user/shuya/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  },
   "permissions": {
     "allow": [
       "Bash(python3 -c:*)",
@@ -43,18 +46,25 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "bash ~/.claude/statusline.sh"
+    "command": "python3 ~/.claude/statusline.py"
   },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
-    "pyright-lsp@claude-plugins-official": true
+    "pyright-lsp@claude-plugins-official": true,
+    "akaridou@akari-awesome-cc-plugins": true,
+    "statusline@akari-awesome-cc-plugins": true
   },
-  "env": {
-    "PATH": "/Users/shuya/.nix-profile/bin:/etc/profiles/per-user/shuya/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/bin:/bin:/usr/sbin:/sbin"
+  "extraKnownMarketplaces": {
+    "akari-awesome-cc-plugins": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/AKARI-Inc/awesome-cc.git"
+      }
+    }
   },
   "language": "日本語",
+  "autoUpdatesChannel": "stable",
   "voiceEnabled": true,
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
-  "autoUpdatesChannel": "stable"
+  "skipAutoPermissionPrompt": true
 }
