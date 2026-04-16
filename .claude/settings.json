@@ -4,21 +4,19 @@
   },
   "permissions": {
     "allow": [
-      "Bash(python3 -c:*)",
-      "Bash(make:*)",
-      "Bash(git log:*)",
-      "Bash(python3:*)",
-      "Bash(find:*)",
-      "Bash(cmake:*)",
+      "Bash(*)",
+      "Edit",
+      "Write",
+      "Read",
+      "Glob",
+      "Grep",
       "WebSearch",
-      "Bash(gh api:*)",
-      "Bash(ninja:*)",
-      "Bash(git checkout:*)",
-      "Bash(grep:*)"
+      "WebFetch",
+      "mcp__*"
     ],
     "deny": [],
     "ask": [],
-    "defaultMode": "auto"
+    "defaultMode": "bypassPermissions"
   },
   "hooks": {
     "Stop": [
