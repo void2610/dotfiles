@@ -13,9 +13,29 @@
 
 ### Phase 1: コメント情報の収集
 1. `gh pr view --comments` でPRの詳細とコメントを取得
-2. `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/comments` で詳細なコメントデータを取得
+2. `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/comments` で詳細なコメントデータを取得（`id` = review comment の `databaseId` を必ず保持）
 3. `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/reviews` でレビューコメントを取得
 4. 必要に応じて `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/issues/{PR_NUMBER}/comments` で一般コメントも確認
+5. GraphQL で review thread の ID を取得し、各 comment がどの thread に属するかマッピングを作成する（Phase 7 の resolve に必要）
+
+```bash
+gh api graphql -F owner='{ORGANIZATION}' -F repo='{CURRENT_REPO}' -F number={PR_NUMBER} -f query='
+query($owner: String!, $repo: String!, $number: Int!) {
+  repository(owner: $owner, name: $repo) {
+    pullRequest(number: $number) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          comments(first: 20) { nodes { databaseId body path } }
+        }
+      }
+    }
+  }
+}'
+```
+
+上記の `nodes[].id` が thread ID（`PRRT_xxx` 形式）、`comments.nodes[].databaseId` が review comment ID。コメント修正後にこの対応表を使って返信 & resolve する。
 
 ### Phase 2: コメント分析と分類
 収集したコメントを以下の観点で分析してください：
@@ -133,6 +153,49 @@
 - 優先度順に修正を実施
 - 各修正後にコミットを作成
 - コミットメッセージにはPR番号と修正内容を記載
+- **コミット直後に、そのコミットが対応するレビューコメントの `commit_hash` と `comment_id` / `thread_id` を記録しておく**（Phase 7 で使用）
 
 #### 3. 最終確認
   - 全ての必須項目が完了していることを確認
+  - `git push` でリモートへ反映（push 前に resolve するとコミットが GitHub 側に未到達で返信リンクが壊れる可能性があるため、push 後に Phase 7 を実行）
+
+### Phase 7: レビューコメントへの返信と resolve
+
+各修正済みコメントについて、以下を実施してください：
+
+#### 1. 修正コミットハッシュを返信
+対応する review comment に対し、`in_reply_to` で返信スレッドを作成します。ハッシュは **完全な形（40 文字）** で書くこと。完全な SHA を書くと GitHub UI が自動的にコミットへのリンク付きテキストに整形してくれる（短縮形やバッククォート付きだとリンク化されない場合がある）。
+
+```bash
+gh api -X POST \
+  repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/comments \
+  -F in_reply_to={COMMENT_ID} \
+  -f body="{FULL_HASH}"
+```
+
+返信本文は完全なコミットハッシュ（40 文字、バッククォートで囲まない）のみ。複数コミットに跨る場合は全 SHA を改行区切りで列挙します。完全 SHA は `git rev-parse HEAD` や `git log --format=%H -1` で取得できます。
+
+#### 2. review thread を resolve
+Phase 1 で取得した `thread_id` を使い、GraphQL で resolve します。
+
+```bash
+gh api graphql -F threadId='{THREAD_ID}' -f query='
+mutation($threadId: ID!) {
+  resolveReviewThread(input: {threadId: $threadId}) {
+    thread { id isResolved }
+  }
+}'
+```
+
+#### 3. 処理ポリシー
+- **必須修正項目 / 推奨修正項目** を実装しコミットしたコメントのみ返信 + resolve
+- **質問・議論項目** は返信のみ（resolve しない）またはスキップ。回答が必要な場合はユーザーに確認
+- 既に `isResolved: true` のスレッドは再 resolve しない
+- 返信 or resolve に失敗した場合はエラーを報告し、残りの処理を継続
+
+#### 4. 完了報告
+すべての対象コメントについて、以下の表をユーザーに提示してください：
+
+| comment_id | ファイル:行 | 修正コミット | 返信 | resolve |
+|------------|-----------|-----------|------|---------|
+| 123456789  | src/main.js:15 | abc1234 | ✅ | ✅ |
