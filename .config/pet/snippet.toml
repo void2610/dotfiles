@@ -34,3 +34,9 @@
   Output = ""
   Tag = []
   command = "claude --dangerously-skip-permissions"
+
+[[Snippets]]
+  Description = "submoduleを全てreset hardする"
+  Output = ""
+  Tag = []
+  command = "git submodule deinit -f ."
