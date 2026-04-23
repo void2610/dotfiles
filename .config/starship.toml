@@ -42,7 +42,7 @@ disabled = false
 
 [git_branch]
 style = "#dda0dd"
-symbol = "♥:"
+symbol = " "
 truncation_length = 4
 truncation_symbol = ""
 
@@ -90,4 +90,4 @@ style = "#ffc0cb"
 
 [package]
 style = "#ffc0cb"
-symbol = " "
+symbol = " "

@@ -7,18 +7,31 @@
 // custom settings, run `zed: open default settings` from the
 // command palette (cmd-shift-p / ctrl-shift-p)
 {
+  "project_panel": {
+    "dock": "left"
+  },
+  "outline_panel": {
+    "dock": "left"
+  },
+  "collaboration_panel": {
+    "dock": "left"
+  },
+  "git_panel": {
+    "dock": "left"
+  },
+  "edit_predictions": {
+    "provider": "copilot"
+  },
   "session": {
     "trust_all_worktrees": true
-  },
-  "features": {
-    "edit_prediction_provider": "copilot",
   },
   "terminal": {
     "shell": {
       "program": "zsh",
     },
     "font_size": 16.0,
-    "font_family": "Fira Code",
+    "font_family": "Hack Nerd Font",
+    "font_fallbacks": ["Apple Color Emoji"],
     "copy_on_select": true,
   },
   "preview_tabs": {
@@ -26,7 +39,7 @@
   },
   "current_line_highlight": "all",
   "cursor_blink": true,
-  "buffer_font_fallbacks": ["Courier New", "monospace"],
+  "buffer_font_fallbacks": ["Courier New", "Hack Nerd Font", "Apple Color Emoji", "monospace"],
   "buffer_font_family": "Fira Code",
   "file_types": {
     "csharp": ["*.cs"],
@@ -42,6 +55,7 @@
   "soft_wrap": "prefer_line",
   "tab_size": 2,
   "agent": {
+    "dock": "right",
     "inline_assistant_model": {
       "provider": "copilot_chat",
       "model": "claude-sonnet-4",
@@ -59,7 +73,6 @@
   "when_closing_with_no_tabs": "keep_window_open",
   "context_servers": {
     "serena-context-server": {
-      "source": "extension",
       "enabled": true,
       "settings": {},
     },
