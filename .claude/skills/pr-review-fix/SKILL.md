@@ -12,11 +12,13 @@
 ## Pull Request 修正手順
 
 ### Phase 1: コメント情報の収集
-1. `gh pr view --comments` でPRの詳細とコメントを取得
-2. `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/comments` で詳細なコメントデータを取得（`id` = review comment の `databaseId` を必ず保持）
-3. `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/reviews` でレビューコメントを取得
-4. 必要に応じて `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/issues/{PR_NUMBER}/comments` で一般コメントも確認
-5. GraphQL で review thread の ID を取得し、各 comment がどの thread に属するかマッピングを作成する（Phase 7 の resolve に必要）
+
+**重要: 対象は未解決 (unresolved) のレビューコメントのみ**
+- GitHub の「Resolve conversation」で閉じられた thread は **既に対応済み** と見なし、収集・分析・修正対象から除外する
+- 判定は GraphQL の `reviewThreads.isResolved == false` を基準とする
+- REST API (`/pulls/{N}/comments`) には `isResolved` フィールドが無いため、単独で使って対象を決定してはならない (必ず GraphQL の isResolved と照合する)
+
+1. まず GraphQL で review thread を列挙し、**`isResolved == false` のスレッド内コメントだけ** を採用する。この結果が以降の全 Phase の入力となる。
 
 ```bash
 gh api graphql -F owner='{ORGANIZATION}' -F repo='{CURRENT_REPO}' -F number={PR_NUMBER} -f query='
@@ -27,7 +29,9 @@ query($owner: String!, $repo: String!, $number: Int!) {
         nodes {
           id
           isResolved
-          comments(first: 20) { nodes { databaseId body path } }
+          isOutdated
+          path
+          comments(first: 20) { nodes { databaseId body path line url author { login } createdAt } }
         }
       }
     }
@@ -35,7 +39,15 @@ query($owner: String!, $repo: String!, $number: Int!) {
 }'
 ```
 
-上記の `nodes[].id` が thread ID（`PRRT_xxx` 形式）、`comments.nodes[].databaseId` が review comment ID。コメント修正後にこの対応表を使って返信 & resolve する。
+- `nodes[].id` が thread ID (`PRRT_xxx` 形式)、`comments.nodes[].databaseId` が review comment ID
+- **`isResolved: true` のスレッドは完全にスキップ** (コメント一覧にも載せない)
+- 各コメント収集時に thread ID / comment ID の対応表を作る (Phase 7 の resolve で使う)
+
+2. 補助データ (採否判断ではなく概要把握のため)
+   - `gh pr view --comments` で PR 全体の概要を確認
+   - `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/pulls/{PR_NUMBER}/reviews` でレビュー本体のサマリーを確認
+3. PR 全体への一般コメント (resolve 概念が無い)
+   - `gh api repos/{ORGANIZATION}/{CURRENT_REPO}/issues/{PR_NUMBER}/comments` — これは全件を対象
 
 ### Phase 2: コメント分析と分類
 収集したコメントを以下の観点で分析してください：
@@ -93,24 +105,25 @@ query($owner: String!, $repo: String!, $number: Int!) {
 **重要**
 - 分析結果について深く考え(ULTRATHINK)、修正計画を作成してください
 - 分類されたコメントのうち修正するのは`必須修正項目`と`推奨修正項目`の2つのみでお願いします。
+- **すべてのコメントをまとめた表には、必ず先頭列に「#」 (通し番号) を付ける**。以降 Phase 6 / Phase 7 の報告表も同じ通し番号で参照する (コメント ID を毎回書かなくて済むよう一意識別子を与える)。
 
 ```markdown
 # PR #{PR_NUMBER} 修正計画
 
 ## 📋 コメント一覧
-| コメントの分類 | カテゴリー | ファイル | 内容 | レビュアー |
-|--------|------------|----------|------|-----------|
-| 🔴 | Code Quality | src/main.js:15 | 変数名をより具体的に | @reviewer1 |
-| 🟡 | Performance | src/api.js:42 | キャッシュ機能の追加検討 | @reviewer2 |
+| # | コメントの分類 | カテゴリー | ファイル | 内容 | レビュアー |
+|---|--------|------------|----------|------|-----------|
+| 1 | 🔴 | Code Quality | src/main.js:15 | 変数名をより具体的に | @reviewer1 |
+| 2 | 🟡 | Performance | src/api.js:42 | キャッシュ機能の追加検討 | @reviewer2 |
 
 ## 🎯 修正方針
 ### 必須修正項目（Phase 1）
-- [ ] 項目1: 詳細な修正内容
-- [ ] 項目2: 詳細な修正内容
+- [ ] #1: 詳細な修正内容
+- [ ] #2: 詳細な修正内容
 
 ### 推奨修正項目（Phase 2）
-- [ ] 項目1: 詳細な修正内容
-- [ ] 項目2: 詳細な修正内容
+- [ ] #3: 詳細な修正内容
+- [ ] #4: 詳細な修正内容
 
 ## 📅 実装順序
 1. 必須修正項目の実装
@@ -126,8 +139,10 @@ query($owner: String!, $repo: String!, $number: Int!) {
 `​``
 
 ### Phase 4: 計画品質のチェック
-- [ ] PR上の全コメントを参照している
+- [ ] PR上の **未解決 (unresolved)** の全コメントを参照している (resolve 済みは対象外で OK)
 - [ ] 全コメントが「必須修正項目」「推奨修正項目」「質問・議論項目」の3つに分類されている
+- [ ] コメント一覧の表に通し番号 (#) が先頭列として振られている
+- [ ] 修正方針・後段の表がすべて通し番号で参照されている
 - [ ] コメントの内容が分析されている
 - [ ] 具体的で明確な修正方針が作成されている
 
@@ -194,8 +209,9 @@ mutation($threadId: ID!) {
 - 返信 or resolve に失敗した場合はエラーを報告し、残りの処理を継続
 
 #### 4. 完了報告
-すべての対象コメントについて、以下の表をユーザーに提示してください：
+すべての対象コメントについて、以下の表をユーザーに提示してください。**先頭列に Phase 3 と同じ通し番号 (#) を必ず付けて対応関係を明示する。**
 
-| comment_id | ファイル:行 | 修正コミット | 返信 | resolve |
-|------------|-----------|-----------|------|---------|
-| 123456789  | src/main.js:15 | abc1234 | ✅ | ✅ |
+| # | comment_id | ファイル:行 | 修正コミット | 返信 | resolve |
+|---|------------|-----------|-----------|------|---------|
+| 1 | 123456789  | src/main.js:15 | abc1234 | ✅ | ✅ |
+| 2 | 123456790  | src/api.js:42  | def5678 | ✅ | ✅ |
