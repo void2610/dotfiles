@@ -1,6 +1,6 @@
 ---
 name: pr-review-fix
-description: "Pull Request の未解決レビューコメントを網羅的に取り込み、修正計画 → ユーザー承認 → 実装 → 返信 & resolve まで一気通貫で対応する。GitHub PR のレビュー対応、「レビューを直して」「コメントに対応」「PR review fix」等に使う。"
+description: "GitHub Pull Request のレビューコメントに一括対応する時に使う。トリガー: 「PR レビュー直して」「レビューコメント対応」「レビューフィードバック反映」「PR の指摘対応」「PR #123 のコメント対応」「review fix」「apply PR review」「address PR feedback」等のユーザー指示、または `/pr-review-fix` スラッシュコマンド、`pr-review-fix` スキル指定。未解決 (isResolved=false) スレッドを網羅収集 → 分類 → 承認付き修正計画 → 実装コミット → push → 返信 & resolve まで 7 フェーズで一気通貫。fork PR / 100 件超の大 PR にも対応。"
 ---
 
 # pr-review-fix
