@@ -16,8 +16,24 @@
 #   - gh api --paginate で reviewThreads 100 件超の大 PR も全取得
 #   - fork から投げた PR でも base repository (レビューが付く upstream) を正しく参照
 #
-# 依存: gh CLI (authenticated), git (PR 自動検出時)
+# 依存:
+#   - gh CLI v2.4.0+ (authenticated) — --paginate + GraphQL 対応が必要
+#   - git (PR 自動検出時)
 set -euo pipefail
+
+# --- gh CLI の存在・バージョンチェック ---
+if ! command -v gh >/dev/null 2>&1; then
+  echo "エラー: gh CLI が見つかりません。https://cli.github.com/ からインストールしてください。" >&2
+  exit 1
+fi
+gh_min="2.4.0"
+gh_ver=$(gh --version 2>/dev/null | head -n1 | awk '{print $3}')
+if [[ -n "$gh_ver" ]]; then
+  lowest=$(printf '%s\n%s\n' "$gh_min" "$gh_ver" | sort -V | head -n1)
+  if [[ "$lowest" != "$gh_min" ]]; then
+    echo "警告: gh ${gh_min}+ 推奨 (現在 ${gh_ver})。--paginate / GraphQL が動かない可能性あり。" >&2
+  fi
+fi
 
 pr_number="${1:-}"
 if [[ -z "$pr_number" ]]; then

@@ -6,6 +6,7 @@
 #
 # 使い方:
 #   ./reply_to_comment.sh <comment_id> <body> [pr_number]
+#   ./reply_to_comment.sh <comment_id> -    [pr_number]   # body を stdin から読む
 #
 # 引数:
 #   comment_id : レビューコメントの databaseId
@@ -20,6 +21,10 @@
 #                     "<日本語 1 文>。"
 #                   例: "PR description を更新しました。"
 #                      "<FULL_SHA> で既に対応済みです。"
+#                body が "-" のときは標準入力から読む。バックスラッシュ・バック
+#                クォート・`$(...)` 等のシェル特殊文字を含む本文を安全に渡したい
+#                場合はこちらを使う (呼び出し元シェルの展開を回避):
+#                     printf '%s' "<body>" | ./reply_to_comment.sh <comment_id> -
 #   pr_number  : 省略可 (デフォルトは現在ブランチの PR)。
 #
 # 最終的に投稿される本文フォーマット:
@@ -29,12 +34,37 @@
 #   ---
 #   🤖 Replied by [Claude Code](https://claude.com/claude-code) via `pr-review-fix` skill
 #
-# 依存: gh CLI (authenticated), git (PR 自動検出時)
+# 依存:
+#   - gh CLI v2.4.0+ (authenticated)
+#   - git (PR 自動検出時)
 set -euo pipefail
 
+# --- gh CLI の存在・バージョンチェック ---
+if ! command -v gh >/dev/null 2>&1; then
+  echo "エラー: gh CLI が見つかりません。https://cli.github.com/ からインストールしてください。" >&2
+  exit 1
+fi
+gh_min="2.4.0"
+gh_ver=$(gh --version 2>/dev/null | head -n1 | awk '{print $3}')
+if [[ -n "$gh_ver" ]]; then
+  lowest=$(printf '%s\n%s\n' "$gh_min" "$gh_ver" | sort -V | head -n1)
+  if [[ "$lowest" != "$gh_min" ]]; then
+    echo "警告: gh ${gh_min}+ 推奨 (現在 ${gh_ver})。" >&2
+  fi
+fi
+
 comment_id="${1:?comment_id が必須です}"
-body="${2:?body が必須です (例: \"<FULL_SHA> で修正しました。\")}"
+body="${2:?body が必須です (例: \"<FULL_SHA> で修正しました。\" または \"-\" で stdin 読み込み)}"
 pr_number="${3:-}"
+
+# body が "-" の場合は stdin から読み込む (特殊文字を含む本文の安全渡し用)
+if [[ "$body" == "-" ]]; then
+  body=$(cat)
+  if [[ -z "$body" ]]; then
+    echo "エラー: body が stdin 経由で指定されましたが空でした。" >&2
+    exit 1
+  fi
+fi
 
 if [[ -z "$pr_number" ]]; then
   pr_number=$(gh pr view --json number -q .number)
