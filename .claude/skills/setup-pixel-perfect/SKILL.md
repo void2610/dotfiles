@@ -1,3 +1,8 @@
+---
+name: setup-pixel-perfect
+description: "Unity 6 でピクセルパーフェクト描画をセットアップする時に使う。RenderTexture への低解像度レンダリング → 合成カメラで整数倍アップスケールの手順を自動化する (Zenn 記事 https://zenn.dev/matsu_friends/articles/c4a5d36b1de94e ベース)。トリガー: 「ピクセルパーフェクト設定して」「setup pixel perfect」「ドット絵 Unity 設定」等のユーザー指示、または `setup-pixel-perfect` スキル指定。"
+---
+
 # Unity ピクセルパーフェクト描画セットアップスキル
 
 Zenn記事（https://zenn.dev/matsu_friends/articles/c4a5d36b1de94e）に基づき、Unity 6でピクセルパーフェクト描画を完全にセットアップします。RenderTextureへの低解像度レンダリング → 合成カメラでの整数倍アップスケーリングにより、鮮明なドット絵表示を実現します。
