@@ -1,8 +1,8 @@
 ---
-name: game-idea-generator-with-loop
+name: game-idea-loop
 description: >
   ゲームのアイデアを自律的に大量生成し、比較・評価・淘汰を繰り返して最良のアイデアを選び出すスキル。
-  ユーザーが明示的に「game-idea-generator-with-loopを起動して」と指示すると発動する。
+  ユーザーが明示的に「game-idea-loopを起動して」と指示すると発動する。
   ユーザーが制約条件（ジャンル、プラットフォーム、テーマ等）を与えると、
   それに基づいて数十のアイデアを生成→評価→淘汰のループを自動で回し、
   思考の全過程をMarkdownファイルに記録する。
