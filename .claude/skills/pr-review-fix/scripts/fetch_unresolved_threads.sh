@@ -21,6 +21,38 @@
 #   - git (PR 自動検出時)
 set -euo pipefail
 
+# --- 純 Bash の SemVer 比較 ($1 < $2 なら 0 を返す) ---
+# 理由: `sort -V` は GNU sort 依存で、macOS 標準の BSD sort では `illegal option -- V`
+#       となり、本スクリプトは `set -e` 下で即終了してしまう。OS 非依存にするため
+#       純 Bash で比較する (数値接尾辞除去にも対応)。
+version_lt() {
+  local lhs="$1" rhs="$2"
+  local -a lhs_parts rhs_parts
+  local i max lhs_part rhs_part
+  IFS=. read -r -a lhs_parts <<< "$lhs"
+  IFS=. read -r -a rhs_parts <<< "$rhs"
+  max=${#lhs_parts[@]}
+  if (( ${#rhs_parts[@]} > max )); then
+    max=${#rhs_parts[@]}
+  fi
+  for ((i = 0; i < max; i++)); do
+    lhs_part="${lhs_parts[i]:-0}"
+    rhs_part="${rhs_parts[i]:-0}"
+    # 末尾の非数値接尾辞 (例: "2.40.0-beta" の "-beta") を除去
+    lhs_part="${lhs_part%%[^0-9]*}"
+    rhs_part="${rhs_part%%[^0-9]*}"
+    [[ -z "$lhs_part" ]] && lhs_part=0
+    [[ -z "$rhs_part" ]] && rhs_part=0
+    if ((10#$lhs_part < 10#$rhs_part)); then
+      return 0
+    fi
+    if ((10#$lhs_part > 10#$rhs_part)); then
+      return 1
+    fi
+  done
+  return 1
+}
+
 # --- gh CLI の存在・バージョンチェック ---
 if ! command -v gh >/dev/null 2>&1; then
   echo "エラー: gh CLI が見つかりません。https://cli.github.com/ からインストールしてください。" >&2
@@ -28,11 +60,8 @@ if ! command -v gh >/dev/null 2>&1; then
 fi
 gh_min="2.4.0"
 gh_ver=$(gh --version 2>/dev/null | head -n1 | awk '{print $3}')
-if [[ -n "$gh_ver" ]]; then
-  lowest=$(printf '%s\n%s\n' "$gh_min" "$gh_ver" | sort -V | head -n1)
-  if [[ "$lowest" != "$gh_min" ]]; then
-    echo "警告: gh ${gh_min}+ 推奨 (現在 ${gh_ver})。--paginate / GraphQL が動かない可能性あり。" >&2
-  fi
+if [[ -n "$gh_ver" ]] && version_lt "$gh_ver" "$gh_min"; then
+  echo "警告: gh ${gh_min}+ 推奨 (現在 ${gh_ver})。--paginate / GraphQL が動かない可能性あり。" >&2
 fi
 
 pr_number="${1:-}"
@@ -75,7 +104,11 @@ query($owner: String!, $repo: String!, $number: Int!, $endCursor: String) {
           isResolved
           isOutdated
           path
-          comments(first: 20) {
+          # スレッド内コメントは first: 100 まで取得する。
+          # GitHub 上で 1 スレッドに 100 件超の返信が付くことは実務上稀なため、
+          # reviewThreads と違い pagination は行わず単発取得で十分とする。
+          # (以前は first: 20 だったが、議論が長いスレッドで後続コメントを取りこぼす問題があった)
+          comments(first: 100) {
             nodes {
               databaseId
               body
