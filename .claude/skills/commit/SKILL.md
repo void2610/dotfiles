@@ -1,9 +1,9 @@
 ---
-name: git-commit
+name: commit
 description: git commit を実行するスキル。「コミットして」「commit」「push して」等の依頼で発動する。コミットメッセージは日本語・件名のみが基本・本文は必要な時だけ、そして複数の意味が混ざる変更は必ず分割する、というポリシーを適用する。
 ---
 
-# Git Commit
+# Commit
 
 `git commit` を実行するときに従うポリシー。
 

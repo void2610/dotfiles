@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: "GitHub Pull Request を作成する時に使う。トリガー: 「PR 作って」「PR 作成」「プルリクエスト作って」「create PR」「open PR」「raise PR」等のユーザー指示、または `pr-create` スキル指定。コミット済みブランチから push 確認 → タイトル / 本文案の提示 → ユーザー承認 → `gh pr create` 実行 → URL 報告までを一気通貫。コミット作成自体は担当せず、事前に git-commit スキル等で済ませておく前提。"
+description: "GitHub Pull Request を作成する時に使う。トリガー: 「PR 作って」「PR 作成」「プルリクエスト作って」「create PR」「open PR」「raise PR」等のユーザー指示、または `pr-create` スキル指定。コミット済みブランチから push 確認 → タイトル / 本文案の提示 → ユーザー承認 → `gh pr create` 実行 → URL 報告までを一気通貫。コミット作成自体は担当せず、事前に commit スキル等で済ませておく前提。"
 ---
 
 # pr-create
