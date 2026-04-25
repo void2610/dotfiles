@@ -67,6 +67,6 @@
   "language": "日本語",
   "autoUpdatesChannel": "stable",
   "skipDangerousModePermissionPrompt": true,
-  "skipAutoPermissionPrompt": true,
+  "agentPushNotifEnabled": true,
   "voiceEnabled": true
 }
