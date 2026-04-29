@@ -65,6 +65,7 @@
     }
   },
   "language": "日本語",
+  "effortLevel": "high",
   "autoUpdatesChannel": "stable",
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
