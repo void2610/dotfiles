@@ -2,7 +2,7 @@
   {
     "context": "Editor && vim_mode == insert",
     "bindings": {
-      "j j": ["vim::SwitchMode", "Normal"],
+      "j j": "vim::SwitchToNormalMode",
     },
   },
   {
