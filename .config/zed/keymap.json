@@ -16,6 +16,7 @@
     "context": "Workspace",
     "bindings": {
       "cmd-t": "terminal_panel::ToggleFocus",
+      "cmd-shift-g": "git_graph::Open",
     },
   },
 ]
