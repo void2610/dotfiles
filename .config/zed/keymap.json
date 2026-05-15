@@ -9,7 +9,7 @@
     "context": "Terminal",
     "bindings": {
       "shift-enter": ["terminal::SendText", "\u001b\r"],
-      "cmd-t": "workspace::ActivatePaneUp",
+      "cmd-t": "terminal_panel::ToggleFocus",
     },
   },
   {
