@@ -60,7 +60,8 @@
     "pyright-lsp@claude-plugins-official": true,
     "akaridou@akari-awesome-cc-plugins": true,
     "statusline@akari-awesome-cc-plugins": true,
-    "warp@claude-code-warp": true
+    "warp@claude-code-warp": true,
+    "swift-lsp@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "akari-awesome-cc-plugins": {
@@ -81,6 +82,6 @@
   "autoUpdatesChannel": "stable",
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
-  "voiceEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "voiceEnabled": true
 }
