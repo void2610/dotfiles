@@ -12,3 +12,4 @@
 /.codex/*
 !/.codex/.gitignore
 .config/sops/age/keys.txt
+.config/claude/discord-webhook
