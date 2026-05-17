@@ -1,0 +1,59 @@
+# MyWM デフォルト設定ファイル
+# このファイルは初回起動時に ~/.config/mywm/config.toml にコピーされる。
+# モディファイア表記: cmd, opt, ctrl, shift
+
+[general]
+animation_enabled = true
+animation_duration = 0.25
+padding = 8
+
+[hotkeys]
+focus_left  = "cmd+opt+left"
+focus_right = "cmd+opt+right"
+focus_up    = "cmd+opt+up"
+focus_down  = "cmd+opt+down"
+
+snap_left   = "cmd+ctrl+left"
+snap_right  = "cmd+ctrl+right"
+snap_top    = "cmd+ctrl+up"
+snap_bottom = "cmd+ctrl+down"
+maximize    = "cmd+ctrl+return"
+center      = "cmd+ctrl+c"
+
+snap_top_left     = "cmd+ctrl+shift+left"
+snap_top_right    = "cmd+ctrl+shift+right"
+snap_bottom_left  = "cmd+opt+shift+left"
+snap_bottom_right = "cmd+opt+shift+right"
+
+# アプリ起動ホットキーの例
+[[launch]]
+key = "opt+d"
+bundle_id = "com.hnc.Discord"
+
+[[launch]]
+key = "opt+u"
+bundle_id = "com.unity3d.UnityEditor5.x"
+
+[[launch]]
+key = "opt+a"
+bundle_id = "company.thebrowser.Browser"
+
+[[launch]]
+key = "opt+w"
+bundle_id = "dev.warp.Warp-Stable"
+
+[[launch]]
+key = "opt+z"
+bundle_id = "dev.zed.Zed"
+
+[[launch]]
+key = "opt+s"
+bundle_id = "com.spotify.client"
+
+[[launch]]
+key = "opt+r"
+bundle_id = "com.jetbrains.rider"
+
+[[launch]]
+key = "opt+g"
+bundle_id = "com.github.GitHubClient"
