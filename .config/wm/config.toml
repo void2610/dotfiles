@@ -27,33 +27,37 @@ snap_bottom_right = "cmd+opt+shift+right"
 
 # アプリ起動ホットキーの例
 [[launch]]
-key = "opt+d"
+key = "cmd+ctrl+d"
 bundle_id = "com.hnc.Discord"
 
 [[launch]]
-key = "opt+u"
+key = "cmd+ctrl+u"
 bundle_id = "com.unity3d.UnityEditor5.x"
 
 [[launch]]
-key = "opt+a"
+key = "cmd+ctrl+a"
 bundle_id = "company.thebrowser.Browser"
 
 [[launch]]
-key = "opt+w"
+key = "cmd+ctrl+w"
 bundle_id = "dev.warp.Warp-Stable"
 
 [[launch]]
-key = "opt+z"
+key = "cmd+ctrl+z"
 bundle_id = "dev.zed.Zed"
 
 [[launch]]
-key = "opt+s"
+key = "cmd+ctrl+s"
 bundle_id = "com.spotify.client"
 
 [[launch]]
-key = "opt+r"
+key = "cmd+ctrl+r"
 bundle_id = "com.jetbrains.rider"
 
 [[launch]]
-key = "opt+g"
+key = "cmd+ctrl+g"
 bundle_id = "com.github.GitHubClient"
+
+[[launch]]
+key = "cmd+ctrl+m"
+path = "~/Documents/GitHub/melchior/build/melchior_main"
