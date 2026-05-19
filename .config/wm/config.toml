@@ -1,63 +1,57 @@
-# MyWM デフォルト設定ファイル
-# このファイルは初回起動時に ~/.config/mywm/config.toml にコピーされる。
-# モディファイア表記: cmd, opt, ctrl, shift
-
 [general]
-animation_enabled = true
 animation_duration = 0.25
-padding = 8
+animation_enabled = true
+enhanced_ui_excluded = []
+padding = 4
 
 [hotkeys]
-focus_left  = "cmd+opt+left"
-focus_right = "cmd+opt+right"
-focus_up    = "cmd+opt+up"
-focus_down  = "cmd+opt+down"
-
-snap_left   = "cmd+ctrl+left"
-snap_right  = "cmd+ctrl+right"
-snap_top    = "cmd+ctrl+up"
-snap_bottom = "cmd+ctrl+down"
-maximize    = "cmd+ctrl+return"
-center      = "cmd+ctrl+c"
-
-snap_top_left     = "cmd+ctrl+shift+left"
-snap_top_right    = "cmd+ctrl+shift+right"
-snap_bottom_left  = "cmd+opt+shift+left"
-snap_bottom_right = "cmd+opt+shift+right"
-
-# アプリ起動ホットキーの例
-[[launch]]
-key = "cmd+ctrl+d"
-bundle_id = "com.hnc.Discord"
+center = 'cmd+ctrl+c'
+focus_down = 'cmd+opt+down'
+focus_left = 'cmd+opt+left'
+focus_right = 'cmd+opt+right'
+focus_up = 'cmd+opt+up'
+maximize = 'cmd+ctrl+return'
+snap_bottom = 'cmd+ctrl+down'
+snap_bottom_left = 'cmd+opt+shift+left'
+snap_bottom_right = 'cmd+opt+shift+right'
+snap_left = 'cmd+ctrl+left'
+snap_right = 'cmd+ctrl+right'
+snap_top = 'cmd+ctrl+up'
+snap_top_left = 'cmd+ctrl+shift+left'
+snap_top_right = 'cmd+ctrl+shift+right'
 
 [[launch]]
-key = "cmd+ctrl+u"
-bundle_id = "com.unity3d.UnityEditor5.x"
+bundle_id = 'com.hnc.Discord'
+key = 'cmd+ctrl+d'
 
 [[launch]]
-key = "cmd+ctrl+a"
-bundle_id = "company.thebrowser.Browser"
+bundle_id = 'com.unity3d.UnityEditor5.x'
+key = 'cmd+ctrl+u'
 
 [[launch]]
-key = "cmd+ctrl+w"
-bundle_id = "dev.warp.Warp-Stable"
+bundle_id = 'company.thebrowser.Browser'
+key = 'cmd+ctrl+a'
 
 [[launch]]
-key = "cmd+ctrl+z"
-bundle_id = "dev.zed.Zed"
+bundle_id = 'dev.warp.Warp-Stable'
+key = 'cmd+ctrl+w'
 
 [[launch]]
-key = "cmd+ctrl+s"
-bundle_id = "com.spotify.client"
+bundle_id = 'dev.zed.Zed'
+key = 'cmd+ctrl+z'
 
 [[launch]]
-key = "cmd+ctrl+r"
-bundle_id = "com.jetbrains.rider"
+bundle_id = 'com.spotify.client'
+key = 'cmd+ctrl+s'
 
 [[launch]]
-key = "cmd+ctrl+g"
-bundle_id = "com.github.GitHubClient"
+bundle_id = 'com.jetbrains.rider'
+key = 'cmd+ctrl+r'
 
 [[launch]]
-key = "cmd+ctrl+m"
-path = "~/Documents/GitHub/melchior/build/melchior_main"
+bundle_id = 'com.github.GitHubClient'
+key = 'cmd+ctrl+g'
+
+[[launch]]
+key = 'cmd+ctrl+m'
+path = '~/Documents/GitHub/melchior/build/melchior_main'
