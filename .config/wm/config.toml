@@ -2,7 +2,7 @@
 animation_duration = 0.25
 animation_enabled = true
 enhanced_ui_excluded = []
-padding = 4
+padding = 5
 
 [hotkeys]
 center = 'cmd+ctrl+c'
@@ -17,8 +17,6 @@ snap_bottom_right = 'cmd+opt+shift+right'
 snap_left = 'cmd+ctrl+left'
 snap_right = 'cmd+ctrl+right'
 snap_top = 'cmd+ctrl+up'
-snap_top_left = 'cmd+ctrl+shift+left'
-snap_top_right = 'cmd+ctrl+shift+right'
 
 [[launch]]
 bundle_id = 'com.hnc.Discord'
