@@ -1,0 +1,54 @@
+# ghostty config
+# Warp 風のモダン・ダーク UI を目指したセットアップ。
+# 詳細仕様: https://ghostty.org/docs/config/reference
+
+# --- カラーテーマ ---
+# Warp のデフォルトに近い濃い背景＋ビビッドなアクセント。
+# 他候補: tokyonight, nord, dracula, gruvbox-dark, rose-pine
+theme = Catppuccin Mocha
+
+# --- フォント ---
+# 等幅で合字 (==, =>, !=) が綺麗に出るものを指定。
+# 未インストールなら好みで JetBrains Mono / Hack Nerd Font / SF Mono に差し替え。
+font-family = JetBrainsMono Nerd Font
+font-size = 14
+font-feature = +liga, +calt
+
+# --- ウィンドウ装飾 ---
+# Warp 風のタブバー＋やや余白を取ったレイアウト。
+macos-titlebar-style = tabs
+window-padding-x = 10
+window-padding-y = 8
+window-padding-balance = true
+window-decoration = true
+window-save-state = always
+
+# --- 透過・ブラー ---
+# わずかに透過させて背後のウォールペーパーを滲ませる。
+background-opacity = 0.5
+background-blur-radius = 20
+
+# --- 挙動 ---
+mouse-hide-while-typing = true
+copy-on-select = clipboard
+confirm-close-surface = false
+shell-integration = detect
+shell-integration-features = cursor,sudo,title
+
+# --- スクロールバック ---
+scrollback-limit = 100000
+
+# --- キーバインド (macOS 標準補完) ---
+# タブ操作
+keybind = cmd+t=new_tab
+keybind = cmd+w=close_surface
+keybind = cmd+shift+]=next_tab
+keybind = cmd+shift+[=previous_tab
+# 分割
+keybind = cmd+d=new_split:right
+keybind = cmd+a=new_split:left
+keybind = cmd+shift+d=new_split:down
+keybind = cmd+alt+left=goto_split:left
+keybind = cmd+alt+right=goto_split:right
+keybind = cmd+alt+up=goto_split:top
+keybind = cmd+alt+down=goto_split:bottom
