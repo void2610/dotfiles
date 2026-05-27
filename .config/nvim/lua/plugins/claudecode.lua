@@ -2,7 +2,19 @@ return {
   {
     "coder/claudecode.nvim",
     dependencies = { "folke/snacks.nvim" },
-    config = true,
+    opts = {
+      terminal = {
+        -- LazyVim が snacks.terminal に設定する `<C-/>` / `<C-_>` の
+        -- "hide" バインドを claudecode のターミナルでだけ無効化する。
+        -- これらが効くと Claude セッション自体が閉じてしまうため。
+        snacks_win_opts = {
+          keys = {
+            hide_slash = false,
+            hide_underscore = false,
+          },
+        },
+      },
+    },
     keys = {
       { "<leader>a", nil, desc = "AI/Claude Code" },
       { "<leader>ac", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
