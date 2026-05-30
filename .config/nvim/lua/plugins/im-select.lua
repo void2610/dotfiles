@@ -49,9 +49,9 @@ return {
             return
           end
           local mode = vim.api.nvim_get_mode().mode
-          -- インサート(i)系・コマンドライン(c)系は対象外
-          -- （コマンドラインは日本語検索などで日本語入力を使うため）
-          if mode:find("^[ic]") then
+          -- インサート(i)系・コマンドライン(c)系・ターミナル(t)系は対象外
+          -- （コマンドラインは日本語検索、ターミナルは日本語入力を使うため）
+          if mode:find("^[ict]") then
             return
           end
           vim.system({ "macism" }, { text = true }, function(res)
