@@ -19,6 +19,7 @@ FILES=(
   ".config"
   ".claude"
   ".codex"
+  ".markdownlint-cli2.jsonc"
 )
 
 for file in "${FILES[@]}"; do

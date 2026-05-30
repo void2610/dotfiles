@@ -3,3 +3,6 @@
 -- Add any additional options here
 
 vim.g.lazyvim_picker = "telescope"
+
+-- CJK 文字 (日本語等) をスペルチェック対象外にし、波線が出ないようにする
+vim.opt.spelllang = { "en", "cjk" }
