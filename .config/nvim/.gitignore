@@ -6,3 +6,5 @@ debug
 foo.*
 *.log
 data
+# 起動時に en.utf-8.add から自動生成される add 辞書のコンパイル済みファイル
+spell/*.add.spl
