@@ -3,12 +3,11 @@
 -- もともと shell 関数 `g` (ghq + fzf) で行っていたリポジトリ選択を、
 -- nvim 内のフロート (telescope ピッカー) として開けるよう書き直したもの。
 -- 各リポジトリの状態 (dirty / ahead / behind / branch) を一覧に表示し、
--- プレビューに git status とファイル一覧を出す。
+-- プレビューに README (bat) とコミット履歴を出す。
 -- 状態取得は元と同様 xargs -P で並列化し、telescope の非同期 finder に
 -- ストリーミングで流し込むため、リポジトリ数が多くても素早く一覧が立ち上がる。
 --
--- <CR> で選択すると、そのリポジトリへ cd し、続けて find_files を開く
--- (shell での `cd` 後にそのまま作業を始める挙動に相当)。
+-- <CR> で選択すると、そのリポジトリへ cd する (shell での `cd` 相当)。
 
 local M = {}
 
@@ -39,11 +38,6 @@ done
     ' _ {}
 ]==]
 
--- リポジトリのフルパスからホーム以下を ~ に短縮して返す。
-local function short_path(path)
-  return vim.fn.fnamemodify(path, ":~")
-end
-
 function M.pick(opts)
   opts = opts or {}
 
@@ -55,7 +49,7 @@ function M.pick(opts)
   local action_state = require("telescope.actions.state")
   local entry_display = require("telescope.pickers.entry_display")
 
-  -- 各カラムの表示幅。dirty / ahead / behind / name / branch / path の順。
+  -- 各カラムの表示幅。dirty / ahead / behind / name / branch の順。
   local displayer = entry_display.create({
     separator = " ",
     items = {
@@ -63,7 +57,6 @@ function M.pick(opts)
       { width = 4 },
       { width = 4 },
       { width = 30 },
-      { width = 24 },
       { remaining = true },
     },
   })
@@ -89,7 +82,6 @@ function M.pick(opts)
       behind,
       { entry.name, "TelescopeResultsIdentifier" },
       { entry.branch, "Comment" },
-      { short_path(entry.value), "Comment" },
     })
   end
 
@@ -113,21 +105,112 @@ function M.pick(opts)
     }
   end
 
-  -- プレビュー: git status と eza/ls によるファイル一覧 (元スクリプトと同じ)。
-  local previewer = previewers.new_termopen_previewer({
-    get_command = function(entry)
-      local p = vim.fn.shellescape(entry.path)
-      return {
-        "zsh",
-        "-lc",
-        string.format(
-          "git -C %s -c color.status=always status -sb 2>/dev/null; echo; "
-            .. "eza -la --icons --color=always %s 2>/dev/null || ls -la %s",
-          p,
-          p,
-          p
-        ),
-      }
+  -- プレビュー: 上半分に README、下半分にコミット履歴を縦に並べる。
+  -- コミット履歴のうち未プッシュ (@{u}..HEAD) のものは緑 + ↑ で強調する。
+  --
+  -- termopen (端末) ではなく buffer previewer を使う。理由は折り返し制御:
+  -- termopen は幅を超える行を端末が必ず物理折り返しし、しかも bat は全角を
+  -- 正しく折り返せないため、README の長さで「commits」見出しの位置がずれてしまう。
+  -- buffer previewer なら wrap=false で 1 論理行 = 1 表示行が保証され、
+  -- nvim_buf_set_lines で行数を完全に固定できる。
+  --
+  -- 変数名は `repo` にする。zsh では `path` が $PATH に連動する特殊変数のため、
+  -- `path=$1` とすると PATH が引数のディレクトリだけに上書きされ git が消える。
+  -- `]==]` で囲い、内部の zsh の [[ ]] や @{u} と Lua 長括弧が衝突しないようにする。
+  local PREVIEW_SCRIPT = [==[
+repo=$1
+# プレビューウィンドウの高さと半分の行数を Lua 側から受け取る。
+half=${2:-20}
+height=${3:-40}
+# 上半分: README をちょうど half 行に収め、足りない分は空行で埋める (固定レイアウト)。
+# 色付けは Lua 側 (markdown treesitter + 手動ハイライト) で行うためプレーンに出す。
+readme=""
+for f in README.md README.markdown README.rst README README.txt; do
+  [[ -f "$repo/$f" ]] && { readme="$repo/$f"; break; }
+done
+if [[ -n "$readme" ]]; then
+  out=$(cat "$readme")
+else
+  out="(no README)"
+fi
+out=$(print -r -- "$out" | head -n "$half")
+print -r -- "$out"
+shown=$(print -r -- "$out" | wc -l)
+for ((i = shown; i < half; i++)); do echo; done
+echo "──────── commits ────────"
+# 下: コミット履歴。未プッシュ (@{u}..HEAD) を ↑ 始まりにし、Lua 側で緑に着色する。
+# 表示数は残り行数 (height - half - 見出し1行) に制限し、全体を height に収める。
+rest=$((height - half - 1))
+[[ $rest -lt 1 ]] && rest=1
+if git -C "$repo" rev-parse @{u} >/dev/null 2>&1; then
+  {
+    git -C "$repo" --no-pager log --format="↑ %h %s" @{u}..HEAD
+    git -C "$repo" --no-pager log --format="  %h %s" "@{u}"
+  } | head -n "$rest"
+else
+  git -C "$repo" --no-pager log --format="  %h %s" | head -n "$rest"
+fi
+]==]
+
+  local previewer = previewers.new_buffer_previewer({
+    title = "preview",
+    define_preview = function(self, entry, status)
+      -- telescope のプレビューウィンドウ id は status.layout.preview.winid。
+      local win = status and status.layout and status.layout.preview and status.layout.preview.winid
+      local valid = win and vim.api.nvim_win_is_valid(win)
+      local height = valid and vim.api.nvim_win_get_height(win) or 40
+      local width = valid and vim.api.nvim_win_get_width(win) or 80
+      local half = math.max(5, math.floor(height / 2) - 1)
+      local bufnr = self.state.bufnr
+
+      local out = vim.fn.systemlist({
+        "zsh", "-c", PREVIEW_SCRIPT, "_", entry.path, tostring(half), tostring(height),
+      })
+
+      -- 折り返しでレイアウトが崩れないよう、各行を表示幅 width に切り詰める。
+      -- wrap 設定に依存せず 1 行 = 1 表示行を保証する (これが固定レイアウトの要)。
+      local function clip(s)
+        if vim.fn.strdisplaywidth(s) <= width then
+          return s
+        end
+        local lo, hi = 0, vim.fn.strchars(s)
+        while lo < hi do
+          local mid = math.floor((lo + hi + 1) / 2)
+          if vim.fn.strdisplaywidth(vim.fn.strcharpart(s, 0, mid)) <= width then
+            lo = mid
+          else
+            hi = mid - 1
+          end
+        end
+        return vim.fn.strcharpart(s, 0, lo)
+      end
+      local lines = {}
+      for i, l in ipairs(out) do
+        lines[i] = clip(l)
+      end
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+      if valid then
+        vim.wo[win].wrap = false
+      end
+      -- 着色は手動で行う。filetype=markdown による treesitter 着色だと、README を
+      -- half 行で切った際に末尾の未閉じコードブロック等の構文が下のコミット履歴まで
+      -- 引きずられて色が混ざるため使わない。
+      for i, l in ipairs(lines) do
+        if l:match("^↑") then
+          -- 未プッシュコミット: 行全体を緑
+          pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "DiagnosticOk", i - 1, 0, -1)
+        elseif l:match("^────") then
+          -- commits 見出し
+          pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Title", i - 1, 0, -1)
+        elseif l:match("^  %x+ ") then
+          -- プッシュ済みコミット: 先頭のハッシュ部分を淡色
+          pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Comment", i - 1, 0, 9)
+        elseif l:match("^#+%s") then
+          -- README 見出し
+          pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Title", i - 1, 0, -1)
+        end
+      end
     end,
   })
 
@@ -136,7 +219,7 @@ function M.pick(opts)
       prompt_title = "ghq repositories",
       finder = finders.new_async_job({
         command_generator = function()
-          return { "zsh", "-lc", LIST_SCRIPT }
+          return { "zsh", "-c", LIST_SCRIPT }
         end,
         entry_maker = entry_maker,
       }),
@@ -149,9 +232,8 @@ function M.pick(opts)
           if not entry then
             return
           end
-          -- 選択リポジトリへ移動し、そのまま作業を始められるよう find_files を開く。
+          -- 選択リポジトリへ移動する。
           vim.cmd.cd(vim.fn.fnameescape(entry.path))
-          require("telescope.builtin").find_files({ cwd = entry.path })
         end)
         return true
       end,
