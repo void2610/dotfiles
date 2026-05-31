@@ -1,12 +1,32 @@
 return {
   {
     "folke/snacks.nvim",
-    opts = {
-      image = { enabled = true },
+    opts = function(_, opts)
+      opts.image = opts.image or {}
+      opts.image.enabled = true
       -- telescope を主 picker としつつ Snacks.picker は ui_select 用に有効化する。
       -- これで `vim.ui.select` のプロンプトが綺麗になり checkhealth 警告も消える。
-      picker = { enabled = true, ui_select = true },
-    },
+      opts.picker = opts.picker or {}
+      opts.picker.enabled = true
+      opts.picker.ui_select = true
+      opts.picker.sources = opts.picker.sources or {}
+      -- explorer (ファイラ) のサイドバー幅を狭くする
+      opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
+        layout = { layout = { width = 25 } },
+      })
+      -- ダッシュボードに定番レイアウトを開くキー (w) を追加する
+      opts.dashboard = opts.dashboard or {}
+      opts.dashboard.preset = opts.dashboard.preset or {}
+      opts.dashboard.preset.keys = opts.dashboard.preset.keys or {}
+      table.insert(opts.dashboard.preset.keys, 1, {
+        icon = "\239\131\155 ", -- nf-fa-columns (レイアウトを表すアイコン)
+        key = "w",
+        desc = "Open Workspace",
+        action = function()
+          require("util.workspace").open()
+        end,
+      })
+    end,
     config = function(_, opts)
       require("snacks").setup(opts)
       -- nvim-treesitter v2 の registry に norg がなく Neorg plugin 経由でしか入らないため、
