@@ -27,7 +27,7 @@ bundle_id = 'company.thebrowser.Browser'
 key = 'cmd+ctrl+a'
 
 [[launch]]
-bundle_id = 'dev.warp.Warp-Stable'
+bundle_id = 'com.mitchellh.ghostty'
 key = 'cmd+ctrl+w'
 
 [[launch]]
@@ -47,5 +47,6 @@ bundle_id = 'com.github.GitHubClient'
 key = 'cmd+ctrl+g'
 
 [[launch]]
-key = 'cmd+ctrl+m'
 path = '~/Documents/GitHub/melchior/build/melchior_main'
+key = 'cmd+ctrl+m'
+
