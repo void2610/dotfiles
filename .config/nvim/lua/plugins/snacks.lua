@@ -2,8 +2,10 @@ return {
   {
     "folke/snacks.nvim",
     opts = function(_, opts)
+      -- 画像のインライン表示は image.nvim に一本化する。
+      -- snacks.image も有効だと同じ画像が二重に描画されてしまうため無効化する。
       opts.image = opts.image or {}
-      opts.image.enabled = true
+      opts.image.enabled = false
       -- telescope を主 picker としつつ Snacks.picker は ui_select 用に有効化する。
       -- これで `vim.ui.select` のプロンプトが綺麗になり checkhealth 警告も消える。
       opts.picker = opts.picker or {}
