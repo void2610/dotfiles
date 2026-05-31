@@ -14,6 +14,14 @@ return {
       opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
         layout = { layout = { width = 25 } },
       })
+      -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
+      opts.terminal = opts.terminal or {}
+      opts.terminal.win = vim.tbl_deep_extend("force", opts.terminal.win or {}, {
+        position = "float",
+        width = 0.8,
+        height = 0.8,
+        border = "rounded",
+      })
       -- ダッシュボードに定番レイアウトを開くキー (w) を追加する
       opts.dashboard = opts.dashboard or {}
       opts.dashboard.preset = opts.dashboard.preset or {}
