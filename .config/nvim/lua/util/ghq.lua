@@ -134,6 +134,15 @@ else
   out="(no README)"
 fi
 out=$(print -r -- "$out" | head -n "$half")
+# README を half 行で切ると未閉じのコードブロック (```) が残り、markdown 着色が
+# 下のコミット履歴まで波及する。``` が奇数個なら閉じフェンスを補って構文を閉じる。
+# half 行を維持するため、ちょうど half 行のときは最終行を閉じフェンスに差し替える。
+if (( $(print -r -- "$out" | grep -c '^```') % 2 == 1 )); then
+  if (( $(print -r -- "$out" | wc -l) >= half )); then
+    out=$(print -r -- "$out" | head -n $((half - 1)))
+  fi
+  out="$out"$'\n''```'
+fi
 print -r -- "$out"
 shown=$(print -r -- "$out" | wc -l)
 for ((i = shown; i < half; i++)); do echo; done
@@ -190,25 +199,20 @@ fi
       end
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
+      -- README を markdown として treesitter 着色する (着色内容は変更しない)。
+      vim.bo[bufnr].filetype = "markdown"
       if valid then
         vim.wo[win].wrap = false
       end
-      -- 着色は手動で行う。filetype=markdown による treesitter 着色だと、README を
-      -- half 行で切った際に末尾の未閉じコードブロック等の構文が下のコミット履歴まで
-      -- 引きずられて色が混ざるため使わない。
+      -- コミット履歴部分のみ手動着色する (README の着色には触れない)。
+      -- 未プッシュ (↑) を緑、見出しを強調、プッシュ済みのハッシュを淡色にする。
       for i, l in ipairs(lines) do
         if l:match("^↑") then
-          -- 未プッシュコミット: 行全体を緑
           pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "DiagnosticOk", i - 1, 0, -1)
         elseif l:match("^────") then
-          -- commits 見出し
           pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Title", i - 1, 0, -1)
         elseif l:match("^  %x+ ") then
-          -- プッシュ済みコミット: 先頭のハッシュ部分を淡色
           pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Comment", i - 1, 0, 9)
-        elseif l:match("^#+%s") then
-          -- README 見出し
-          pcall(vim.api.nvim_buf_add_highlight, bufnr, -1, "Title", i - 1, 0, -1)
         end
       end
     end,
