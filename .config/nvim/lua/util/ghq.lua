@@ -217,6 +217,8 @@ fi
   pickers
     .new(opts, {
       prompt_title = "ghq repositories",
+      -- 検索入力ではなく j/k で選択できるよう normal モードで起動する (検索は i で開始)。
+      initial_mode = "normal",
       finder = finders.new_async_job({
         command_generator = function()
           return { "zsh", "-c", LIST_SCRIPT }
