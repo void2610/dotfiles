@@ -1,0 +1,7 @@
+# typos-lsp 設定。
+# 日本語 (ひらがな・カタカナ・漢字・全角記号) を含む連続文字列は検査対象外にする。
+# `unicode = false` は identifier 内の非ASCII許可フラグで日本語塊の波線抑制には効かない。
+[default]
+extend-ignore-re = [
+    "[\\u3040-\\u309F\\u30A0-\\u30FF\\u4E00-\\u9FFF\\uFF00-\\uFFEF]+",
+]

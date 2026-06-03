@@ -7,6 +7,10 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
+-- スペルチェックは typos-lsp 一本化のため、LazyVim が text/markdown/gitcommit 等で
+-- buffer-local に spell を強制 ON にする autocmd を解除する。
+pcall(vim.api.nvim_del_augroup_by_name, "lazyvim_wrap_spell")
+
 -- 素の shell ターミナルでだけ jj でノーマルモードに戻れるようにする。
 -- lazygit などの TUI で jj が誤爆するのを避けるため、buffer 名から起動コマンドを判定して
 -- shell の場合のみ buffer-local にマップする。
