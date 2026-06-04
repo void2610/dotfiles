@@ -21,3 +21,6 @@ vim.keymap.set("n", "<leader>yP", function()
   vim.notify(path, vim.log.levels.INFO, { title = "Yanked absolute path" })
 end, { desc = "Yank absolute path" })
 
+-- Ctrl + 左クリックでカーソル位置の URL/パスを既定アプリで開く
+vim.keymap.set({ "n", "x" }, "<C-LeftMouse>", "<LeftMouse>gx", { desc = "Open link under cursor" })
+

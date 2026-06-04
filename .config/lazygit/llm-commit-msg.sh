@@ -13,8 +13,8 @@ fi
 
 # diff を一度だけ取得し、再試行で使い回す。
 diff=$(git diff --cached)
-# 許可する type prefix のホワイトリスト。ここに無いものは弾く（例: refac は OK だが refactor は NG）。
-allowed_types='feat|fix|refac|docs|chore|style|test|perf|ci|build|revert'
+# 許可する type prefix のホワイトリスト。ここに無いものは弾く
+allowed_types='feat|fix|refac|docs|chore|style|test'
 prompt="Write a concise one-line git commit message summarizing the staged changes. Follow the Conventional Commits format with one of these exact English type prefixes (do not use any other prefix, do not spell them out): ${allowed_types}. The prefix may be followed by an optional scope in parentheses and an optional '!' for breaking changes, then ': ' and the description. Write the description in Japanese. Output only the message text, no surrounding quotes or explanation."
 
 # 許可された type 形式（type[scope][!]: 本文）を満たすまで最大3回試行する。
@@ -30,7 +30,9 @@ while [ "$attempt" -le "$max_attempts" ]; do
     msg="$candidate"
     break
   fi
-  echo "生成結果が許可された prefix 形式ではないため再試行します（$attempt/$max_attempts）: $candidate" >&2
+  # `$var` の直後に全角 `）` が続くと bash 5.3 が変数名にマルチバイトの先頭バイトまで含めて
+  # unbound variable と誤判定するため、`${...}` で変数名の終端を明示する。
+  echo "生成結果が許可された prefix 形式ではないため再試行します（${attempt}/${max_attempts}）: $candidate" >&2
   attempt=$((attempt + 1))
 done
 
