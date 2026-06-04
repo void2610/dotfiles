@@ -51,6 +51,37 @@ return {
       -- LazyVim は vim.o.statuscolumn を LazyVim.statuscolumn() で直接設定しており、
       -- snacks.statuscolumn は意図的に無効。これに対する checkhealth 警告を抑止する。
       require("snacks.statuscolumn").meta.health = false
+      -- <C-/> の初回起動時に zsh 初期化の待ち時間が発生するため、
+      -- nvim 起動完了後にバックグラウンドで zsh ターミナルを生成しておく。
+      -- LazyVim の `<C-/>` (Snacks.terminal.focus(nil, { cwd = LazyVim.root() }))
+      -- と同じ cmd/cwd で open することで、snacks 側で同一 terminal id として
+      -- 再利用され、押下時には既に初期化済みのバッファが表示される。
+      -- 同期的に open → hide することで描画前に window を閉じ、フリッカーも回避する。
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "VeryLazy",
+        once = true,
+        callback = function()
+          vim.schedule(function()
+            local cwd
+            if LazyVim and LazyVim.root then
+              local ok_root, root = pcall(LazyVim.root)
+              if ok_root then
+                cwd = root
+              end
+            end
+            cwd = cwd or vim.fn.getcwd(0)
+            local ok_open, term = pcall(function()
+              return require("snacks").terminal.open(nil, {
+                cwd = cwd,
+                win = { enter = false },
+              })
+            end)
+            if ok_open and term and term.hide then
+              term:hide()
+            end
+          end)
+        end,
+      })
     end,
   },
   {
