@@ -49,6 +49,24 @@ customCommands:
       fi
       git commit -m "$msg"
 
+  # Branches パネルで `P` を押すと、gh で取得したオープン PR の一覧から選択して checkout する。
+  # 注意: lazygit はプロンプトの command をシェルではなく自前の ToArgv で分割し、
+  # シングルクォート内でもバックスラッシュをエスケープとして消費するため、
+  # jq の文字列補間 "\(.number)" は使えない (連結 `+` で代用する)。
+  - key: P
+    context: localBranches
+    description: "Checkout PR from list"
+    prompts:
+      - type: menuFromCommand
+        title: "Select PR"
+        key: PrNumber
+        command: gh pr list --limit 30 --json number,title --jq '.[] | (.number|tostring) + " " + .title'
+        filter: '(?P<number>\d+) (?P<title>.*)'
+        valueFormat: "{{ .number }}"
+        labelFormat: "#{{ .number }} {{ .title }}"
+    command: gh pr checkout {{ .Form.PrNumber }}
+    loadingText: "Checking out PR..."
+
   # `C` を上書きし、ステージ済み diff から claude でコミットメッセージを生成して即コミットする。
   # 別ウィンドウ（terminal サブプロセスや nvim）を出さず、生成中は loadingText のスピナーを表示する。
   # 生成メッセージを編集したい場合は、コミット後に `r`（reword）で内蔵パネルから直す。
