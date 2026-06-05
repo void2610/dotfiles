@@ -49,21 +49,40 @@ customCommands:
       fi
       git commit -m "$msg"
 
-  # Branches パネルで `P` を押すと、gh で取得したオープン PR の一覧から選択して checkout する。
+  # どの画面でも `X` を押すと、gh で取得したオープン PR の一覧から選択して checkout する。
+  # (`X` は lazygit v0.61.1 の全コンテキストでデフォルト未使用。他の空きは I / U / Y)
+  # 一覧は「#番号 タイトル 作者 ブランチ」を色付き・列揃えで表示する。
+  # レビュー状態は番号の色で表現: シアン=未レビュー / マゼンタ=draft / 緑=approved / 赤=changes requested。
+  # タイトルは全角文字を幅 2 として数え、表示幅 50 セルで切り詰め・パディングする (jq の truncpad)。
+  # Go テンプレートの printf は rune 数でしか揃えられず日本語で列がずれるため、jq 側で揃える。
   # 注意: lazygit はプロンプトの command をシェルではなく自前の ToArgv で分割し、
   # シングルクォート内でもバックスラッシュをエスケープとして消費するため、
-  # jq の文字列補間 "\(.number)" は使えない (連結 `+` で代用する)。
-  - key: P
-    context: localBranches
+  # jq の文字列補間 "\(.number)" や "\t" は使えない (@tsv でタブ区切りにする)。
+  - key: X
+    context: global
     description: "Checkout PR from list"
     prompts:
       - type: menuFromCommand
         title: "Select PR"
         key: PrNumber
-        command: gh pr list --limit 30 --json number,title --jq '.[] | (.number|tostring) + " " + .title'
-        filter: '(?P<number>\d+) (?P<title>.*)'
+        command: >-
+          gh pr list --limit 30 --json number,title,headRefName,author,isDraft,reviewDecision
+          --jq 'def truncpad($w):
+          [explode[] | [., (if . >= 4352 then 2 else 1 end)]] as $cs
+          | reduce $cs[] as $i ({s:[], n:0, done:false};
+          if (.done|not) and (.n + $i[1] <= $w)
+          then {s:(.s+[$i[0]]), n:(.n+$i[1]), done:false}
+          else .done = true end)
+          | (.s|implode) + ((" " * ($w - .n)) // "");
+          .[] | [(.number|tostring),
+          (if .isDraft then "DRAFT"
+          elif .reviewDecision == "APPROVED" then "APPROVED"
+          elif .reviewDecision == "CHANGES_REQUESTED" then "CHANGES"
+          else "PENDING" end),
+          .author.login, .headRefName, (.title | truncpad(50))] | @tsv'
+        filter: '(?P<number>\d+)\t(?P<status>[^\t]*)\t(?P<author>[^\t]*)\t(?P<branch>[^\t]*)\t(?P<title>.*)'
         valueFormat: "{{ .number }}"
-        labelFormat: "#{{ .number }} {{ .title }}"
+        labelFormat: '{{ if eq .status "DRAFT" }}{{ printf "#%-5s" .number | magenta | bold }}{{ else if eq .status "APPROVED" }}{{ printf "#%-5s" .number | green | bold }}{{ else if eq .status "CHANGES" }}{{ printf "#%-5s" .number | red | bold }}{{ else }}{{ printf "#%-5s" .number | cyan | bold }}{{ end }} {{ .title }} {{ printf "%-12.12s" .author | yellow }} {{ .branch | green }}'
     command: gh pr checkout {{ .Form.PrNumber }}
     loadingText: "Checking out PR..."
 
