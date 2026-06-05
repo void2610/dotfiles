@@ -1,7 +1,8 @@
 {
   "extras": [
     "lazyvim.plugins.extras.lang.dotnet",
-    "lazyvim.plugins.extras.lang.markdown"
+    "lazyvim.plugins.extras.lang.markdown",
+    "lazyvim.plugins.extras.lang.python"
   ],
   "install_version": 8,
   "news": {
