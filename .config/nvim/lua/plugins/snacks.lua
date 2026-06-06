@@ -13,8 +13,11 @@ return {
       opts.picker.ui_select = true
       opts.picker.sources = opts.picker.sources or {}
       -- explorer (ファイラ) のサイドバー幅を狭くする
+      -- また Unity プロジェクト向けに .meta ファイルを除外しつつ隠しファイルは表示する
       opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
         layout = { layout = { width = 25 } },
+        hidden = true, -- ドットファイル (隠しファイル) を表示する
+        exclude = { "*.meta" }, -- Unity の .meta ファイルを非表示にする
       })
       -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
       opts.terminal = opts.terminal or {}
