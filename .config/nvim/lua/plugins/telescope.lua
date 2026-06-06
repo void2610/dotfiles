@@ -2,6 +2,12 @@ return {
   { import = "lazyvim.plugins.extras.editor.telescope" },
   {
     "nvim-telescope/telescope.nvim",
+    opts = {
+      defaults = {
+        -- Unity の .meta ファイルを検索結果から除外する (Lua パターン)
+        file_ignore_patterns = { "%.meta$" },
+      },
+    },
     keys = {
       -- ghq + telescope リポジトリランチャー (旧 shell 関数 `g` 相当)
       {
