@@ -9,7 +9,7 @@
       "Grep",
       "WebSearch",
       "WebFetch",
-      "mcp__*",
+      "mcp__ide__*",
       "Bash(~/.claude/skills/discord-image/send.sh:*)"
     ],
     "deny": [],
