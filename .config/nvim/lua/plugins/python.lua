@@ -19,11 +19,15 @@ return {
         -- extra が `enabled = true` にする pyright を上書きで無効化する
         -- (この spec は extra より後に評価されるため上書きが効く)
         pyright = { enabled = false },
-        -- ty を LSP として有効化 (mason 経由で自動インストールされる)
+        -- ruff の lint / format。mason ではなく PATH の ruff (uv tool 管理) を使う。
+        -- (mason の python パッケージは Homebrew python の expat 破損で入らないため)
+        ruff = { mason = false },
+        -- ty を LSP として有効化。mason ではなく PATH の ty (uv tool 管理) を使う。
         ty = {
+          mason = false,
           -- プロジェクトが ty を pin している場合 (polaris は dev deps に ty==0.0.40)、
           -- バージョン差で `task typecheck` と診断がズレないよう root の .venv/bin/ty を
-          -- 優先する。無ければ mason の ty にフォールバックする。
+          -- 優先する。無ければ PATH の ty (uv tool 管理) にフォールバックする。
           cmd = function(dispatchers, config)
             local bin = "ty"
             local root = config and config.root_dir
