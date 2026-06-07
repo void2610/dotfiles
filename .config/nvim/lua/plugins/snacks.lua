@@ -1,32 +1,49 @@
 return {
   {
     "folke/snacks.nvim",
+    keys = {
+      -- ghq + snacks.picker リポジトリランチャー (旧 shell 関数 `g` 相当)
+      {
+        "<leader>gr",
+        function()
+          require("util.ghq").pick()
+        end,
+        desc = "ghq repositories",
+      },
+    },
     opts = function(_, opts)
       -- 画像のインライン表示は image.nvim に一本化する。
       -- snacks.image も有効だと同じ画像が二重に描画されてしまうため無効化する。
       opts.image = opts.image or {}
       opts.image.enabled = false
-      -- telescope を主 picker としつつ Snacks.picker は ui_select 用に有効化する。
-      -- これで `vim.ui.select` のプロンプトが綺麗になり checkhealth 警告も消える。
+      -- snacks.picker を主 picker として有効化し、`vim.ui.select` も snacks に寄せる。
       opts.picker = opts.picker or {}
       opts.picker.enabled = true
       opts.picker.ui_select = true
       opts.picker.sources = opts.picker.sources or {}
+      -- Unity のエディタ専用ファイル (テキストエディタで直接編集しない) を
+      -- 検索結果から除外する (glob パターン)。
+      local unity_exclude = {
+        "*.meta", -- メタファイル
+        "*.prefab", -- プレハブ
+        "*.unity", -- シーン
+        "*.mat", -- マテリアル
+        "*.asset", -- アセット (ScriptableObject 等)
+        "*.anim", -- アニメーションクリップ
+        "*.controller", -- アニメーターコントローラー
+      }
+      -- ファイル検索 (find_files) と grep の両方で Unity 専用ファイルを除外する。
+      for _, source in ipairs({ "files", "grep" }) do
+        opts.picker.sources[source] = vim.tbl_deep_extend("force", opts.picker.sources[source] or {}, {
+          exclude = vim.deepcopy(unity_exclude),
+        })
+      end
       -- explorer (ファイラ) のサイドバー幅を狭くする
-      -- また Unity プロジェクト向けに .meta ファイルを除外しつつ隠しファイルは表示する
+      -- また Unity プロジェクト向けに専用ファイルを除外しつつ隠しファイルは表示する
       opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
         layout = { layout = { width = 25 } },
         hidden = true, -- ドットファイル (隠しファイル) を表示する
-        -- Unity のエディタ専用ファイル (テキストエディタで直接編集しない) を非表示にする
-        exclude = {
-          "*.meta", -- メタファイル
-          "*.prefab", -- プレハブ
-          "*.unity", -- シーン
-          "*.mat", -- マテリアル
-          "*.asset", -- アセット (ScriptableObject 等)
-          "*.anim", -- アニメーションクリップ
-          "*.controller", -- アニメーターコントローラー
-        },
+        exclude = vim.deepcopy(unity_exclude),
       })
       -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
       opts.terminal = opts.terminal or {}
