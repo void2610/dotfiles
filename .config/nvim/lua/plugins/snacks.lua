@@ -17,7 +17,16 @@ return {
       opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
         layout = { layout = { width = 25 } },
         hidden = true, -- ドットファイル (隠しファイル) を表示する
-        exclude = { "*.meta" }, -- Unity の .meta ファイルを非表示にする
+        -- Unity のエディタ専用ファイル (テキストエディタで直接編集しない) を非表示にする
+        exclude = {
+          "*.meta", -- メタファイル
+          "*.prefab", -- プレハブ
+          "*.unity", -- シーン
+          "*.mat", -- マテリアル
+          "*.asset", -- アセット (ScriptableObject 等)
+          "*.anim", -- アニメーションクリップ
+          "*.controller", -- アニメーターコントローラー
+        },
       })
       -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
       opts.terminal = opts.terminal or {}

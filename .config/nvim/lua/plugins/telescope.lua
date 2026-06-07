@@ -4,8 +4,17 @@ return {
     "nvim-telescope/telescope.nvim",
     opts = {
       defaults = {
-        -- Unity の .meta ファイルを検索結果から除外する (Lua パターン)
-        file_ignore_patterns = { "%.meta$" },
+        -- Unity のエディタ専用ファイル (テキストエディタで直接編集しない) を
+        -- 検索結果から除外する (Lua パターン)
+        file_ignore_patterns = {
+          "%.meta$", -- メタファイル
+          "%.prefab$", -- プレハブ
+          "%.unity$", -- シーン
+          "%.mat$", -- マテリアル
+          "%.asset$", -- アセット (ScriptableObject 等)
+          "%.anim$", -- アニメーションクリップ
+          "%.controller$", -- アニメーターコントローラー
+        },
       },
     },
     keys = {
