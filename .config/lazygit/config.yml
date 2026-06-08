@@ -17,11 +17,11 @@ git:
       pager: "delta --paging=never --line-numbers --hunk-header-style=omit"
 
 customCommands:
-  # `c` を上書きし、空のコミットメッセージ入力欄を出す。
+  # `C`（shift-c）を上書きし、空のコミットメッセージ入力欄を出す。
   # 空のままエンターすると、選択中ファイルの git status を見て
   # 新規追加なら "create <file>"、削除なら "delete <file>"、それ以外は "update <file>" でコミットする。
   # 何か入力すればその文面がそのまま使われる。
-  - key: c
+  - key: C
     context: files
     description: "Commit (empty = create/delete/update <file>)"
     prompts:
@@ -86,10 +86,10 @@ customCommands:
     command: gh pr checkout {{ .Form.PrNumber }}
     loadingText: "Checking out PR..."
 
-  # `C` を上書きし、ステージ済み diff から claude でコミットメッセージを生成して即コミットする。
+  # `c` を上書きし、ステージ済み diff から claude でコミットメッセージを生成して即コミットする。
   # 別ウィンドウ（terminal サブプロセスや nvim）を出さず、生成中は loadingText のスピナーを表示する。
   # 生成メッセージを編集したい場合は、コミット後に `r`（reword）で内蔵パネルから直す。
-  - key: C
+  - key: c
     context: files
     description: "Commit (LLM-generated message)"
     loadingText: "Generating commit message with claude..."
