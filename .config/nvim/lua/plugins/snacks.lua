@@ -33,8 +33,10 @@ return {
         "*.controller", -- アニメーターコントローラー
       }
       -- ファイル検索 (find_files) と grep の両方で Unity 専用ファイルを除外する。
+      -- また .github 等のドットディレクトリも検索対象に含めるため隠しファイルを表示する。
       for _, source in ipairs({ "files", "grep" }) do
         opts.picker.sources[source] = vim.tbl_deep_extend("force", opts.picker.sources[source] or {}, {
+          hidden = true, -- ドットファイル (隠しファイル) を表示する
           exclude = vim.deepcopy(unity_exclude),
         })
       end
