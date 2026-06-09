@@ -1,17 +1,18 @@
 ---
 name: commit
-description: git commit を実行するスキル。「コミットして」「commit」「push して」等の依頼で発動する。ユーザーが指定したコミットルールを適用する。
+description: ユーザーが指定したコミットルールに基づき、`git commit` を実行するスキル。commitを実行する際に必ず発動する。(ユーザー指示、自律実行どちらも)
 ---
 
 # Commit
 
 `git commit` を実行するときに従うポリシー。
+**本文は書かない**
 
 ## コミットメッセージのフォーマット
 
 - **言語**: 件名・本文ともに必ず日本語
-- **形式**: `<type>: <短い要約>` を基本とする (Conventional Commits 風)
-- **type 一覧**:
+- **形式**: `<type>: <短い要約>` を基本とする (Conventional Commits 風だが、`(<scope>)` は書かない)
+- **type 一覧** 必ず以下の7つのうち1つを使用する:
   - `feat:` 新機能
   - `fix:` バグ修正
   - `refac:` 挙動を変えないリファクタリング
