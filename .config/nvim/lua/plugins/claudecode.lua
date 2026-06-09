@@ -5,7 +5,7 @@ return {
     opts = {
       terminal = {
         split_side = "right",
-        split_width_percentage = 0.45, -- Claude Code のペインを広めにする
+        split_width_percentage = 0.4, -- Claude Code のペイン幅
         -- LazyVim が snacks.terminal に設定する `<C-/>` / `<C-_>` の
         -- "hide" バインドを claudecode のターミナルでだけ無効化する。
         -- これらが効くと Claude セッション自体が閉じてしまうため。
