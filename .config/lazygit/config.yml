@@ -12,9 +12,23 @@ gui:
 
 git:
   # diff ビューをシンタックスハイライト付きで表示するため delta をページャーに使う。
+  # 配色は nvim snacks picker (<leader>gD) の fancy diff (tokyonight-moon) に合わせる。
+  # syntax テーマは .config/bat/themes/tokyonight_moon.tmTheme (要 `bat cache --build`)。
   pagers:
     - colorArg: always
-      pager: "delta --paging=never --line-numbers --hunk-header-style=omit"
+      pager: >-
+        delta --paging=never --line-numbers
+        --syntax-theme=tokyonight_moon
+        --minus-style='syntax #4b2a3d' --minus-non-emph-style='syntax #4b2a3d'
+        --minus-emph-style='syntax #6b2e43' --minus-empty-line-marker-style='syntax #4b2a3d'
+        --plus-style='syntax #2a4556' --plus-non-emph-style='syntax #2a4556'
+        --plus-emph-style='syntax #305f6f' --plus-empty-line-marker-style='syntax #2a4556'
+        --line-numbers-minus-style='#e26a75' --line-numbers-plus-style='#b8db87'
+        --line-numbers-zero-style='#3b4261'
+        --line-numbers-left-format='{nm:>4} ' --line-numbers-right-format='{np:>4}  '
+        --hunk-header-style='line-number syntax' --hunk-header-decoration-style='#3b4261 box'
+        --hunk-header-line-number-style='#82aaff'
+        --file-style='#82aaff bold' --file-decoration-style='#3b4261 ul'
 
 customCommands:
   # `C`（shift-c）を上書きし、空のコミットメッセージ入力欄を出す。
