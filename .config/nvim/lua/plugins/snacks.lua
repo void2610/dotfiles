@@ -50,8 +50,8 @@ return {
       -- lazygit のフロートサイズを指定
       opts.lazygit = opts.lazygit or {}
       opts.lazygit.win = vim.tbl_deep_extend("force", opts.lazygit.win or {}, {
-        width = 0.9,
-        height = 0.9,
+        width = 0.93,
+        height = 0.93,
       })
       -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
       opts.terminal = opts.terminal or {}
