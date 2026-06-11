@@ -47,6 +47,12 @@ return {
         hidden = true, -- ドットファイル (隠しファイル) を表示する
         exclude = vim.deepcopy(unity_exclude),
       })
+      -- lazygit のフロートサイズを指定
+      opts.lazygit = opts.lazygit or {}
+      opts.lazygit.win = vim.tbl_deep_extend("force", opts.lazygit.win or {}, {
+        width = 0.9,
+        height = 0.9,
+      })
       -- <c-/> のターミナルを下分割ではなく画面中央のフロート (オーバーレイ) で開閉する
       opts.terminal = opts.terminal or {}
       opts.terminal.win = vim.tbl_deep_extend("force", opts.terminal.win or {}, {

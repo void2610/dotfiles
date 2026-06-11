@@ -6,6 +6,9 @@
 promptToReturnFromSubprocess: false
 
 gui:
+  # コマンドログパネルを隠して diff 表示域を広げる（@ で一時表示可能）。
+  showCommandLog: false
+
   # loadingText 表示時のスピナーが速すぎるので、回転を緩める（デフォルト 50ms → 100ms）。
   spinner:
     rate: 200
