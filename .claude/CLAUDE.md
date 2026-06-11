@@ -1,5 +1,12 @@
 # CLAUDE.md
 
+## Comments
+- Comments only for non-obvious WHY (workarounds, constraints, domain knowledge). Never restate WHAT the code does.
+- Max 1 line per comment. No multi-line comment blocks unless asked.
+- Never write comments describing the change process (e.g. "fixed", "changed to", "added").
+- Preserve existing comments unless they become factually wrong.
+- Write comments in Japanese.
+
 ## レスポンスガイドライン
 
 - 常に日本語で応答し、プログラム内の全てのコメントを日本語で記述すること。
@@ -10,13 +17,13 @@
 
 ## 基本ルール
 
-- 冗長なコメントは絶対に書かない。
-  - 過去実装との差分は書かない。 (差分はGitHubでいつでも参照可能、運用に関わる重要要素以外残す必要性が一切無い)
-  - 長すぎるコメントは書かない。 (3行以上になるコメントはコードの可読性を著しく下げる。どうしても説明が必要な場合はMDファイルの実装ドキュメント用意を検討する)
+- プログラム内のコメントは、[Comments](#comments) の内容に従って記述する。
 - 新規ブランチを `git switch -c <branch> origin/main` で作らない。
   - upstream を `origin/main` に設定してしまい、`git push` が main を狙う事故につながる。
   - 最新 main 起点で切る場合は `--no-track` を付け、upstream は初回 push 時に `git push -u origin HEAD` で同名リモートブランチへ紐づける。
-- パッケージやCLIツールのインストールは nix-darwinで管理された Homebrew を第一候補とする。Homebrewにパッケージが存在しない場合、nixpkgs を用いる。 いずれにせよ、宣言的でメンテナンス性を考慮したパッケージ管理を心がける。
+- パッケージやCLIツールのインストールは nix-darwinで管理された Homebrew を第一候補とする。
+  - Homebrewにパッケージが存在しない場合、nixpkgs を用いる。
+  - いずれにせよ、宣言的でメンテナンス性を考慮したパッケージ管理を心がける。
 
 ## ユーザー指示フォーマット
 
