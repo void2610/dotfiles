@@ -16,7 +16,7 @@ return {
             claude_toggle = {
               "<leader>a",
               function()
-                vim.cmd("ClaudeCode")
+                vim.cmd("ClaudeCodeFocus")
               end,
               mode = "t",
               desc = "Toggle Claude",
@@ -26,7 +26,7 @@ return {
       },
     },
     keys = {
-      { "<leader>a", "<cmd>ClaudeCode<cr>", desc = "Toggle Claude" },
+      { "<leader>a", "<cmd>ClaudeCodeFocus<cr>", desc = "Toggle/Focus Claude" },
       { "<leader>A", nil, desc = "AI/Claude Code" },
       { "<leader>Af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
       { "<leader>Ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
