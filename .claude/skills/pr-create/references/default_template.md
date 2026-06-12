@@ -19,6 +19,10 @@
 
 ## 各セクションの書き方
 
-- **概要**: Why を 1〜3 行。コードから読める What の冗長説明は書かない
-- **変更点**: コミット単位 or 機能単位で主要変更を箇条書き。数個までに絞る
+- **概要**: Why を 1行で書く。コードから読める What の冗長説明は書かない
+- **変更点**: 
+  - コミット、ファイル単位ではなく、わかりやすい機能単位で分割する。
+  - コードを読めばわかる具体名は極力書かない。 
+  - 悪い例: 旧 `experiments/sim2real/utils/action_dr.py` を削除し、engine (`LowFreqNoiseInjector` / `dagger_offset_approach_iter` / `sample_duration_scale` / `sample_ee_perturbation` / `taper_weight`) を `polaris/dr/motion_noise.py` に移設
+  - 良い例: DR関連のutil関数を正しい場所へ移設
 - **動作確認**: 簡潔に 2〜3 項目程度まで。実行者が実際に確認する最低限に絞り、網羅リストにしない
