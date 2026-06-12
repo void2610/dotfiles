@@ -11,6 +11,18 @@
 -- buffer-local に spell を強制 ON にする autocmd を解除する。
 pcall(vim.api.nvim_del_augroup_by_name, "lazyvim_wrap_spell")
 
+-- 外部 (Claude Code 等) でファイルが変更されたら自動で再読み込みする。
+-- LazyVim 既定の checktime は FocusGained/TermClose/TermLeave のみのため、
+-- フォーカスを失わずにウィンドウ・バッファを移動した場合もカバーする。
+vim.api.nvim_create_autocmd({ "WinEnter", "BufEnter" }, {
+  group = vim.api.nvim_create_augroup("shuya_checktime", { clear = true }),
+  callback = function()
+    if vim.o.buftype == "" then
+      vim.cmd("checktime")
+    end
+  end,
+})
+
 -- 素の shell ターミナルでだけ jj でノーマルモードに戻れるようにする。
 -- lazygit などの TUI で jj が誤爆するのを避けるため、buffer 名から起動コマンドを判定して
 -- shell の場合のみ buffer-local にマップする。
