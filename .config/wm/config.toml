@@ -6,6 +6,10 @@ padding = 5
 
 [hotkeys]
 center = 'cmd+ctrl+c'
+focus_down = 'cmd+ctrl+j'
+focus_left = 'cmd+ctrl+h'
+focus_right = 'cmd+ctrl+l'
+focus_up = 'cmd+ctrl+k'
 maximize = 'cmd+ctrl+return'
 snap_bottom = 'cmd+ctrl+down'
 snap_bottom_left = 'cmd+opt+shift+left'
@@ -47,6 +51,5 @@ bundle_id = 'com.github.GitHubClient'
 key = 'cmd+ctrl+g'
 
 [[launch]]
-path = '~/Documents/GitHub/melchior/build/melchior_main'
 key = 'cmd+ctrl+m'
-
+path = '~/Documents/GitHub/melchior/build/melchior_main'
