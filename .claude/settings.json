@@ -36,15 +36,6 @@
           }
         ]
       },
-      {
-        "hooks": [
-          {
-            "type": "prompt",
-            "prompt": "このフックは「直近のClaudeの行動が CLAUDE.md（ユーザーのグローバル指示およびプロジェクトの指示）に則っているか」を判定する。判定結果は必ず {\"ok\": true, \"reason\": \"理由\"} の形の JSON ひとつだけで返すこと（ok は真偽値、reason は日本語の文字列。前置き・説明文・コードフェンスを付けない）。CLAUDE.md に違反していなければ停止を許可する（{\"ok\": true}）。違反があれば差し戻して是正させる（{\"ok\": false}）。トランスクリプトと、コンテキストに含まれる CLAUDE.md の内容を読み、次のとおり判定せよ。\n\n(1) 違反の差し戻し【継続側】: 直近のターンでのClaudeの行動・出力が CLAUDE.md のいずれかのルールに明確に違反している場合、停止せず差し戻す（{\"ok\": false}）。違反例（これに限らない）: 冗長・過剰なコメントや過去実装との差分コメントを書いた / 依頼されていない fallback・代替手順・注意書きを勝手に足した / `git switch -c <branch> origin/main` 相当で upstream を origin/main に設定した / パッケージ導入で nix-darwin 管理の Homebrew→nixpkgs の優先順位を無視した / ユーザーをスペシャリストとして尊重せず初歩的な指摘（「最新版に更新したか」「再起動してください」等）で時間を浪費した / 日本語以外で応答した、コメントを日本語で書かなかった。reason には違反したルールと具体的な箇所を明記し、是正を促す。確実な違反のみを差し戻し、判断に迷う軽微なものは違反としない。\n\n(2) 停止してよい【停止側】: 直近の行動に CLAUDE.md への明確な違反が見当たらない場合は停止を許可する（{\"ok\": true}）。stop_hook_active が true（差し戻しが繰り返されている）場合は、同じ指摘を反復しても是正されないなら誤継続を疑い、停止を許可する。\n",
-            "model": "claude-sonnet-4-6"
-          }
-        ]
-      }
     ],
     "StopFailure": [
       {
@@ -115,6 +106,5 @@
   "skipDangerousModePermissionPrompt": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "model": "claude-fable-5[1m]"
+  "voiceEnabled": true
 }
