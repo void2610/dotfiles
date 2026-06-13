@@ -3,7 +3,8 @@
     "lazyvim.plugins.extras.lang.clangd",
     "lazyvim.plugins.extras.lang.dotnet",
     "lazyvim.plugins.extras.lang.markdown",
-    "lazyvim.plugins.extras.lang.python"
+    "lazyvim.plugins.extras.lang.python",
+    "lazyvim.plugins.extras.util.octo"
   ],
   "install_version": 8,
   "news": {
