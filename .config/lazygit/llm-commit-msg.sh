@@ -25,7 +25,7 @@ msg=""
 validation_regex="^(${allowed_types})!?: .+"
 while [ "$attempt" -le "$max_attempts" ]; do
   # 1行目を取得し、前後の空白を除去する。
-  candidate=$(printf '%s' "$diff" | claude -p "$prompt" | head -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+  candidate=$(printf '%s' "$diff" | claude -p --model haiku "$prompt" | head -n1 | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
   if printf '%s' "$candidate" | grep -Eq "$validation_regex"; then
     msg="$candidate"
     break
