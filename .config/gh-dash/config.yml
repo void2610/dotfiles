@@ -1,4 +1,6 @@
 prSections:
+    - title: All Open
+      filters: is:open sort:updated-desc
     - title: My Pull Requests
       filters: is:open author:@me
     - title: Needs My Review
@@ -90,7 +92,7 @@ theme:
             showSeparator: true
             compact: false
 pager:
-    diff: ""
+    diff: delta
 confirmQuit: false
 showAuthorIcons: true
 smartFilteringAtLaunch: true
