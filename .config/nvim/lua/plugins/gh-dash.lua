@@ -3,7 +3,7 @@ return {
     "folke/snacks.nvim",
     keys = {
       {
-        "<leader>gh",
+        "<leader>go",
         function()
           -- 現在バッファのリポジトリで起動し、gh-dash の smartFilteringAtLaunch で当該リポジトリに自動スコープさせる。
           local file = vim.api.nvim_buf_get_name(0)
