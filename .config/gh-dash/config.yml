@@ -87,6 +87,13 @@ defaults:
     refetchIntervalMinutes: 30
 keybindings:
     prs:
+        # 組み込み checkout は固定 repoPaths しか見ないため、起動したリポジトリ ({{.RepoPath}}) で checkout するカスタムで C/Space 両方を上書きする。
+        - key: C
+          name: checkout
+          command: cd {{.RepoPath}} && gh pr checkout {{.PrNumber}}
+        - key: space
+          name: checkout
+          command: cd {{.RepoPath}} && gh pr checkout {{.PrNumber}}
         - key: m
           name: merge
           command: 'printf "Merge method [M/s/r]: "; read mm; case "$mm" in [sS]*) method=--squash ;; [rR]*) method=--rebase ;; *) method=--merge ;; esac; printf "Delete remote branch? [Y/n] "; read a; case "$a" in [nN]*) d= ;; *) d=--delete-branch ;; esac; gh pr merge --repo {{.RepoName}} {{.PrNumber}} $method $d'
