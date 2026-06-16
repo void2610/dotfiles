@@ -3,6 +3,9 @@ return {
     "coder/claudecode.nvim",
     dependencies = { "folke/snacks.nvim" },
     opts = {
+      diff_opts = {
+        open_in_new_tab = true,
+      },
       terminal = {
         split_side = "right",
         split_width_percentage = 0.4, -- Claude Code のペイン幅
