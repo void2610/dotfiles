@@ -40,10 +40,23 @@ vim.api.nvim_create_autocmd("TermOpen", {
       sh = true,
       fish = true,
       dash = true,
-      claude = true, -- claudecode.nvim の Claude Code セッション
     }
     if allowed[basename] then
       vim.keymap.set("t", "jj", [[<C-\><C-n>]], { buffer = args.buf, silent = true })
+    elseif basename == "claude" then
+      -- claudecode.nvim の Claude Code セッション。
+      -- KeyRepeat=2(≈30ms)/InitialKeyRepeat=15(≈225ms) より、50〜200ms 間隔の 2 回目の j だけを手動 jj とみなす。
+      -- これより短い間隔(長押しのオートリピート)は素の j として通し、Ctrl+O のスクロールを妨げない。
+      local last_j = 0
+      vim.keymap.set("t", "j", function()
+        local now = vim.uv.hrtime() / 1e6
+        local gap = now - last_j
+        last_j = now
+        if gap >= 50 and gap <= 200 then
+          return [[<C-\><C-n>]]
+        end
+        return "j"
+      end, { buffer = args.buf, expr = true, silent = true })
     end
   end,
 })
