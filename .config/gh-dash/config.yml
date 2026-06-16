@@ -99,25 +99,13 @@ keybindings:
           command: 'printf "Merge method [M/s/r]: "; read mm; case "$mm" in [sS]*) method=--squash ;; [rR]*) method=--rebase ;; *) method=--merge ;; esac; printf "Delete remote branch? [Y/n] "; read a; case "$a" in [nN]*) d= ;; *) d=--delete-branch ;; esac; gh pr merge --repo {{.RepoName}} {{.PrNumber}} $method $d'
         - key: e
           name: edit
-          # 1行目=タイトル / 2行目空行 / 3行目以降=本文 としてまとめて編集する。$NVIM を外しネスト警告を回避する。
-          command: |
-            f=$(mktemp); b=$(mktemp)
-            gh pr view {{.PrNumber}} --repo {{.RepoName}} --json title,body --jq '.title + "\n\n" + .body' > "$f"
-            env -u NVIM nvim "$f"
-            title=$(sed -n '1p' "$f"); sed -n '3,$p' "$f" > "$b"
-            gh pr edit {{.PrNumber}} --repo {{.RepoName}} --title "$title" --body-file "$b"
-            rm -f "$f" "$b"
+          # Octo で PR を開く。番号→repo の順で repo を明示するため cwd 非依存。$NVIM を外しネスト警告を回避する。
+          command: env -u NVIM nvim -c "Octo pr edit {{.PrNumber}} {{.RepoName}}"
     issues:
         - key: e
           name: edit
-          # 1行目=タイトル / 2行目空行 / 3行目以降=本文 としてまとめて編集する。$NVIM を外しネスト警告を回避する。
-          command: |
-            f=$(mktemp); b=$(mktemp)
-            gh issue view {{.IssueNumber}} --repo {{.RepoName}} --json title,body --jq '.title + "\n\n" + .body' > "$f"
-            env -u NVIM nvim "$f"
-            title=$(sed -n '1p' "$f"); sed -n '3,$p' "$f" > "$b"
-            gh issue edit {{.IssueNumber}} --repo {{.RepoName}} --title "$title" --body-file "$b"
-            rm -f "$f" "$b"
+          # Octo で Issue を開く。番号→repo の順で repo を明示するため cwd 非依存。$NVIM を外しネスト警告を回避する。
+          command: env -u NVIM nvim -c "Octo issue edit {{.IssueNumber}} {{.RepoName}}"
 repoPaths: {}
 theme:
     ui:
