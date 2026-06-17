@@ -1,40 +1,58 @@
 ---
 name: branch-create
-description: "**ClaudeCodeが新しい Git ブランチを作成する際、必ず呼び出すこと。** (ユーザー指示、自律実行どちらも) トリガー: 「ブランチ切って」「ブランチ作って」「create branch」「new branch」等のユーザー指示、Claude 自身が `git switch -c` / `git branch` でブランチを切ろうとする場面、または `branch-create` スキル指定。作業内容 (依頼内容 or 未コミット差分) から規約に沿った名前を決定し、最新のデフォルトブランチを起点に作成する。"
+description: "新しい Git ブランチ名を決めて作成するスキル。トリガー: 「ブランチ切って」「ブランチ作って」「create branch」「new branch」等のユーザー指示、または `branch-create` スキル指定。作業内容 (依頼内容 or 未コミット差分) から規約に沿った名前を決定し、最新のデフォルトブランチを起点に `git switch -c` する。"
 ---
 
-# branch-create (dispatcher)
+# branch-create
 
-このスキルは **ディスパッチャ**。メインエージェントはブランチ作成を自分で実行せず、
-必ず **haiku の軽量サブエージェント** に委譲する。命名規約とワークフローは
-[`workflow.md`](workflow.md) にあり、サブエージェントがそれを読んで実行する。
+## 命名規約
 
-## メインエージェントの手順
+形式: `<type>/<short-kebab-case-summary>`
 
-1. ブランチ名の根拠となる文脈 (ユーザーの依頼内容、作業対象) を把握する。
-2. **Agent ツール** を以下で呼び出す:
-   - `subagent_type`: `general-purpose`
-   - `model`: `haiku`
-   - `prompt`: 下記テンプレート
-3. サブエージェントの報告 (作成したブランチ名、または確認要求) を受けて対応する。
-   - 正常作成 → そのままユーザーに報告。
-   - 確認要求 (同名衝突 / 未コミット変更で switch 衝突 / 文脈不足) → メインがユーザーに
-     確認し、回答を補って再度サブエージェントを呼ぶ。
+type (commit スキルと統一): `feat` / `fix` / `refac` / `docs` / `style` / `test` / `chore`
 
-## サブエージェントへ渡す prompt テンプレート
+summary: 英語 kebab-case、30 文字目安、動詞 + 目的語 (`add-x`, `fix-x`, `rename-x-to-y`)。`update` / `change` / `wip` 等の曖昧語単独は禁止。
 
-```
-あなたは git ブランチ作成専任です。次の手順書を読み、規約に厳密に従って
-新しいブランチを作成してください。
+NG 例: `update`, `feat/various-changes`, `my-branch`, `feat/add_login_form`
 
-手順書: ~/.claude/skills/branch-create/workflow.md
+## 確認が必要なケース (これ以外は確認なしで進める)
 
-ブランチ名の根拠となる文脈 (メインから):
-{ユーザーの依頼内容や作業対象をここに転記}
+- 依頼文も差分も空でコンテキストが取れない
+- 同名ブランチが既に存在
+- 未コミット変更があってデフォルトブランチへの `switch` が衝突
 
-ルール:
-- 手順書「確認が必要なケース」に該当しない限り、確認待ちをせず最後まで作成すること。
-- 該当した場合 (依頼文も差分も空 / 同名ブランチ既存 / 未コミット変更で switch 衝突) は
-  作成を中断し、状況と選択肢を簡潔に報告して終了すること。
-- 完了したら作成したブランチ名と起点を報告すること。
-```
+## ワークフロー
+
+1. **事前チェック**
+
+   ```bash
+   git rev-parse --abbrev-ref HEAD
+   git status --short
+   git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p'
+   ```
+
+2. **コンテキスト収集**: 依頼文 → 未コミット差分 (`git diff --stat`) の順で根拠を集める。
+
+3. **名前決定**: 規約に沿った名前を 1 つ決める。
+
+4. **起点を最新化** (デフォルト動作。「現ブランチから派生で」等の明示指示時のみスキップ):
+
+   ```bash
+   git fetch origin
+   git switch <default-branch>
+   git pull --ff-only
+   ```
+
+5. **作成**:
+
+   ```bash
+   git switch -c <branch-name>
+   ```
+
+push はしない。`pr-create` 側に委ねる。
+
+## トラブル
+
+- **同名衝突**: 既存に switch するか別名にするかをユーザーに確認
+- **switch 失敗 (未コミット変更)**: stash / commit / 現ブランチ派生のどれかをユーザーに確認
+- **origin なし**: ローカル完結で作成して終了
