@@ -14,6 +14,19 @@ return {
             config = vim.fn.stdpath("config") .. "/typos.toml",
           },
         },
+        marksman = {
+          handlers = {
+            -- code 2 = リンク先ドキュメント不在 (broken reference) の診断のみ抑制する
+            ["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
+              if result and result.diagnostics then
+                result.diagnostics = vim.tbl_filter(function(d)
+                  return not (d.source == "Marksman" and d.code == 2)
+                end, result.diagnostics)
+              end
+              return vim.lsp.handlers["textDocument/publishDiagnostics"](err, result, ctx, config)
+            end,
+          },
+        },
       },
     },
   },
