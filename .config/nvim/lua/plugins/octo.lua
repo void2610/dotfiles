@@ -6,5 +6,18 @@ return {
     keys = {
       { "<leader>gr", false },
     },
+    config = function(_, opts)
+      require("octo").setup(opts)
+
+      -- PR/Issue タイトルに CR/LF が混入すると nvim_buf_set_lines が
+      -- "'replacement string' item contains newlines" で失敗するため、
+      -- write_title 呼び出し時にタイトルをサニタイズする (upstream バグ回避)。
+      local writers = require("octo.ui.writers")
+      local original_write_title = writers.write_title
+      writers.write_title = function(bufnr, title, line)
+        local sanitized = (title or ""):gsub("[\r\n]+", " ")
+        return original_write_title(bufnr, sanitized, line)
+      end
+    end,
   },
 }
