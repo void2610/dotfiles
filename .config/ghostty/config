@@ -40,6 +40,12 @@ shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
 # --- スクロールバック ---
 scrollback-limit = 100000
 
+# --- クイックターミナル ---
+# global: プレフィックスで Ghostty 非フォーカス時でもトグル可能にする。
+quick-terminal-position = top
+quick-terminal-animation-duration = 0.1
+keybind = global:ctrl+semicolon=toggle_quick_terminal
+
 # --- キーバインド (macOS 標準補完) ---
 # タブ操作
 keybind = cmd+t=new_tab
