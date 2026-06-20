@@ -2,6 +2,10 @@ return {
   {
     "keaising/im-select.nvim",
     event = "VeryLazy",
+    -- macism / com.apple.keylayout.ABC を前提とする実装のため macOS 限定とする。
+    cond = function()
+      return vim.fn.has("mac") == 1
+    end,
     opts = {
       -- macOS では macism を入力ソースの取得・切替に使用する
       default_command = "macism",
