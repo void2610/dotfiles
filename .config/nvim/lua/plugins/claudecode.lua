@@ -31,6 +31,19 @@ return {
     keys = {
       { "<leader>a", "<cmd>ClaudeCodeFocus<cr>", desc = "Toggle/Focus Claude" },
       { "<leader>A", nil, desc = "AI/Claude Code" },
+      {
+        "<leader>An",
+        function()
+          -- claudecode.nvim 本体のリグレッションを避けるため、特定バージョンの CLI を npx で起動する
+          local term = require("claudecode.terminal")
+          local pinned = "npx @anthropic-ai/claude-code@2.1.145"
+          term.setup({}, pinned, nil)
+          term.focus_toggle({}, nil)
+          -- 後続の <leader>a が既定の `claude` を使えるよう復元する (起動済みターミナルには影響しない)
+          term.setup({}, nil, nil)
+        end,
+        desc = "Focus Claude (pinned npx 2.1.145)",
+      },
       { "<leader>Af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
       { "<leader>Ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
       { "<leader>AC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
