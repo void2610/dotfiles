@@ -74,10 +74,7 @@
       }
     ]
   },
-  "statusLine": {
-    "type": "command",
-    "command": "python3 ~/.claude/statusline.py"
-  },
+  "statusLine": {"type":"command","command":"python3 ~/.claude/statusline.py"},
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
