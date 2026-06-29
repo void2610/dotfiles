@@ -42,7 +42,7 @@ return {
           -- 後続の <leader>a が既定の `claude` を使えるよう復元する (起動済みターミナルには影響しない)
           term.setup({}, nil, nil)
         end,
-        desc = "Focus Claude (pinned npx 2.1.145)",
+        desc = "Focus Claude (pinned npx 2.1.154)",
       },
       { "<leader>Af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
       { "<leader>Ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
