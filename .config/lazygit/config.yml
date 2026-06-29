@@ -13,6 +13,12 @@ gui:
   spinner:
     rate: 200
 
+# <C-d> でメインビューを下スクロールできるのに対し、上スクロールが <C-u>/K/<PgUp> のみで
+# 左手だけで完結しないため、上スクロールにも <C-e> を割り当てる（vim と上下逆だが対称性優先）。
+keybinding:
+  universal:
+    scrollUpMain: '<c-e>'
+
 git:
   # diff ビューをシンタックスハイライト付きで表示するため delta をページャーに使う。
   # 配色は nvim snacks picker (<leader>gD) の fancy diff (tokyonight-moon) に合わせる。
