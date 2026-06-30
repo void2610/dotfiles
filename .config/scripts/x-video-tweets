@@ -1,0 +1,108 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.10"
+# dependencies = ["pycryptodome"]
+# ///
+"""x(Twitter)アカウントの動画を含むツイートURLを列挙する。
+
+使い方:
+  x-video-tweets <username> [<username> ...]
+  x-video-tweets void2610 AyakaCyan_520
+
+Arc のログインCookieを復号して gallery-dl(uvx 経由)に渡し、メディアタイムラインから
+type が video / animated_gif のツイートを重複排除して新しい順に出力する。
+出力は標準出力と <username>_video_tweets.txt(カレントディレクトリ)の両方。
+"""
+import json, os, shutil, sqlite3, subprocess, sys, tempfile
+from Crypto.Cipher import AES
+from Crypto.Protocol.KDF import PBKDF2
+from Crypto.Hash import SHA1
+
+ARC_COOKIES = os.path.expanduser("~/Library/Application Support/Arc/User Data/Default/Cookies")
+KEYCHAIN_SERVICE = "Arc Safe Storage"
+
+
+def export_cookies(out_path):
+    pw = subprocess.check_output(
+        ["security", "find-generic-password", "-w", "-s", KEYCHAIN_SERVICE]
+    ).strip()
+    key = PBKDF2(pw, b"saltysalt", dkLen=16, count=1003, hmac_hash_module=SHA1)
+
+    def decrypt(val):
+        if not val:
+            return ""
+        if val[:3] in (b"v10", b"v11"):
+            dec = AES.new(key, AES.MODE_CBC, b" " * 16).decrypt(val[3:])
+            dec = dec[: -dec[-1]]  # PKCS7 unpad
+            try:
+                return dec.decode("utf-8")
+            except UnicodeDecodeError:
+                return dec[32:].decode("utf-8", "replace")  # Chrome 130+ domain-hash prefix
+        return val.decode("utf-8", "replace")
+
+    tmp_db = tempfile.mktemp(suffix=".sqlite")
+    shutil.copy2(ARC_COOKIES, tmp_db)
+    con = sqlite3.connect(tmp_db)
+    rows = con.execute(
+        "SELECT host_key, path, is_secure, expires_utc, name, encrypted_value, value "
+        "FROM cookies WHERE host_key LIKE '%x.com'"
+    ).fetchall()
+    con.close()
+    os.remove(tmp_db)
+
+    lines = ["# Netscape HTTP Cookie File"]
+    for host, path, secure, expires, name, enc, plain in rows:
+        value = plain if plain else decrypt(enc)
+        exp = int(expires / 1000000 - 11644473600) if expires else 0
+        flag = "TRUE" if host.startswith(".") else "FALSE"
+        lines.append("\t".join([host, flag, path, "TRUE" if secure else "FALSE", str(exp), name, value]))
+    with open(out_path, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    names = {r[4] for r in rows}
+    if "auth_token" not in names:
+        sys.exit("auth_token が見つかりません。Arc で x.com にログイン済みか確認してください。")
+
+
+def video_tweets(username, cookies_path):
+    url = f"https://x.com/{username}/media"
+    out = subprocess.run(
+        ["uvx", "gallery-dl", "--cookies", cookies_path, "-j", url],
+        capture_output=True, text=True,
+    )
+    if out.returncode != 0:
+        sys.stderr.write(out.stderr)
+        out.check_returncode()
+    data = json.loads(out.stdout)
+    seen, ids = set(), []
+    for e in data:
+        m = e[-1]
+        if not isinstance(m, dict) or m.get("type") not in ("video", "animated_gif"):
+            continue
+        tid = m.get("tweet_id")
+        if tid in seen:
+            continue
+        seen.add(tid)
+        ids.append(tid)
+    ids.sort(key=int, reverse=True)  # tweet_id は時系列で単調増加
+    return [f"https://x.com/{username}/status/{t}/video/1" for t in ids]
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    cookies_path = tempfile.mktemp(suffix="_xcookies.txt")
+    try:
+        export_cookies(cookies_path)
+        for username in sys.argv[1:]:
+            urls = video_tweets(username, cookies_path)
+            with open(f"{username}_video_tweets.txt", "w") as f:
+                f.write("\n".join(urls) + "\n")
+            print(f"\n# @{username}: 動画を含むツイート {len(urls)} 件 -> {username}_video_tweets.txt")
+            print("\n".join(urls))
+    finally:
+        if os.path.exists(cookies_path):
+            os.remove(cookies_path)  # 認証Cookieは必ず削除
+
+
+if __name__ == "__main__":
+    main()
