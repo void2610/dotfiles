@@ -10,7 +10,9 @@ end, { desc = "Open workspace" })
 
 -- カレントバッファのパスをシステムクリップボードにヤンク
 vim.keymap.set("n", "<leader>yp", function()
-  local path = vim.fn.expand("%")
+  -- カレント cwd はプラグインが変更しうるため、nvim 起動時の cwd (vim.g.launch_cwd) を基準に相対化する
+  local abs_path = vim.fn.expand("%:p")
+  local path = vim.fs.relpath(vim.g.launch_cwd, abs_path) or abs_path
   vim.fn.setreg("+", path)
   vim.notify(path, vim.log.levels.INFO, { title = "Yanked relative path" })
 end, { desc = "Yank relative path" })
