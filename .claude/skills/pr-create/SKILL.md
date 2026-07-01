@@ -34,12 +34,14 @@ git log --oneline "$(git merge-base HEAD @{u} 2>/dev/null || git merge-base HEAD
 
 ### Phase 2 — push
 
+`git push` は `CLAUDE_GIT_SKILL=pr-create` を前置して実行する (PreToolUse hook `~/.claude/hooks/enforce-git-skill.sh` が本スキル経由かどうかをこのマーカーで判定し、無いと直接実行はブロックされる)。
+
 ```bash
 # upstream 未設定の初回 push
-git push -u origin HEAD
+CLAUDE_GIT_SKILL=pr-create git push -u origin HEAD
 
 # upstream 設定済みでローカルが先行
-git push
+CLAUDE_GIT_SKILL=pr-create git push
 ```
 
 push 失敗時は `gh auth status` と `git remote -v` を確認してユーザーに報告。
@@ -98,10 +100,10 @@ ls .github/PULL_REQUEST_TEMPLATE/ 2>/dev/null
 
 ### Phase 4 — PR 作成
 
-`gh pr create` を HEREDOC で呼び出す (改行・Markdown を安全に渡すため)。
+`gh pr create` を HEREDOC で呼び出す (改行・Markdown を安全に渡すため)。`CLAUDE_GIT_SKILL=pr-create` を前置しないと PreToolUse hook にブロックされる。
 
 ```bash
-gh pr create --title "<承認済みタイトル>" --body "$(cat <<'EOF'
+CLAUDE_GIT_SKILL=pr-create gh pr create --title "<承認済みタイトル>" --body "$(cat <<'EOF'
 ## 概要
 ...
 

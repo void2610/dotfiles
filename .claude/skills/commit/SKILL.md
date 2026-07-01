@@ -82,3 +82,8 @@ feat: XXX を追加し YYY も変更し ZZZ も調整    # 複数の意味が混
 4. 各コミットの件名を決める。必要な場合のみ本文を添える
 5. コミット前に「そのコミットは 1 つの目的だけか」を再確認する
 6. 最終確認として**本文は本当に必要か**を自問する。件名だけで十分なら本文は書かない
+7. 実際に `git commit` を実行するコマンドには `CLAUDE_GIT_SKILL=commit` を前置する (PreToolUse hook `~/.claude/hooks/enforce-git-skill.sh` が本スキル経由かどうかをこのマーカーで判定し、無いと直接実行はブロックされる)
+
+```bash
+CLAUDE_GIT_SKILL=commit git commit -m "<件名>"
+```
