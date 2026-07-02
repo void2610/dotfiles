@@ -2,7 +2,7 @@
 
 ## Comments
 - Comments only for non-obvious WHY (workarounds, constraints, domain knowledge). Never restate WHAT the code does.
-- Max 1 line per comment. No multi-line comment blocks unless asked.
+- Max 1 line per comment. No multi-line comment blocks unless asked, or a complex constraint / domain knowledge genuinely cannot be summarized in one line.
 - Never write comments describing the change process (e.g. "fixed", "changed to", "added").
 - Preserve existing comments unless they become factually wrong.
 - Write comments in Japanese.
