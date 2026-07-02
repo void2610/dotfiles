@@ -8,6 +8,8 @@
 !/agents/**
 !/commands/
 !/commands/**
+!/hooks/
+!/hooks/**
 !/notify.sh
 !/settings.json
 !/skills/
