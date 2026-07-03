@@ -1,12 +1,12 @@
 ---
 disable-model-invocation: true
 name: nix-pkg-update
-description: "Update a custom npm package managed in /Users/shuya/nix-config/pkgs/ to the latest version. Edits the .nix file with the new version and hash, then rebuilds with darwin-rebuild."
+description: "Update a custom npm package managed in ~/nix-config/pkgs/ to the latest version. Edits the .nix file with the new version and hash, then rebuilds with darwin-rebuild."
 ---
 
 # nix-pkg-update
 
-`/Users/shuya/nix-config/pkgs/` で管理されているカスタム npm パッケージを最新バージョンに更新する。
+`~/nix-config/pkgs/` で管理されているカスタム npm パッケージを最新バージョンに更新する。
 
 ## 対象パッケージ
 
@@ -21,7 +21,7 @@ description: "Update a custom npm package managed in /Users/shuya/nix-config/pkg
 引数でパッケージ名が指定された場合はそれを使う。指定がなければ `pkgs/*.nix` を列挙してユーザーに確認する。
 
 ```bash
-ls /Users/shuya/nix-config/pkgs/*.nix
+ls ~/nix-config/pkgs/*.nix
 ```
 
 対応する `.nix` ファイルを開き、現在の `version` と npm パッケージ名（`pname` または URL から判断）を確認する。
@@ -30,7 +30,7 @@ ls /Users/shuya/nix-config/pkgs/*.nix
 
 ```bash
 # 現在のバージョン（.nix ファイルから）
-grep 'version = ' /Users/shuya/nix-config/pkgs/<パッケージ名>.nix
+grep 'version = ' ~/nix-config/pkgs/<パッケージ名>.nix
 
 # npm の最新バージョン
 npm info <npm-package-name> version
@@ -83,7 +83,7 @@ nix store prefetch-file --json --hash-type sha512 \
 ### 6. ビルド確認
 
 ```bash
-cd /Users/shuya/nix-config
+cd ~/nix-config
 git add pkgs/<パッケージ名>.nix
 nix build .#darwinConfigurations.<target>.system --no-link
 ```
@@ -93,10 +93,10 @@ nix build .#darwinConfigurations.<target>.system --no-link
 ### 7. 適用
 
 `darwin-rebuild switch` は sudo パスワードを要求する。スキル実行環境では非対話 sudo が通らないことが多いので、
-その場合はユーザーに `! cd /Users/shuya/nix-config && sudo darwin-rebuild switch --flake .#<target>` の実行を依頼する。
+その場合はユーザーに `! cd ~/nix-config && sudo darwin-rebuild switch --flake .#<target>` の実行を依頼する。
 
 ```bash
-cd /Users/shuya/nix-config && sudo darwin-rebuild switch --flake .#<target>
+cd ~/nix-config && sudo darwin-rebuild switch --flake .#<target>
 ```
 
 ### 8. 動作確認
@@ -135,6 +135,6 @@ npmDepsHash = "sha256-...";  # ← prefetch 不可。fakeHash → ビルドエ�
 
 ### nix-config のリポジトリ
 
-`/Users/shuya/nix-config`
+`~/nix-config`
 </content>
 </invoke>
