@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: game-idea-loop
 description: >
   ゲームのアイデアを自律的に大量生成し、比較・評価・淘汰を繰り返して最良のアイデアを選び出すスキル。

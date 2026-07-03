@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: setup-pixel-perfect
 description: "Unity 6 でピクセルパーフェクト描画をセットアップする時に使う。RenderTexture への低解像度レンダリング → 合成カメラで整数倍アップスケールの手順を自動化する (Zenn 記事 https://zenn.dev/matsu_friends/articles/c4a5d36b1de94e ベース)。トリガー: 「ピクセルパーフェクト設定して」「setup pixel perfect」「ドット絵 Unity 設定」等のユーザー指示、または `setup-pixel-perfect` スキル指定。"
 ---

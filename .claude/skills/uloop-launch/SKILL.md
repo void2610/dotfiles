@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: uloop-launch
 description: "Launch Unity project with matching Editor version via uloop CLI. Use when you need to: (1) Open a Unity project with the correct Editor version, (2) Restart Unity to apply changes, (3) Switch build target when launching."
 ---

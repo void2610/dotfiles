@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: discord-image
 description: Discord webhook 経由で個人チャンネルに画像を送信するスキル。リモートコントロール中の Claude がユーザーに画面状態や成果物画像を共有する用途。トリガー「画像を Discord に送って」「スクリーンショット送って」「画面を共有して」「send screenshot to discord」等のユーザー指示、または `discord-image` スキル指定。ローカルファイル / macOS スクリーンショット / 画像 URL の 3 モードに対応。
 ---

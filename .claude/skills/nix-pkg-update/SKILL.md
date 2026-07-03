@@ -1,4 +1,5 @@
 ---
+disable-model-invocation: true
 name: nix-pkg-update
 description: "Update a custom npm package managed in /Users/shuya/nix-config/pkgs/ to the latest version. Edits the .nix file with the new version and hash, then rebuilds with darwin-rebuild."
 ---
