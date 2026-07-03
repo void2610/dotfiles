@@ -1,5 +1,10 @@
 # CLAUDE.md
 
+## 作業の始め方
+
+- 複数フェーズにわたる開発作業 (実装からコミット・PR・レビュー対応まで到達しうる依頼) は、**ship スキルを標準フロー**とする。まず ship の状態機械 (`ship.sh status`) で現在地を確認し、フェーズ遷移・チェックポイントは ship スキルの指示に従う。
+- 単発の作業 (コミットだけ、PR だけ、調査・質問だけ等) は対応する各スキルを直接使う。
+
 ## Comments
 - Comments only for non-obvious WHY (workarounds, constraints, domain knowledge). Never restate WHAT the code does.
 - Max 1 line per comment. No multi-line comment blocks unless asked, or a complex constraint / domain knowledge genuinely cannot be summarized in one line.
