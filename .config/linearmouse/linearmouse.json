@@ -57,6 +57,33 @@
           "vertical" : 0
         }
       }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "mouse",
+          "productID" : "0x1",
+          "productName" : "Cornix",
+          "serialNumber" : "vial:f64c2b3c:9fe24e",
+          "vendorID" : "0xe118"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1
+        },
+        "distance" : {
+          "vertical" : 7
+        },
+        "smoothed" : {
+          "vertical" : {
+            "enabled" : false
+          }
+        },
+        "speed" : {
+          "vertical" : 0
+        }
+      }
     }
-  ]
+ ]
 }
