@@ -1,6 +1,6 @@
 ---
 name: pr-create
-description: "GitHub Pull Request を作成する時に使う。トリガー: 「PR 作って」「PR 作成」「プルリクエスト作って」「create PR」「open PR」「raise PR」等のユーザー指示、または `pr-create` スキル指定。コミット済みブランチから push 確認 → タイトル / 本文案の提示 → ユーザー承認 → `gh pr create` 実行 → URL 報告までを一気通貫。コミット作成自体は担当せず、事前に commit スキル等で済ませておく前提。"
+description: "GitHub Pull Request を作成する時に使う。トリガー: 「PR 作って」「PR 作成」「プルリクエスト作って」「create PR」「open PR」「raise PR」等のユーザー指示、または `pr-create` スキル指定。コミット済みブランチから push 確認 → タイトル / 本文案の提示 → `gh pr create` 実行 → Copilot レビュー依頼 → 到着をバックグラウンド監視し、指摘があれば pr-review-fix へ自動接続するまでを一気通貫。コミット作成自体は担当せず、事前に commit スキル等で済ませておく前提。"
 ---
 
 # pr-create
@@ -136,16 +136,31 @@ bash "${CLAUDE_PROJECT_DIR:-$HOME}/.claude/skills/pr-create/scripts/request-copi
 - 内部で `gh api graphql` の `requestReviews` mutation を `botIds` 付きで呼び、Copilot PR Reviewer (固定 bot ノード `BOT_kgDOCnlnWA`) を依頼する
 - Copilot レビュー機能未有効・既に依頼済み・権限不足などで失敗する場合があるが、**PR 作成自体は成功している**ので終了コード 1 でも警告扱いとし、ユーザーには「Copilot 依頼に失敗 (理由)」と PR URL の両方を伝える
 
+依頼に成功したら、続けてレビュー到着のポーリングを **background で** 起動する (`run_in_background: true` の Bash で実行し、セッションをブロックしない)。依頼に失敗した場合はポーリングを起動しない:
+
+```bash
+bash ~/.claude/skills/pr-create/scripts/poll-copilot-review.sh <PR番号>
+```
+
 ### Phase 6 — 完了報告
 
-作成された PR URL と Copilot 依頼結果を表示して終了。以降のレビュー対応は `pr-review-fix` スキルに委ねる。
+作成された PR URL・Copilot 依頼結果・ポーリング起動を報告していったん終了。
 
 ```
 ✅ PR #<N> を作成しました: <URL>
-✅ Copilot にレビューを依頼しました
+✅ Copilot にレビューを依頼しました (到着をバックグラウンドで監視中)
 ```
 
 (Copilot 依頼が失敗した場合は ⚠️ で警告のみ表示し、PR 作成成功は維持する)
+
+### Phase 7 — レビュー到着時の自動対応
+
+ポーリングの完了通知 (task-notification) を受けたら、出力に応じて自動で動く:
+
+- `copilot_review=arrived` かつ `unresolved_threads` > 0 → **pr-review-fix スキルを起動**して対応を開始する (修正計画の承認は pr-review-fix 内のフローが担うため、起動自体に確認は不要)。ship フローの最中なら先に `ship.sh done review` を打つ
+- `unresolved_threads` = 0 → 「Copilot レビュー到着、未解決の指摘なし」と報告して終了
+- `unresolved_threads` = `?` → スレッド数の取得に失敗している。`fetch_unresolved_threads.sh` を手動実行して確認してから判断する (0 件と誤認しない)
+- exit 1 (タイムアウト) → その旨を報告し、必要なら `poll-copilot-review.sh` を再起動するか手動確認を提案
 
 ## トラブルシューティング
 
