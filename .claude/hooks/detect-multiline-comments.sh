@@ -17,6 +17,10 @@ case "$path" in
   *) exit 0 ;;
 esac
 
+# doc コメント (C#/Rust の ///) はブロック検知から除外
+dm=''
+[ "$m" = '//' ] && dm='///'
+
 # Write (old_string なし) は git HEAD の内容を既存扱いにする
 if [ -z "$old" ] && [ -f "$path" ]; then
   dir=$(dirname "$path")
@@ -26,11 +30,11 @@ fi
 
 # 2行以上連続するフルラインコメントブロックを \x1e 区切りで抽出 (shebang は除外)
 extract_blocks() {
-  awk -v m="$m" '
+  awk -v m="$m" -v dm="$dm" '
     function flush() { if (n >= 2) printf "%s\x1e", buf; buf = ""; n = 0 }
     {
       l = $0; sub(/^[ \t]+/, "", l)
-      if (index(l, m) == 1 && l !~ /^#!/) { buf = buf (n ? "\n" : "") $0; n++ } else flush()
+      if (index(l, m) == 1 && l !~ /^#!/ && (dm == "" || index(l, dm) != 1)) { buf = buf (n ? "\n" : "") $0; n++ } else flush()
     }
     END { flush() }
   '
