@@ -134,7 +134,7 @@
     }
   },
   "language": "日本語",
-  "effortLevel": "high",
+  "effortLevel": "low",
   "autoUpdatesChannel": "stable",
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
