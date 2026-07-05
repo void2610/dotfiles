@@ -64,6 +64,50 @@
                     ]
                 }
             ],
+            "complex_modifications": {
+                "rules": [
+                    {
+                        "description": "Mouse keys (F13-F19 -> cursor move & click)",
+                        "manipulators": [
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f13", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "mouse_key": { "y": -1536 } }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f14", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "mouse_key": { "y": 1536 } }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f15", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "mouse_key": { "x": -1536 } }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f16", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "mouse_key": { "x": 1536 } }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f17", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "pointing_button": "button1" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f18", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "pointing_button": "button2" }]
+                            },
+                            {
+                                "type": "basic",
+                                "from": { "key_code": "f19", "modifiers": { "optional": ["any"] } },
+                                "to": [{ "pointing_button": "button3" }]
+                            }
+                        ]
+                    }
+                ]
+            },
             "name": "default",
             "selected": true,
             "simple_modifications": [
