@@ -25,6 +25,7 @@
     "ask": [],
     "defaultMode": "auto"
   },
+  "statusLine": {"type":"command","command":"python3 ~/.claude/statusline.py"},
   "hooks": {
     "PreToolUse": [
       {
@@ -141,5 +142,6 @@
   "theme": "dark",
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true
+  "voiceEnabled": true,
+  "model": "sonnet"
 }
