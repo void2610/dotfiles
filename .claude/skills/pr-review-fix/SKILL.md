@@ -13,7 +13,7 @@ description: "GitHub Pull Request のレビューコメントに一括対応す�
 - 現在のブランチに PR が紐づいていない場合は即座に作業終了する。
 - GitHub の「Resolve conversation」で閉じたスレッドは **既に対応済み** と見なし、以降のすべてのフェーズから除外する。判定は GraphQL の `reviewThreads.isResolved == false` を基準にする (REST `/pulls/{N}/comments` には `isResolved` フィールドが無いため単独判定不可)。
 - スキルディレクトリは `~/.claude/skills/pr-review-fix/` で、配下に `scripts/` と `references/` を持つ。スクリプトは常に絶対パス `~/.claude/skills/pr-review-fix/scripts/<name>.sh` で呼び出す (Claude の cwd は通常プロジェクトルートなので相対パスは不可)。
-- 依存: `gh` CLI (authenticated、v2.4.0+ 推奨)、`git`。`jq` は不要 (`gh api --jq` の内蔵 gojq を使用)。
+- 依存: `gh` CLI (authenticated、v2.4.0+ 推奨)、`git`。Phase 1〜6 で使うスクリプトは `jq` 不要 (`gh api --jq` の内蔵 gojq を使用)。Phase 7 の `process_replies.sh` は mapping.json 解析に `jq` を使用する。
 
 ## ワークフロー (7 Phase)
 
@@ -48,9 +48,12 @@ mkdir -p outputs/pr-review-fix
   {"seq": 1, "thread_id": "PRRT_...", "comment_id": 123, "path": "src/a.py", "line": 42,
    "classification": "🔴", "category": "アーキテクチャ", "author": "reviewer1",
    "body_summary": "...", "fix_plan": "...",
-   "commit_hash": null, "replied": false, "resolved": false}
+   "commit_hash": null, "reply_eligible": false, "reply_body": null,
+   "replied": false, "resolved": false}
 ]
 ```
+
+`reply_eligible` / `reply_body` は Phase 7 で `process_replies.sh` が読む判定フィールド (詳細は Phase 7 参照)。Phase 1〜6 では `false` / `null` のままにする。
 
 Phase 6 でコミットするたび `commit_hash` を、Phase 7 で返信・resolve するたび `replied` / `resolved` を更新する。利用する各プロジェクトで `outputs/` を `.gitignore` に含めて、これらの生成ファイルが誤って commit されないようにする。
 
@@ -118,64 +121,40 @@ gh pr view <pr_number> --json body -q .body > /tmp/pr_body.md
 gh pr edit <pr_number> --body-file /tmp/pr_body.md
 ```
 
-対応表では `commit_hash` を `null` のままにし、代わりに `fix_plan` に "PR description 更新 (kv=6_000 に合わせた)" 等の説明を残す。Phase 7 の返信本文は `"PR description を更新しました。"` のような non-SHA 文で渡す。
+対応表では `commit_hash` を `null` のままにし、代わりに `fix_plan` に "PR description 更新 (kv=6_000 に合わせた)" 等の説明を残す。`reply_eligible` は `false` のままにする (非コード修正は Phase 7 で返信しない、下記参照)。
 
 ### Phase 7 — 返信 & resolve
 
-**返信対象**: 本スキルが Phase 6 で実際に修正 (新規コミット作成 / PR description 更新等の副作用ある変更) を行ったエントリ **のみ**。修正不要と判断したコメント、🟢 質問・議論への回答、既存コミットを流用しただけのコメントには **返信しない** (resolve も行わない)。
+**本フェーズでは `reply_to_comment.sh` / `resolve_thread.sh` を直接呼び出さない。** 両スクリプトは `process_replies.sh` の内部依存であり、Claude が直接叩くと「返信対象ではないコメントに誤って返信する」事故を機械的に防げなくなる。Phase 7 の唯一の実行経路は次の 2 ステップ。
 
-対応表の対象エントリについて以下を実施。
+#### 1. mapping.json に `reply_eligible` / `reply_body` を設定する
 
-#### 1. 固定フォーマットで返信 (日本語)
+対応表の各エントリについて、**Phase 6 で本スキルが新規コミットを作成したエントリのみ** `reply_eligible: true` を設定し、`reply_body` に `<FULL_SHA> で修正しました。` (完全 40 文字 SHA、複数コミットに跨る場合は読点区切り) を書く。例: `abc1234567890abcdef1234567890abcdef12345678 で修正しました。`
 
-`scripts/reply_to_comment.sh` は本文末尾に **Claude Code 署名行を必ず自動付加する** ので、呼び出し側は本文 1 文 (日本語) だけ渡す。これにより全コメントへの返信が同一フォーマットになり、人間の直レビューと一目で区別できる。
-
-本文は **次の 2 パターンのみ** 使う。
-
-| ケース | 本文 (body) の形 | 例 |
-|--------|---------------|---|
-| A: 新規コミットで修正 | `<FULL_SHA> で修正しました。` | `abc1234567890abcdef1234567890abcdef12345678 で修正しました。` |
-| B: コミットを伴わない実修正 (PR description 更新等、本スキルが副作用ある変更を行った場合のみ) | 日本語 1 文 | `PR description を更新しました。` |
-
-- **完全 SHA (40 文字、バッククォート無し)** で書く。GitHub UI が自動でコミットリンクに整形する。短縮形は不可。
-- 複数コミットに跨る場合は読点区切り: `<SHA1>、<SHA2> で修正しました。`
-- 完全 SHA は `git rev-parse HEAD` / `git log --format=%H -1` で取得。
-
-```bash
-~/.claude/skills/pr-review-fix/scripts/reply_to_comment.sh <comment_id> "<FULL_SHA> で修正しました。"
-```
-
-実際に投稿される本文 (スクリプトが自動で署名 (英語) を付加):
-
-```
-abc1234567890abcdef1234567890abcdef12345678 で修正しました。
-
----
-🤖 Replied by [Claude Code](https://claude.com/claude-code) via `pr-review-fix` skill
-```
-
-#### 2. スレッドを resolve
-
-```bash
-~/.claude/skills/pr-review-fix/scripts/resolve_thread.sh <thread_id>
-```
-
-#### 3. 処理ポリシー
-
-- **返信 + resolve する対象**: Phase 6 で本スキルが新規コミット作成 or 副作用ある非コード変更 (PR description 更新等) を行ったエントリのみ。
-- **返信も resolve もしない対象**:
+- **対象外 (常に `reply_eligible: false`、返信も resolve もしない)**:
+  - PR description 更新等、コミットを作らない非コード修正のエントリ。
   - 🟢 質問・議論カテゴリのコメント (Claude からの返信は禁止。回答はユーザー自身が行う)。
   - 修正不要と判断したコメント (議論を残す目的)。
-  - 既存コミットで既に対応済みのコメント (新規副作用なし)。
-- 既に `isResolved: true` のスレッドは再 resolve しない。
-- 返信 or resolve に失敗した場合はエラーを報告し、残りの処理は継続。
-- 各処理後に `outputs/pr-review-fix/pr-<N>-mapping.json` の該当エントリの `replied` / `resolved` を `true` に更新 (context 切れ時の再開用)。返信対象外エントリは `replied` / `resolved` を `false` のままにし、`fix_plan` に対象外の理由を残す。
-- body に `` ` ``・`$(...)`・バックスラッシュ等のシェル特殊文字を含めたい場合は stdin モードを使う:
-  ```bash
-  printf '%s' "<body>" | ~/.claude/skills/pr-review-fix/scripts/reply_to_comment.sh <comment_id> -
-  ```
+  - 既存コミットで既に対応済みのコメント (新規コミットなし)。
 
-#### 4. 完了報告
+`reply_body` は `<FULL_SHA(、FULL_SHA...)> で修正しました。` の形のみ許可される (他の形式は `process_replies.sh` が機械的に拒否する)。同じエントリの `commit_hash` に同一の完全 SHA を書くこと。`process_replies.sh` は `reply_body` 中の SHA と `commit_hash` が完全一致しないエントリを拒否する (誤った SHA を貼る事故を防ぐ)。完全 SHA は `git rev-parse HEAD` / `git log --format=%H -1` で取得する。
+
+#### 2. `process_replies.sh` を実行する
+
+```bash
+# まず --dry-run で送信対象を確認する
+~/.claude/skills/pr-review-fix/scripts/process_replies.sh outputs/pr-review-fix/pr-<N>-mapping.json --dry-run
+# 対象が意図通りであることを確認したら本実行
+~/.claude/skills/pr-review-fix/scripts/process_replies.sh outputs/pr-review-fix/pr-<N>-mapping.json
+```
+
+このスクリプトが `reply_eligible == true` かつ `reply_body` が上記 2 パターンに合致するエントリのみを対象に、`reply_to_comment.sh` (署名自動付加) → `resolve_thread.sh` を順に実行し、成功したエントリの `replied` / `resolved` を mapping.json 上で `true` に更新する。判定を満たさないエントリは API を一切呼ばずにスキップされ、その理由が stderr に出力される。
+
+- 既に `replied: true` のエントリは再送されない (再実行の安全性)。
+- 返信 or resolve に失敗した場合はエラーを出力し、残りの処理は継続する。
+- スキップされたエントリが想定と異なる場合は、mapping.json の `reply_eligible` / `reply_body` を見直してから再実行する。
+
+#### 3. 完了報告
 
 [`references/plan_template.md`](references/plan_template.md) の「Phase 7 完了報告テーブル」でユーザーに提示する。先頭列に Phase 3 と同じ通し番号を必ず付ける。
 
