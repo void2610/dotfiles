@@ -28,13 +28,18 @@ if [ -z "$old" ] && [ -f "$path" ]; then
   [ -n "$rel" ] && old=$(git -C "$dir" show "HEAD:$rel" 2>/dev/null || true)
 fi
 
-# 2行以上連続するフルラインコメントブロックを \x1e 区切りで抽出 (shebang は除外)
+# 2行以上連続するフルラインコメントブロックを \x1e 区切りで抽出 (shebang・@ディレクティブ行は除外)
 extract_blocks() {
   awk -v m="$m" -v dm="$dm" '
     function flush() { if (n >= 2) printf "%s\x1e", buf; buf = ""; n = 0 }
     {
       l = $0; sub(/^[ \t]+/, "", l)
-      if (index(l, m) == 1 && l !~ /^#!/ && (dm == "" || index(l, dm) != 1)) { buf = buf (n ? "\n" : "") $0; n++ } else flush()
+      if (index(l, m) == 1 && l !~ /^#!/ && (dm == "" || index(l, dm) != 1)) {
+        r = substr(l, length(m) + 1)
+        sub(/^[-!\/*#";]*[ \t]*/, "", r)
+        if (r ~ /^@/) next
+        buf = buf (n ? "\n" : "") $0; n++
+      } else flush()
     }
     END { flush() }
   '
@@ -43,9 +48,13 @@ extract_blocks() {
 blocks=$(extract_blocks <<<"$new")
 [ -z "$blocks" ] && exit 0
 
+# @行を挟む既存ブロックは抽出結果が非連続になり raw 比較で一致しないため、old 側の抽出結果とも比較する
+old_blocks=$(extract_blocks <<<"$old")
+
 found=""
 while IFS= read -r -d $'\x1e' b; do
   case "$old" in *"$b"*) continue ;; esac
+  case "$old_blocks" in *"$b"*) continue ;; esac
   found="${found}${b}"$'\n----\n'
 done <<<"$blocks"
 [ -z "$found" ] && exit 0
