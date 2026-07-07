@@ -62,11 +62,8 @@ done <<<"$blocks"
 cat >&2 <<EOF
 CLAUDE.md の Comments ルール違反の可能性: ${path} に複数行コメントブロックが追加された。
 第一の対処は「削除」である。1 行への圧縮で形式だけ合わせるな。各行について「非自明な WHY を述べているか」を判定し、WHAT の説明・Usage・列挙は削除、残せるのは WHY の 1 行のみ:
-- Comments only for non-obvious WHY (workarounds, constraints, domain knowledge). Never restate WHAT the code does.
-- Max 1 line per comment. No multi-line comment blocks unless asked, or a complex constraint / domain knowledge genuinely cannot be summarized in one line.
-- Never write comments describing the change process (e.g. "fixed", "changed to", "added").
-- Preserve existing comments unless they become factually wrong.
-- Write comments in Japanese.
+この判定は今回の Edit 1 回で完結させること。複数回の Edit で行数を段階的に減らす (3行→2行→1行) のは禁止。「要約不能な複雑な制約/ドメイン知識」に該当するなら、そのまま残して再編集しない。該当しないなら、このブロックを直接 WHY 1 行 (または削除) まで落とす。
+変更過程 (fixed/changed 等) を説明するコメントは書かない。事実として正しい既存コメントは保持する。コメントは日本語で書く。
 検出ブロック:
 ${found}
 EOF
