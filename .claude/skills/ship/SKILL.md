@@ -29,6 +29,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | test | `ship.sh done test` 自体が実行 | `.claude/ship.json` の test コマンドが exit 0 |
 | format | 同上 | format コマンドが exit 0 |
 | commit | commit スキル | working tree clean かつコミットが積まれている |
+| quiz | push-quiz スキル (全問正答 + ユーザーの push 許可後に `ship.sh quiz approve`)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
 | pr | pr-create スキル (Copilot 依頼 + レビューポーリングの background 起動まで担当) | 現ブランチに OPEN な PR |
 | review | ポーリング完了通知を待つ (催促されたら status で状況報告) | Copilot レビューが実在する |
 | fix | 未解決スレッドが残っていれば pr-review-fix スキル | 未解決レビュースレッド 0 件 |

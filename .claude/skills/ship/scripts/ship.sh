@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PHASES=(plan branch impl test format commit pr review fix)
+PHASES=(plan branch impl test format commit quiz pr review fix)
 COPILOT_LOGIN="copilot-pull-request-reviewer"
 FETCH_THREADS="$HOME/.claude/skills/pr-review-fix/scripts/fetch_unresolved_threads.sh"
 
@@ -36,8 +36,12 @@ base_ref() {
   echo ""
 }
 
+# クイズゲートはこのホストのみ (dotfiles 共有先の他マシンには課さない)
+quiz_enabled() { [[ "$(hostname -s)" == "PCmac24055" ]]; }
+
 phase_mark() {
   local p="$1"
+  [[ "$p" == quiz ]] && ! quiz_enabled && { echo skip; return; }
   [[ $(state ".done.$p // empty") != "" ]] && { echo done; return; }
   [[ $(state ".skipped.$p // empty") != "" ]] && { echo skip; return; }
   echo pending
@@ -91,7 +95,17 @@ verify_commit() {
   [[ -z "$untracked" ]] || echo "注意: untracked ファイルあり (意図的か確認):"$'\n'"$untracked"
 }
 
+verify_quiz() {
+  local sha approved
+  sha=$(git rev-parse HEAD)
+  approved=$(state '.quiz.approved_sha // empty')
+  [[ -n "$approved" ]] || die "クイズ未実施。push-quiz スキルで出題し、全問正答 + ユーザー許可後に ship.sh quiz approve を実行すること"
+  [[ "$approved" == "$sha" ]] || die "クイズ承認 ($approved) が現 HEAD ($sha) と不一致。実装が変わったので push-quiz スキルで再出題すること"
+}
+
 verify_pr() {
+  # quiz 完了後に積み直した場合、古い承認のまま push させない
+  if quiz_enabled; then [[ -n $(state '.skipped.quiz // empty') ]] || verify_quiz; fi
   local st; st=$(gh pr view --json state --jq .state 2>/dev/null || true)
   [[ "$st" == "OPEN" ]] || die "現在ブランチに OPEN な PR がない。pr-create スキルで作成すること"
 }
@@ -166,6 +180,17 @@ case "$cmd" in
     update_state ".skipped.\"$p\" = \"$*\""
     echo "OK: $p をスキップ (理由: $*)。next=$(next_phase)"
     ;;
+  quiz)
+    require_state
+    sub=${1:-status}
+    case "$sub" in
+      # ユーザーが全問正答し push を明示許可した後にのみ実行してよい (push-quiz スキル参照)
+      approve) update_state ".quiz = {approved_sha: \"$(git rev-parse HEAD)\", approved_at: \"$(date -u +%FT%TZ)\"}"; echo "OK: quiz 承認を HEAD ($(git rev-parse --short HEAD)) に記録" ;;
+      revoke)  update_state "del(.quiz)"; echo "OK: quiz 承認を取り消した" ;;
+      status)  state '.quiz // "未承認"' ;;
+      *) die "Usage: ship.sh quiz approve|revoke|status" ;;
+    esac
+    ;;
   checkpoint)
     require_state
     sub=${1:-list}; p=${2:-}
@@ -177,6 +202,6 @@ case "$cmd" in
     esac
     ;;
   *)
-    die "Usage: ship.sh init|status|next|done|skip|checkpoint"
+    die "Usage: ship.sh init|status|next|done|skip|checkpoint|quiz"
     ;;
 esac
