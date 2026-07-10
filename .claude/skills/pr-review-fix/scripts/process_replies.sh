@@ -26,7 +26,7 @@ if ! jq empty "$mapping_file" >/dev/null 2>&1; then
 fi
 
 # FULL_SHA (40 桁 16 進) を "、" 区切りで 1 個以上並べた文字列 + 固定サフィックス
-sha_line_re='^([0-9a-f]{40})(、[0-9a-f]{40})*で修正しました。$'
+sha_line_re='^([0-9a-f]{40})(、[0-9a-f]{40})* で修正しました。$'
 
 count=$(jq 'length' "$mapping_file")
 sent=0
