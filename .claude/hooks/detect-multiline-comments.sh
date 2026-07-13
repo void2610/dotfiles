@@ -9,12 +9,12 @@ old=$(jq -r '.tool_input.old_string // ""' <<<"$input")
 path=$(jq -r '.tool_input.file_path // ""' <<<"$input")
 
 case "$path" in
-  *.sh|*.bash|*.zsh|*.py|*.rb|*.pl|*.nix|*.toml|*.yml|*.yaml|*.conf|*.tf|*.fish|*.mk|Makefile) m='#' ;;
-  *.c|*.h|*.cpp|*.hpp|*.cc|*.cs|*.m|*.mm|*.swift|*.js|*.jsx|*.ts|*.tsx|*.go|*.rs|*.java|*.kt|*.kts|*.scala|*.dart|*.zig) m='//' ;;
-  *.lua|*.hs|*.sql|*.elm) m='--' ;;
-  *.vim|*vimrc) m='"' ;;
-  *.el|*.lisp|*.clj) m=';' ;;
-  *) exit 0 ;;
+*.sh | *.bash | *.zsh | *.py | *.rb | *.pl | *.nix | *.toml | *.yml | *.yaml | *.conf | *.tf | *.fish | *.mk | Makefile) m='#' ;;
+*.c | *.h | *.cpp | *.hpp | *.cc | *.cs | *.m | *.mm | *.swift | *.js | *.jsx | *.ts | *.tsx | *.go | *.rs | *.java | *.kt | *.kts | *.scala | *.dart | *.zig) m='//' ;;
+*.lua | *.hs | *.sql | *.elm) m='--' ;;
+*.vim | *vimrc) m='"' ;;
+*.el | *.lisp | *.clj) m=';' ;;
+*) exit 0 ;;
 esac
 
 # doc コメント (C#/Rust の ///) はブロック検知から除外
@@ -61,10 +61,19 @@ done <<<"$blocks"
 
 cat >&2 <<EOF
 CLAUDE.md の Comments ルール違反の可能性: ${path} に複数行コメントブロックが追加された。
-第一の対処は「削除」である。1 行への圧縮で形式だけ合わせるな。各行について「非自明な WHY を述べているか」を判定し、WHAT の説明・Usage・列挙は削除、残せるのは WHY の 1 行のみ:
-この判定は今回の Edit 1 回で完結させること。複数回の Edit で行数を段階的に減らす (3行→2行→1行) のは禁止。「要約不能な複雑な制約/ドメイン知識」に該当するなら、そのまま残して再編集しない。該当しないなら、このブロックを直接 WHY 1 行 (または削除) まで落とす。
-変更過程 (fixed/changed 等) を説明するコメントは書かない。事実として正しい既存コメントは保持する。コメントは日本語で書く。
-検出ブロック:
+以下のワークフローを今回の Edit 1 回で完結させる (段階的な削減はしない):
+
+1. コメントが WHY (非自明な理由: workaround・制約・ドメイン知識) / Why not (採らなかった選択肢とその理由) を述べているか確認する
+2. 述べていない → 削除する
+   - what コメント (次の行が何をするかの言い換え) — What の説明はテストコードの責務
+   - Usage・列挙
+   - 変更過程の説明 (fixed / changed 等)
+3. 述べている → 1 行に削減する
+   - 要約不能な複雑な制約/ドメイン知識のみ、そのまま残して再編集しない
+
+事実として正しい既存コメントは保持する。
+
+## 検出ブロック
 ${found}
 EOF
 exit 2
