@@ -46,6 +46,12 @@ return {
         layout = { layout = { width = 25 } },
         hidden = true, -- ドットファイル (隠しファイル) を表示する
         exclude = vim.deepcopy(unity_exclude),
+        actions = {
+          explorer_fix_all = function(picker)
+            require("util.fixall").dir(picker:dir())
+          end,
+        },
+        win = { list = { keys = { ["F"] = "explorer_fix_all" } } },
       })
       -- lazygit のフロートサイズを指定
       opts.lazygit = opts.lazygit or {}

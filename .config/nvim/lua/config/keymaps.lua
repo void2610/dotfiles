@@ -51,6 +51,10 @@ vim.keymap.set("n", "gx", function()
   vim.ui.open(url)
 end, { desc = "Open link under cursor" })
 
+vim.keymap.set("n", "<leader>xF", function()
+  require("util.fixall").buffer()
+end, { desc = "Fix All" })
+
 -- 左クリック: URL の上なら gx と同じロジックで開き、それ以外は通常のクリック動作
 vim.keymap.set("n", "<LeftMouse>", function()
   local pos = vim.fn.getmousepos()
