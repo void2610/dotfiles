@@ -6,7 +6,10 @@
     "OTEL_METRICS_EXPORTER": "otlp",
     "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf",
     "OTEL_EXPORTER_OTLP_ENDPOINT": "https://d25nyrwm2wqzzf.cloudfront.net",
-    "OTEL_RESOURCE_ATTRIBUTES": "user.email=shuya.izumi@akariinc.co.jp"
+    "OTEL_RESOURCE_ATTRIBUTES": "user.email=shuya.izumi@akariinc.co.jp",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION": "claude-opus-4-7[1m]",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "Opus 4.7",
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "Opus 4.7 (1M context)"
   },
   "permissions": {
     "allow": [
@@ -118,7 +121,8 @@
     "akaridou@akari-awesome-cc-plugins": true,
     "statusline@akari-awesome-cc-plugins": true,
     "warp@claude-code-warp": true,
-    "swift-lsp@claude-plugins-official": true
+    "swift-lsp@claude-plugins-official": true,
+    "learning-output-style@claude-plugins-official": true
   },
   "extraKnownMarketplaces": {
     "akari-awesome-cc-plugins": {
