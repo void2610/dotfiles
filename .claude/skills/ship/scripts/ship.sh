@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PHASES=(plan branch impl test format commit quiz pr review fix)
+PHASES=(plan branch impl test format knowledge commit quiz pr review fix)
 COPILOT_LOGIN="copilot-pull-request-reviewer"
 FETCH_THREADS="$HOME/.claude/skills/pr-review-fix/scripts/fetch_unresolved_threads.sh"
 
@@ -84,6 +84,11 @@ run_config_cmd() {
 
 verify_test()   { run_config_cmd test; }
 verify_format() { run_config_cmd format; }
+
+# Knowledge/ (OKF) への永続化を「検討した」記録を強制する。書かない判断も理由付きで記録する
+verify_knowledge() {
+  [[ -n $(state '.knowledge.note // empty') ]] || die "Knowledge 永続化が未検討。得た知見を Knowledge/ に書くか、書かない理由を ship.sh knowledge \"<書いたファイル or 不要の理由>\" で記録すること"
+}
 
 verify_commit() {
   git diff --quiet && git diff --cached --quiet || die "未コミットの変更が残っている。commit スキルでコミットすること"
@@ -207,6 +212,12 @@ case "$cmd" in
       status)  state '.quiz // "未承認"' ;;
       *) die "Usage: ship.sh quiz approve|revoke|status" ;;
     esac
+    ;;
+  knowledge)
+    require_state
+    [[ $# -ge 1 ]] || die "Usage: ship.sh knowledge \"<書いたファイル or 不要の理由>\""
+    update_state ".knowledge = {note: \"$*\", at: \"$(date -u +%FT%TZ)\"}"
+    echo "OK: knowledge 検討を記録: $*"
     ;;
   checkpoint)
     require_state

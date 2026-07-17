@@ -6,6 +6,7 @@
 - 単発の作業 (コミットだけ、PR だけ、調査・質問だけ等) は対応する各スキルを直接使う。
 
 ## Comments
+
 - Comments only for non-obvious WHY (workarounds, constraints, domain knowledge). Never restate WHAT the code does.
 - Max 1 line per comment. No multi-line comment blocks unless asked, or a complex constraint / domain knowledge genuinely cannot be summarized in one line.
 - Never write comments describing the change process (e.g. "fixed", "changed to", "added").
@@ -31,6 +32,7 @@
   - いずれにせよ、宣言的でメンテナンス性を考慮したパッケージ管理を心がける。
 - 未検証の仕様・依存関係を断定しない。主張は実物 (ソース・実行結果) で裏取りし、完了報告の前に実ビルド/実行で検証する。不確実なら「未検証」と明示する。
 - GitHub のコード参照リンクは `blob/<完全SHA>` のパーマリンクで書く (branch 参照は後の編集で行番号がズレる)。SHA は `git log -1 --format=%H origin/main -- <path>` で取得する。
+- **知識の永続化は指示を待たず自律的に行う**。調査の結論・採用/見送りの判断・設計上の Why を得たら、その場でプロジェクトの知識ベース (`Knowledge/` 等) へ書く。ship フロー中は knowledge フェーズが機械的に強制するが、ship 外の作業でも同じ基準で書く。
 
 ## ユーザー指示フォーマット
 
