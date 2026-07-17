@@ -110,10 +110,25 @@ verify_pr() {
   [[ "$st" == "OPEN" ]] || die "現在ブランチに OPEN な PR がない。pr-create スキルで作成すること"
 }
 
+# gh pr checks は fail 時 exit 1 / pending 時 exit 8 を返すため、JSON 出力で判定する
+ci_summary() {
+  local out
+  out=$(gh pr checks --json bucket --jq '[.[].bucket] | join(",")' 2>/dev/null) || true
+  [[ -z "$out" ]] && { echo none; return; }
+  [[ "$out" == *pending* ]] && { echo pending; return; }
+  [[ "$out" == *fail* || "$out" == *cancel* ]] && { echo fail; return; }
+  echo pass
+}
+
 verify_review() {
   local n
   n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\")] | length" 2>/dev/null || echo 0)
   [[ "$n" -gt 0 ]] || die "Copilot レビューが未到着 (poll-copilot-review.sh の完了を待つこと)"
+  local ci; ci=$(ci_summary)
+  case "$ci" in
+    pending) die "CI チェックが実行中。完了を待つこと (gh pr checks)" ;;
+    fail)    die "CI チェックが失敗している。原因を修正して push すること (gh pr checks)" ;;
+  esac
 }
 
 verify_fix() {
@@ -149,7 +164,9 @@ case "$cmd" in
       echo "  $p: $mark$cp$cur"
     done
     echo "worktree_dirty=$(git status --porcelain | grep -q . && echo yes || echo no)"
-    echo "pr=$(gh pr view --json url --jq .url 2>/dev/null || echo none)"
+    pr_url=$(gh pr view --json url --jq .url 2>/dev/null || echo none)
+    echo "pr=$pr_url"
+    if [[ "$pr_url" != none ]]; then echo "ci=$(ci_summary)"; fi
     ;;
   next)
     require_state
