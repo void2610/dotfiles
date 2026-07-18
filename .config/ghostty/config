@@ -60,3 +60,6 @@ keybind = cmd+alt+left=goto_split:left
 keybind = cmd+alt+right=goto_split:right
 keybind = cmd+alt+up=goto_split:top
 keybind = cmd+alt+down=goto_split:bottom
+
+# 使わない
+keybind = cmd+enter=unbind
