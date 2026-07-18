@@ -11,12 +11,16 @@ echo "=========================================="
 echo ""
 
 echo "=========================================="
+echo "ClaudeCode インストール"
+echo "=========================================="
+echo ""
+curl -fsSL https://claude.ai/install.sh | bash
+
+echo "=========================================="
 echo "Nix インストール"
 echo "=========================================="
 echo ""
-# Nix のインストール（Determinate Systems installer、既に導入済みなら何もしない）
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
-# 以降のコマンドで nix を使えるようにする
 . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 
 # nix-config リポジトリのクローン（未クローンの場合のみ）
