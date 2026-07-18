@@ -1,24 +1,38 @@
 #!/bin/bash
 set -e
 
-# dotfilesディレクトリのパス（このスクリプトが置いてある場所）
 DOTFILES_DIR="${HOME}/dotfiles"
-# バックアップ先ディレクトリのパス
 BACKUP_DIR="${HOME}/backup"
+NIX_CONFIG_DIR="${HOME}/nix-config"
 
 echo "=========================================="
 echo "  dotfiles セットアップスクリプト"
 echo "=========================================="
 echo ""
 
-# ========================================
-# dotfiles のシンボリックリンク作成
-# ========================================
+echo "=========================================="
+echo "Nix インストール"
+echo "=========================================="
+echo ""
+# Nix のインストール（Determinate Systems installer、既に導入済みなら何もしない）
+curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
+# 以降のコマンドで nix を使えるようにする
+. /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+
+# nix-config リポジトリのクローン（未クローンの場合のみ）
+if [ ! -d "${NIX_CONFIG_DIR}" ]; then
+  echo "nix-config をクローンします..."
+  git clone "https://github.com/void2610/nix-config.git" "${NIX_CONFIG_DIR}"
+else
+  echo "nix-config は既にクローン済みです。スキップします。"
+fi
+
+# シンボリックリンク作成
 "${DOTFILES_DIR}/link.sh"
 
-# ========================================
-# セットアップ完了
-# ========================================
 echo "=========================================="
 echo "  セットアップが完了しました！"
 echo "=========================================="
+echo ""
+echo "次のコマンドで nix-darwin の設定を適用してください:"
+echo "  cd ${NIX_CONFIG_DIR} && darwin-rebuild switch --flake .#<ホスト名>"
