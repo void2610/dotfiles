@@ -1,4 +1,5 @@
 {
+  "spinnerVerbs": {"mode":"replace","verbs":["DesignPass.dev — Kill design slop"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
@@ -28,7 +29,7 @@
     "ask": [],
     "defaultMode": "auto"
   },
-  "statusLine": {"type":"command","command":"python3 ~/.claude/statusline.py"},
+  "model": "claude-fable-5",
   "hooks": {
     "PreToolUse": [
       {
@@ -115,6 +116,7 @@
       }
     ]
   },
+  "statusLine": {"type":"command","command":"node \"/Users/shuya/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
@@ -146,6 +148,5 @@
   "theme": "dark",
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "model": "sonnet"
+  "voiceEnabled": true
 }
