@@ -1,0 +1,49 @@
+#!/bin/sh
+# GIT_EXTERNAL_DIFF 形式 (path old-file old-hex old-mode new-file new-hex new-mode ...) で呼ばれ、Unity YAML のみ prefablens に振り分ける
+path=$1
+old=$2
+new=$5
+
+# 配色は snacks picker の fancy diff (tokyonight-moon、.config/bat/themes/tokyonight_moon.tmTheme 要 `bat cache --build`) に合わせる
+run_delta() {
+  diff -u --label "a/$path" --label "b/$path" "$old" "$new" | delta \
+    --paging=never --line-numbers \
+    --syntax-theme=tokyonight_moon \
+    --minus-style='syntax #4b2a3d' --minus-non-emph-style='syntax #4b2a3d' \
+    --minus-emph-style='syntax #6b2e43' --minus-empty-line-marker-style='syntax #4b2a3d' \
+    --plus-style='syntax #2a4556' --plus-non-emph-style='syntax #2a4556' \
+    --plus-emph-style='syntax #305f6f' --plus-empty-line-marker-style='syntax #2a4556' \
+    --line-numbers-minus-style='#e26a75' --line-numbers-plus-style='#b8db87' \
+    --line-numbers-zero-style='#3b4261' \
+    --line-numbers-left-format='{nm:>4} ' --line-numbers-right-format='{np:>4}  ' \
+    --hunk-header-style='line-number syntax' --hunk-header-decoration-style='#3b4261 box' \
+    --hunk-header-line-number-style='#82aaff' \
+    --file-style='#82aaff bold' --file-decoration-style='#3b4261 ul'
+}
+
+case "$path" in
+  *.prefab | *.unity | *.asset | *.anim | *.controller | *.overrideController | *.mat | *.playable | *.mask | *.spriteatlas)
+    # 追加/削除は片側が /dev/null になり prefablens がパスと解釈できないため delta へ回す
+    if [ "$old" = /dev/null ] || [ "$new" = /dev/null ]; then
+      run_delta
+    else
+      # 2ファイル比較モードはリポジトリルートを自動検出しないため、guid 解決用に $path の祖先から Unity プロジェクトルートを探す
+      proj=$(dirname "$path")
+      while [ "$proj" != "." ] && [ "$proj" != "/" ]; do
+        [ -d "$proj/ProjectSettings" ] && [ -d "$proj/Assets" ] && break
+        proj=$(dirname "$proj")
+      done
+      if [ -d "$proj/ProjectSettings" ] && [ -d "$proj/Assets" ]; then
+        prefablens --color --project "$proj" "$old" "$new"
+      else
+        prefablens --color "$old" "$new"
+      fi
+    fi
+    ;;
+  *)
+    run_delta
+    ;;
+esac
+
+# diff(1) は差分ありで 1 を返すが、外部 diff は非 0 終了を git がエラー扱いするため常に 0 で終える
+exit 0
