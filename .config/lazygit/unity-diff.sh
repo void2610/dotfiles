@@ -21,6 +21,27 @@ run_delta() {
     --file-style='#82aaff bold' --file-decoration-style='#3b4261 ul'
 }
 
+# delta 風に add/remove の行背景を敷く。ツリー書式ではなく行内の前景色 (緑=追加値, 赤=削除値) で判定し、変更行 (赤緑混在 or 黄マーカー) は背景なし
+colorize() {
+  awk '
+    BEGIN {
+      add = "\033[48;2;42;69;86m"    # delta --plus-style と同じ #2a4556
+      del = "\033[48;2;75;42;61m"    # delta --minus-style と同じ #4b2a3d
+    }
+    {
+      g = index($0, "\033[32m"); r = index($0, "\033[31m"); y = index($0, "\033[33m")
+      bg = ""
+      if (y || (r && g)) bg = ""
+      else if (g)        bg = add
+      else if (r)        bg = del
+      if (bg == "") { print; next }
+      line = $0
+      gsub(/\033\[0m/, "\033[0m" bg, line)   # リセットで背景が消えるため直後に敷き直す
+      printf "%s%s\033[K\033[0m\n", bg, line
+    }
+  '
+}
+
 case "$path" in
   *.prefab | *.unity | *.asset | *.anim | *.controller | *.overrideController | *.mat | *.playable | *.mask | *.spriteatlas)
     # 追加/削除は片側が /dev/null になり prefablens がパスと解釈できないため delta へ回す
@@ -34,9 +55,9 @@ case "$path" in
         proj=$(dirname "$proj")
       done
       if [ -d "$proj/ProjectSettings" ] && [ -d "$proj/Assets" ]; then
-        prefablens --color --project "$proj" "$old" "$new"
+        prefablens --color --project "$proj" "$old" "$new" | colorize
       else
-        prefablens --color "$old" "$new"
+        prefablens --color "$old" "$new" | colorize
       fi
     fi
     ;;
