@@ -1,42 +1,48 @@
 
 [[Snippets]]
-  Description = "melchiorのビルドと起動(python3.12を指定)"
-  Output = ""
-  Tag = []
-  command = "cmake .. -GNinja -DMELCHIOR_TUTORIALS=OFF -DMELCHIOR_EXAMPLES=ON -DMELCHIOR_BINDING=ON -DPython_EXECUTABLE=/opt/homebrew/opt/python@3.12/bin/python3.12 && ninja melchior_main -j8 && ninja toadflax && ./melchior_main"
+Description = "melchiorのビルドと起動(python3.12を指定)"
+Output = ""
+Tag = []
+command = "cmake .. -GNinja -DMELCHIOR_TUTORIALS=OFF -DMELCHIOR_EXAMPLES=ON -DMELCHIOR_BINDING=ON -DPython_EXECUTABLE=/opt/homebrew/opt/python@3.12/bin/python3.12 && ninja melchior_main -j8 && ninja toadflax && ./melchior_main"
 
 [[Snippets]]
-  Description = "C#スクリプトの行数をカウントする"
-  Output = ""
-  Tag = []
-  command = "find . -name \"*.cs\" -print0 | xargs -0 wc -l"
+Description = "C#スクリプトの行数をカウントする"
+Output = ""
+Tag = []
+command = "find . -name \"*.cs\" -print0 | xargs -0 wc -l"
 
 [[Snippets]]
-  Description = "NixでMac環境をrebuildする"
-  Output = ""
-  Tag = []
-  command = "sudo darwin-rebuild switch --flake ."
+Description = "NixでMac環境をrebuildする"
+Output = ""
+Tag = []
+command = "sudo darwin-rebuild switch --flake ."
 
 [[Snippets]]
-  Description = "git blobless clone"
-  Output = ""
-  Tag = []
-  command = "git clone --filter=blob:none https://github.com/void2610/hoge.git"
+Description = "git blobless clone"
+Output = ""
+Tag = []
+command = "git clone --filter=blob:none https://github.com/void2610/hoge.git"
 
 [[Snippets]]
-  Description = "git サブモジュールのクローン"
-  Output = ""
-  Tag = []
-  command = "git submodule update --init --recursive"
+Description = "git サブモジュールのクローン"
+Output = ""
+Tag = []
+command = "git submodule update --init --recursive"
 
 [[Snippets]]
-  Description = "claude code 起動"
-  Output = ""
-  Tag = []
-  command = "claude --dangerously-skip-permissions"
+Description = "claude code 起動"
+Output = ""
+Tag = []
+command = "claude --dangerously-skip-permissions"
 
 [[Snippets]]
-  Description = "submoduleを全てreset hardする"
-  Output = ""
-  Tag = []
-  command = "git submodule deinit -f ."
+Description = "submoduleを全てreset hardする"
+Output = ""
+Tag = []
+command = "git submodule deinit -f ."
+
+[[Snippets]]
+Description = "iPhoneにStrixをインストールする"
+Output = ""
+Tag = []
+command = "xcodebuild -project Strix.xcodeproj -scheme Strix -destination \"platform=iOS,id=00008140-001C61C436A2801C\" -configuration Debug -allowProvisioningUpdates build && xcrun devicectl device install app --device 9C6866FC-D294-573E-BB8B-4106CC0E01F6 $(find ~/Library/Developer/Xcode/DerivedData/Strix-*/Build/Products/Debug-iphoneos -name \"Strix.app\" -maxdepth 1 | head -1)"
