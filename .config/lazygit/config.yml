@@ -19,6 +19,11 @@ keybinding:
   universal:
     scrollUpMain: '<c-e>'
 
+# nvim 内起動時、デフォルトの nvim-remote プリセットは --remote-tab で別タブに開くため --remote に変更。
+os:
+  edit: '[ -z "$NVIM" ] && nvim -- {{filename}} || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}})'
+  editAtLine: '[ -z "$NVIM" ] && nvim +{{line}} -- {{filename}} || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}} && nvim --server "$NVIM" --remote-send "{{line}}G")'
+
 git:
   # Unity YAML は prefablens、それ以外は delta で diff 表示するラッパー (delta の引数もスクリプト側に集約)。
   pagers:
