@@ -43,8 +43,14 @@ colorize() {
   '
 }
 
-case "$path" in
-  *.prefab | *.unity | *.asset | *.anim | *.controller | *.overrideController | *.mat | *.playable | *.mask | *.spriteatlas)
+# prefablens の対応拡張子 (cli/src/unity_path.zig の 26 種) を大文字小文字無視で照合する
+case "$(printf %s "$path" | tr '[:upper:]' '[:lower:]')" in
+  *.prefab | *.unity | *.asset | *.mat | *.anim | *.controller | \
+  *.overridecontroller | *.physicmaterial | *.physicsmaterial2d | \
+  *.playable | *.mask | *.brush | *.flare | *.fontsettings | *.guiskin | \
+  *.giparams | *.rendertexture | *.spriteatlas | *.spriteatlasv2 | \
+  *.terrainlayer | *.mixer | *.shadervariants | *.preset | *.signal | \
+  *.lighting | *.scenetemplate)
     # 追加/削除は片側が /dev/null になり prefablens がパスと解釈できないため delta へ回す
     if [ "$old" = /dev/null ] || [ "$new" = /dev/null ]; then
       run_delta
