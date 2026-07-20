@@ -27,11 +27,12 @@ colorize() {
     BEGIN {
       add = "\033[48;2;42;69;86m"    # delta --plus-style と同じ #2a4556
       del = "\033[48;2;75;42;61m"    # delta --minus-style と同じ #4b2a3d
+      chg = "\033[48;2;74;60;37m"    # 変更行はマーカーの黄に合わせた暗アンバー #4a3c25
     }
     {
       g = index($0, "\033[32m"); r = index($0, "\033[31m"); y = index($0, "\033[33m")
       bg = ""
-      if (y || (r && g)) bg = ""
+      if (y || (r && g)) bg = chg
       else if (g)        bg = add
       else if (r)        bg = del
       if (bg == "") { print; next }
