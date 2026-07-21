@@ -63,3 +63,8 @@ keybind = cmd+alt+down=goto_split:bottom
 
 # 使わない
 keybind = cmd+enter=unbind
+
+# --- マシン固有設定 ---
+# git 管理外の config-linux があれば読み込む (`?` で無ければ無視)。
+# Linux では nix 版 zsh の command 指定など、パスがホスト依存の設定をここに逃がす。
+config-file = ?config-linux
