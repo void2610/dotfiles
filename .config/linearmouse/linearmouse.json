@@ -1,5 +1,5 @@
 {
-  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.2",
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.3",
   "schemes" : [
     {
       "if" : {
@@ -39,23 +39,26 @@
           "vendorID" : "0x46d"
         }
       },
+      "logitech" : {
+        "highResolutionWheel" : false
+      },
       "pointer" : {
         "acceleration" : 1.9638,
         "disableAcceleration" : true
       },
       "scrolling" : {
-        "acceleration" : {
-          "vertical" : 1
-        },
+        "acceleration" : 1,
         "distance" : {
+          "horizontal" : 2,
           "vertical" : 5
         },
-        "reverse" : {
-          "vertical" : true
+        "reverse" : true,
+        "smoothed" : {
+          "horizontal" : {
+            "enabled" : false
+          }
         },
-        "speed" : {
-          "vertical" : 0
-        }
+        "speed" : 0
       }
     },
     {
@@ -85,5 +88,5 @@
         }
       }
     }
- ]
+  ]
 }
