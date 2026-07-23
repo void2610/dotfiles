@@ -10,6 +10,21 @@ return {
         end,
         desc = "ghq repositories",
       },
+      -- lazygit は util.lazygit_bg 経由で開き、`q` の hide 対象 window を捕捉する。
+      {
+        "<leader>gg",
+        function()
+          require("util.lazygit_bg").open({ cwd = LazyVim.root() })
+        end,
+        desc = "Lazygit (Root Dir)",
+      },
+      {
+        "<leader>gG",
+        function()
+          require("util.lazygit_bg").open()
+        end,
+        desc = "Lazygit (cwd)",
+      },
     },
     opts = function(_, opts)
       -- 画像のインライン表示は image.nvim に一本化する。
@@ -82,6 +97,13 @@ return {
     end,
     config = function(_, opts)
       require("snacks").setup(opts)
+      -- _G.LazygitHide を定義し、nvim 限定の上書き設定を LG_CONFIG_FILE に追加する (nvim 起動時のみ `q`=hide が効く)。
+      require("util.lazygit_bg")
+      local override = vim.fn.expand("~/.config/lazygit/nvim-overrides.yml")
+      local cur = vim.env.LG_CONFIG_FILE or ""
+      if not cur:find(override, 1, true) then
+        vim.env.LG_CONFIG_FILE = (cur == "") and override or (cur .. "," .. override)
+      end
       -- nvim-treesitter v2 の registry に norg がなく Neorg plugin 経由でしか入らないため、
       -- Snacks.image.langs() の結果から norg を除外して checkhealth の警告を消す。
       local image = require("snacks.image")

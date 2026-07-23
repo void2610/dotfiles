@@ -1,0 +1,12 @@
+# nvim 起動時のみ snacks.lua が LG_CONFIG_FILE に追加する上書き (素の端末では読まれず `q` 終了は従来どおり)。
+keybinding:
+  universal:
+    quit: <disabled>
+
+customCommands:
+  # `q` を終了ではなく hide に振り替え、プロセスを生かして裏処理とスピナーを継続させる (完全終了は `Q`)。
+  - key: q
+    context: global
+    description: "Hide lazygit (keep running in background)"
+    command: nvim --server "$NVIM" --remote-expr "luaeval('_G.LazygitHide()')" >/dev/null 2>&1
+    output: none
