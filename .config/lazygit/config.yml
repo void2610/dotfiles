@@ -107,6 +107,13 @@ customCommands:
     command: "$HOME/.config/lazygit/llm-commit-msg.sh"
     output: log
 
+  # `<c-x>` で実行中の `c` (コミットメッセージ生成) を中止する。
+  - key: <c-x>
+    context: global
+    description: "Cancel running commit-message generation"
+    command: "$HOME/.config/lazygit/cancel-job.sh"
+    output: log
+
   # `P` を上書きし、確認無しで即 detach push する (閉じても中断されず結果は通知)。force は `U` 側に分離。
   - key: P
     context: global

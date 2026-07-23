@@ -46,5 +46,7 @@ if git diff --cached --quiet; then
   exit 1
 fi
 
-# 生成〜コミットを detach して即 return する (lazygit を閉じても完走する)。
+# 生成〜コミットを detach する。cancel-job.sh から中止できるよう repo 単位のジョブ ID を渡す。
+top=$(git rev-parse --show-toplevel 2>/dev/null) || top=""
+export LG_JOB_ID="commit-$(printf '%s' "$top" | shasum | cut -c1-12)"
 exec "$detach" "$self" --worker

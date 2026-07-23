@@ -3,12 +3,21 @@
 set -eu
 
 log="${XDG_CACHE_HOME:-$HOME/.cache}/lazygit/detached.log"
-mkdir -p "$(dirname "$log")"
-# worker が終了時に exit code を書き込む完了マーカー。存在＝完了。
-done_file=$(mktemp -u "${TMPDIR:-/tmp}/lg-detach.XXXXXX")
+jobs_dir="${XDG_CACHE_HOME:-$HOME/.cache}/lazygit/jobs"
+mkdir -p "$(dirname "$log")" "$jobs_dir"
 
-# fork 後に setsid して worker を pty から切り離し、perl 親は即戻る。worker は system() でコマンドを実行し rc を done_file へ残す。
-LG_DETACH_LOG="$log" LG_DONE_FILE="$done_file" /usr/bin/perl -MPOSIX -e '
+# LG_JOB_ID があれば決定的なパスにして中止スクリプトから止められるようにする (無ければ一時ファイル)。
+if [ -n "${LG_JOB_ID:-}" ]; then
+  done_file="$jobs_dir/${LG_JOB_ID}.done"
+  pid_file="$jobs_dir/${LG_JOB_ID}.pid"
+else
+  done_file=$(mktemp -u "${TMPDIR:-/tmp}/lg-detach.XXXXXX")
+  pid_file=""
+fi
+rm -f "$done_file" "$pid_file"
+
+# fork 後に setsid して worker を pty から切り離し、perl 親は即戻る。worker はセッションリーダーの pid を記録し、system() 実行後に rc を done_file へ残す。
+LG_DETACH_LOG="$log" LG_DONE_FILE="$done_file" LG_PID_FILE="$pid_file" /usr/bin/perl -MPOSIX -e '
   my $pid = fork();
   die "fork failed: $!" unless defined $pid;
   exit 0 if $pid;
@@ -16,9 +25,11 @@ LG_DETACH_LOG="$log" LG_DONE_FILE="$done_file" /usr/bin/perl -MPOSIX -e '
   open(STDIN,  "<",  "/dev/null");
   open(STDOUT, ">>", $ENV{LG_DETACH_LOG});
   open(STDERR, ">>", $ENV{LG_DETACH_LOG});
+  if ($ENV{LG_PID_FILE} ne "" and open(my $pf, ">", $ENV{LG_PID_FILE})) { print $pf $$; close($pf); }
   my $st = system(@ARGV);
   my $rc = $st == -1 ? 1 : ($st >> 8);
   if (open(my $fh, ">", $ENV{LG_DONE_FILE})) { print $fh $rc; close($fh); }
+  unlink($ENV{LG_PID_FILE}) if $ENV{LG_PID_FILE} ne "";
   POSIX::_exit($rc);
 ' -- "$@"
 
@@ -31,5 +42,7 @@ while [ ! -e "$done_file" ]; do
   [ "$waited" -ge "$max_loops" ] && exit 0
 done
 rc=$(cat "$done_file" 2>/dev/null || echo 0)
-rm -f "$done_file"
+rm -f "$done_file" "$pid_file"
+# 130 は中止 (cancel-job.sh) を表す。失敗ではないため lazygit のエラーポップアップを出さないよう 0 にする。
+[ "$rc" = "130" ] && rc=0
 exit "$rc"
