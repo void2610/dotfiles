@@ -71,3 +71,7 @@ vim.keymap.set("n", "<LeftMouse>", function()
   return "<LeftMouse>"
 end, { expr = true, desc = "Click to open URL" })
 
+
+-- タブ操作 (LazyVim デフォルトの <leader><Tab> グループを上書き)
+vim.keymap.set("n", "<leader><Tab>n", "<cmd>tabnew<cr>", { desc = "New Tab" })
+vim.keymap.set("n", "<leader><Tab><Tab>", "<cmd>tabnext<cr>", { desc = "Next Tab" })
