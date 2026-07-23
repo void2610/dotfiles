@@ -10,7 +10,8 @@
     "OTEL_RESOURCE_ATTRIBUTES": "user.email=shuya.izumi@akariinc.co.jp",
     "ANTHROPIC_CUSTOM_MODEL_OPTION": "claude-opus-4-7[1m]",
     "ANTHROPIC_CUSTOM_MODEL_OPTION_NAME": "Opus 4.7",
-    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "Opus 4.7 (1M context)"
+    "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION": "Opus 4.7 (1M context)",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
   "permissions": {
     "allow": [
