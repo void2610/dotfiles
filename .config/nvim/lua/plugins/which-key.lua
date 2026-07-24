@@ -9,6 +9,7 @@ return {
       -- nf-oct-repo (U+F401) をバイトエスケープで指定する。
       table.insert(opts.spec, { "<leader>gr", icon = { icon = "\239\144\129 ", color = "green" } })
       table.insert(opts.spec, { "<leader>y", group = "yank", mode = "n" })
+      table.insert(opts.spec, { "<leader>z", group = "zetema", icon = { icon = "ζ", color = "azure" } })
       local motions = require("which-key.plugins.presets").motions
       for _, m in ipairs(motions) do
         if type(m) == "table" and type(m[1]) == "string" then
