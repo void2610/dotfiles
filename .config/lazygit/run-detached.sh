@@ -44,9 +44,5 @@ done
 rc=$(cat "$done_file" 2>/dev/null || echo 0)
 # 130 は中止 (cancel-job.sh) を表す。失敗ではないため lazygit のエラーポップアップを出さないよう 0 にする。
 [ "$rc" = "130" ] && rc=0
-# 失敗時は worker が残した理由を stderr へ流し、lazygit の中央モーダルに表示させる。
-if [ "$rc" != "0" ] && [ -n "$msg_file" ] && [ -s "$msg_file" ]; then
-  cat "$msg_file" >&2
-fi
-rm -f "$done_file" "$pid_file" "$msg_file"
+rm -f "$done_file" "$pid_file"
 exit "$rc"
