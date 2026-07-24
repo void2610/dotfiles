@@ -3,6 +3,9 @@
 -- Add any additional keymaps here
 vim.keymap.set("i", "jj", "<ESC>", { silent = true })
 
+-- <C-d> (半ページ下) の逆として <C-e> で半ページ上にスクロール
+vim.keymap.set({ "n", "v" }, "<C-e>", "<C-u>", { desc = "Scroll half page up" })
+
 -- workspace (ファイラ + 編集 + Claude Code) を開く
 vim.keymap.set("n", "<leader>qw", function()
   require("util.workspace").open()
