@@ -2,7 +2,7 @@ return {
   {
     dir = vim.fn.expand("~/Documents/GitHub/zetema"),
     name = "zetema",
-    cmd = { "Zetema", "ZetemaSource", "ZetemaAsk", "ZetemaMore", "ZetemaChat", "ZetemaReview", "ZetemaHistory", "ZetemaMode", "ZetemaViewed", "ZetemaView", "ZetemaJump" },
+    cmd = { "Zetema", "ZetemaSource", "ZetemaAsk", "ZetemaMore", "ZetemaChat", "ZetemaReview", "ZetemaHistory", "ZetemaMode", "ZetemaViewed", "ZetemaView", "ZetemaJump", "ZetemaJumpBack" },
     keys = {
       { "<leader>zo", "<cmd>Zetema<cr>", desc = "zetema: diff を開く" },
       { "<leader>zs", "<cmd>ZetemaSource<cr>", desc = "zetema: repo/rev 切替" },
