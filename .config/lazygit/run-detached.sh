@@ -16,7 +16,7 @@ else
 fi
 rm -f "$done_file" "$pid_file"
 
-# fork 後に setsid して worker を pty から切り離し、perl 親は即戻る。worker はセッションリーダーの pid を記録し、system() 実行後に rc を done_file へ残す。
+# fork 後に setsid で worker を pty から切り離し perl 親は即戻る。worker は pid を記録し system() 実行後に rc を done_file へ残す。
 LG_DETACH_LOG="$log" LG_DONE_FILE="$done_file" LG_PID_FILE="$pid_file" /usr/bin/perl -MPOSIX -e '
   my $pid = fork();
   die "fork failed: $!" unless defined $pid;
@@ -42,7 +42,11 @@ while [ ! -e "$done_file" ]; do
   [ "$waited" -ge "$max_loops" ] && exit 0
 done
 rc=$(cat "$done_file" 2>/dev/null || echo 0)
-rm -f "$done_file" "$pid_file"
 # 130 は中止 (cancel-job.sh) を表す。失敗ではないため lazygit のエラーポップアップを出さないよう 0 にする。
 [ "$rc" = "130" ] && rc=0
+# 失敗時は worker が残した理由を stderr へ流し、lazygit の中央モーダルに表示させる。
+if [ "$rc" != "0" ] && [ -n "$msg_file" ] && [ -s "$msg_file" ]; then
+  cat "$msg_file" >&2
+fi
+rm -f "$done_file" "$pid_file" "$msg_file"
 exit "$rc"

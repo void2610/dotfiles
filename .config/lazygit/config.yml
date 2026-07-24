@@ -113,30 +113,3 @@ customCommands:
     description: "Cancel running commit-message generation"
     command: "$HOME/.config/lazygit/cancel-job.sh"
     output: log
-
-  # `P` を上書きし、確認無しで即 detach push する (閉じても中断されず結果は通知)。force は `U` 側に分離。
-  - key: P
-    context: global
-    description: "Push (detached / background-safe)"
-    command: "$HOME/.config/lazygit/push-detached.sh normal"
-    loadingText: "Pushing in background..."
-    output: log
-
-  # `U` は force が必要なとき用。with-lease / force をメニューで選ぶ detach push (`<c-P>` は端末上で `<c-p>` と区別不可のため plain キー)。
-  - key: U
-    context: global
-    description: "Force push (detached, with lease / force)"
-    prompts:
-      - type: menu
-        title: "Force push"
-        key: Mode
-        options:
-          - name: "Force push (with lease)"
-            description: "git push --force-with-lease (安全な強制 push)"
-            value: "lease"
-          - name: "Force push"
-            description: "git push --force"
-            value: "force"
-    command: "$HOME/.config/lazygit/push-detached.sh {{ .Form.Mode }}"
-    loadingText: "Force pushing in background..."
-    output: log
