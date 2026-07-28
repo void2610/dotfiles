@@ -229,7 +229,17 @@ case "$cmd" in
       *) die "Usage: ship.sh checkpoint add|remove|list [phase]" ;;
     esac
     ;;
+  guard)
+    # PreToolUse hook 用: branch フェーズ完了〜フロー完走の間はブランチ作成・移動を禁止する
+    [[ -f "$branch_file" ]] || exit 0
+    [[ -n $(state '.done.branch // empty') ]] || exit 0
+    n=$(next_phase)
+    [[ "$n" == complete ]] && exit 0
+    echo "ship フロー進行中 (goal=$(state .goal), next=$n)。全フェーズ完了までブランチの作成・移動は禁止。別ブランチでの作業が必要ならユーザーに報告して指示を待つこと。"
+    # ロック検知は専用 exit code 3 (die の 1 と区別し、無関係な失敗で hook が誤ブロックしないため)
+    exit 3
+    ;;
   *)
-    die "Usage: ship.sh init|status|next|done|skip|checkpoint|quiz"
+    die "Usage: ship.sh init|status|next|done|skip|checkpoint|quiz|guard"
     ;;
 esac

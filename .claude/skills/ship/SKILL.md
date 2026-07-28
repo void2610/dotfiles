@@ -13,7 +13,8 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 1. **現在地と次アクションは必ず `ship.sh` に聞く** (`status` / `next`)。自分の記憶でフェーズを進めない。セッション途中参加・再開時も最初に `status` を打つ
 2. **フェーズ遷移は必ず `ship.sh done <phase>` 経由**。postcondition が実測検証され、NG の間は次へ進めない。NG を解消してから再実行する (検証の握りつぶし・skip での回避は禁止)
 3. `ship.sh next` が `checkpoint=yes` を返したら、**そのフェーズの作業を始めずに**現状を報告してユーザーの指示を待つ
-4. **柔軟性はユーザーの自然言語をそのまま状態に反映する**。選択肢の提示はしない
+4. **branch フェーズ完了後はフロー完走までブランチを固定する**。全フェーズが done になるまで、新しいブランチの作成 (`git switch -c` / `git checkout -b` / worktree 追加等) とブランチ移動 (`git switch` / `git checkout <branch>`) を一切行わない。別ブランチでの作業が必要になったらユーザーに報告して指示を待つ (enforce-ship-branch-lock.sh hook が `ship.sh guard` で機械的にもブロックする)
+5. **柔軟性はユーザーの自然言語をそのまま状態に反映する**。選択肢の提示はしない
    - 「コミット前で毎回止めて」→ `ship.sh checkpoint add commit`
    - 「もう止めなくていい」→ `ship.sh checkpoint remove <phase>`
    - 「テストは飛ばして」→ `ship.sh skip test <ユーザーの理由>`

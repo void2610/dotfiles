@@ -39,6 +39,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/enforce-git-skill.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/enforce-ship-branch-lock.sh"
           }
         ]
       }
