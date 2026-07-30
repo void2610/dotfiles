@@ -50,6 +50,7 @@ keybind = global:ctrl+semicolon=toggle_quick_terminal
 # タブ操作
 keybind = cmd+t=new_tab
 keybind = cmd+w=close_surface
+keybind = cmd+q>cmd+q=quit
 keybind = cmd+shift+]=next_tab
 keybind = cmd+shift+[=previous_tab
 # 分割
