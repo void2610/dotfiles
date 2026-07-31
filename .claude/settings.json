@@ -116,6 +116,10 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/detect-open-ended-task.sh"
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/detect-reset-restack.sh"
           }
         ]
       }
