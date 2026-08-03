@@ -68,6 +68,10 @@ case "$(printf %s "$path" | tr '[:upper:]' '[:lower:]')" in
       fi
     fi
     ;;
+  # sips がデコードできる主要ラスタ画像は kitty graphics (Unicode placeholder) で表示する
+  *.png | *.jpg | *.jpeg | *.gif | *.bmp | *.tiff | *.tif | *.webp | *.heic | *.icns)
+    "$HOME/.config/lazygit/image-diff.sh" "$path" "$old" "$new"
+    ;;
   *)
     run_delta
     ;;
