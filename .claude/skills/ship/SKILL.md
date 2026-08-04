@@ -1,6 +1,6 @@
 ---
 name: ship
-description: 開発フロー (計画 → ブランチ → 実装 → テスト → フォーマット → コミット → PR → Copilot レビュー → レビュー対応) を状態機械で進めるパイプラインスキル。グローバル CLAUDE.md の基本ルールにより、複数フェーズにわたる開発依頼の標準フロー。中断したフローの再開にも使う。
+description: 開発フロー (計画 → ブランチ → 実装 → テスト → フォーマット → コミット → 実装報告 → クイズ → PR → Copilot レビュー → レビュー対応) を状態機械で進めるパイプラインスキル。グローバル CLAUDE.md の基本ルールにより、複数フェーズにわたる開発依頼の標準フロー。中断したフローの再開にも使う。
 ---
 
 # ship — 開発フローパイプライン
@@ -31,7 +31,8 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | format | 同上 | format コマンドが exit 0 |
 | knowledge | 得た知見の `Knowledge/` (OKF等) への永続化を検討し、書く/書かないを `ship.sh knowledge "<内容 or 理由>"` で記録 (プロジェクトに知識ベースが無ければ理由に明記して skip 可) | 検討記録が存在する |
 | commit | commit スキル | working tree clean かつコミットが積まれている |
-| quiz | push-quiz スキル (**出題前に必ず実装報告を提示** → 全問正答 + ユーザーの push 許可後に `ship.sh quiz approve`)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
+| report | 実装報告を提示 (変更内容・設計判断・検証結果)。ユーザーが報告を読み承認したら `ship.sh report approve`。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
+| quiz | push-quiz スキル (全問正答 + ユーザーの push 許可後に `ship.sh quiz approve`)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
 | pr | pr-create スキル (Copilot 依頼 + レビュー/CI ポーリングの background 起動まで担当) | 現ブランチに OPEN な PR |
 | review | ポーリング完了通知を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push する | Copilot レビューが実在し、CI が fail/pending でない |
 | fix | 未解決スレッドが残っていれば pr-review-fix スキル | 未解決レビュースレッド 0 件 |
