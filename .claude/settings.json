@@ -1,5 +1,10 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":["DesignPass.dev — Kill design slop"]},
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": [
+      "La Maison Blanche - Luxury Rental Home in Quebec City"
+    ]
+  },
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
@@ -125,7 +130,11 @@
       }
     ]
   },
-  "statusLine": {"type":"command","command":"node \"/Users/shuya/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
+  "statusLine": {
+    "type": "command",
+    "command": "node \"/Users/shuya.izumi/.kickbacks/vibe-ads-statusline.mjs\"",
+    "padding": 0
+  },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
