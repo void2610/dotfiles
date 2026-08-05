@@ -14,3 +14,4 @@
 .config/sops/age/keys.txt
 .config/claude/discord-webhook
 .config/ghostty/config-linux
+/.config/terminal-browser/extensions/
