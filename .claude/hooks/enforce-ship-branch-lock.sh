@@ -11,6 +11,9 @@ grep -qE '\bgit([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+(switch|che
 # "git checkout -- <path>" のファイル復元はブランチ移動ではないため許可
 grep -qE '\bgit([[:space:]]+-C[[:space:]]+[^[:space:]]+)?[[:space:]]+checkout([[:space:]]+[^[:space:]]+)*[[:space:]]+--([[:space:]]|$)' <<<"$command" && exit 0
 
+# ユーザー明示承認の escape。ship ロック・open PR ロックの双方に効かせるため両判定より前に置く
+grep -qE '(^|[^A-Za-z0-9_])SHIP_ALLOW_BRANCH_SWITCH=1' <<<"$command" && exit 0
+
 ship="$HOME/.claude/skills/ship/scripts/ship.sh"
 [[ -n "$cwd" ]] || exit 0
 cd "$cwd" 2>/dev/null || exit 0
