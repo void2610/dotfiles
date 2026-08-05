@@ -100,6 +100,19 @@ return {
         return true
       end
 
+      local function open_current(url)
+        local bin = terminal_browser_bin()
+        if not bin then
+          return false
+        end
+        local cmd = { bin, "open" }
+        if url and url ~= "" then
+          table.insert(cmd, url)
+        end
+        Snacks.terminal.open(cmd, { win = { position = "current" } })
+        return true
+      end
+
       local function toggle()
         if alive() then
           term:toggle()
@@ -109,12 +122,10 @@ return {
       end
 
       vim.api.nvim_create_user_command("TerminalBrowser", function(args)
-        if args.args == "" then
-          toggle()
-        elseif not open_float(args.args) then
+        if not open_current(args.args) then
           vim.notify("terminal-browser が見つかりません", vim.log.levels.ERROR)
         end
-      end, { nargs = "?", desc = "terminal-browser をフロートで開閉" })
+      end, { nargs = "?", desc = "terminal-browser を現在のウィンドウで開く" })
 
       -- ユーザーコマンドは大文字始まり必須のため、小文字 :tb は先頭でのみ展開する略語で提供する
       vim.cmd([[cnoreabbrev <expr> tb (getcmdtype() ==# ':' && getcmdpos() == 3) ? 'TerminalBrowser' : 'tb']])
