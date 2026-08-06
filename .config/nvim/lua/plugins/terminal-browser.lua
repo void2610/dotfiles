@@ -441,6 +441,18 @@ requestAnimationFrame(step);};requestAnimationFrame(step);}})(%%d,%%d)]]):format
           end,
           desc = "前のタブ",
         },
+        ["<Tab>"] = {
+          run = function(buf)
+            tab_command(buf, "next")
+          end,
+          desc = "次のタブ",
+        },
+        ["<S-Tab>"] = {
+          run = function(buf)
+            tab_command(buf, "prev")
+          end,
+          desc = "前のタブ",
+        },
         ["yy"] = { run = yank_url, desc = "URL をヤンク" },
         ["f"] = { run = hint_links, desc = "リンクをヒント選択" },
         ["/"] = { run = find_in_page, desc = "ページ内検索" },
