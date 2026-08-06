@@ -192,6 +192,11 @@ return {
         end)
       end
 
+      -- window.open は setWindowOpenHandler 経由で TabManager.create に届くので本体と齟齬が出ない
+      local function new_tab(buf, url)
+        action(buf, { "eval", ("window.open(%s,'_blank')"):format(vim.json.encode(url or "about:blank")) })
+      end
+
       -- ドットを含むだけでは URL と断定できない (lua string.format 等) ため、既知 TLD かパス付きに限る
       local KNOWN_TLD = {}
       for tld in
