@@ -22,6 +22,16 @@ return {
         return vim.fn.executable(local_bin) == 1 and local_bin or nil
       end
 
+      -- terminal-browser CLI のペイン検出は nvim (タイトルを書き換え続ける TUI) 配下で必ず失敗するため CDP 直結を使う
+      local function agent_browser_bin()
+        local bin = vim.fn.expand("~/.local/share/terminal-browser/app/agent-browser/bin/agent-browser")
+        return vim.fn.executable(bin) == 1 and bin or nil
+      end
+
+      -- vim.fn.* は fast event context で呼べないため、コールバックから使う値は起動時に解決しておく
+      local BIN = terminal_browser_bin()
+      local AGENT = agent_browser_bin()
+
       local float_win = {
         position = "float",
         width = 0.95,
@@ -29,19 +39,14 @@ return {
         border = "rounded",
       }
 
+      local SCROLL_STEP = 120
+      local SCROLL_PAGE = 480
+
       local term ---@type snacks.win?
+      local ports_by_buf = {} ---@type table<integer, integer> buf -> CDP ポート
 
       local function alive()
         return term ~= nil and term:buf_valid()
-      end
-
-      local function float_tty()
-        if not alive() then
-          return nil
-        end
-        local chan = vim.bo[term.buf].channel
-        local ok, info = pcall(vim.api.nvim_get_chan_info, chan)
-        return ok and info.pty or nil
       end
 
       local function warn(message)
@@ -50,45 +55,285 @@ return {
         end)
       end
 
-      -- 既存フロートのセッションを ls --json の tty 一致で特定し、新規タブで URL を開く
-      local function open_in_existing(bin, url)
-        local tty = float_tty()
-        if not tty then
-          return warn("terminal-browser のセッションを特定できませんでした")
+      local function buf_terminal_info(buf)
+        local chan = vim.bo[buf].channel
+        local ok, info = pcall(vim.api.nvim_get_chan_info, chan)
+        if not ok then
+          return nil, nil
         end
-        vim.system({ bin, "ls", "--all", "--json" }, { text = true }, function(res)
-          local ok, data = pcall(vim.json.decode, res.stdout or "")
-          local key
-          if ok and type(data) == "table" then
-            for _, browser in ipairs(data.browsers or {}) do
-              if browser.tty == tty then
-                key = browser.key
-                break
+        local ok_pid, pid = pcall(vim.fn.jobpid, chan)
+        return info.pty, ok_pid and pid or nil
+      end
+
+      -- CLI の ls はペイン検出のリトライで数秒かかるため、Electron の起動スイッチから直接ポートを読む
+      local function resolve_port(bin, buf, cb)
+        if ports_by_buf[buf] then
+          return cb(ports_by_buf[buf])
+        end
+        local function take(port)
+          ports_by_buf[buf] = port
+          cb(port)
+        end
+        local tty = buf_terminal_info(buf)
+        vim.system({ "ps", "-Ao", "command=" }, { text = true }, function(ps)
+          local ports = {}
+          for port in (ps.stdout or ""):gmatch("remote%-debugging%-port=(%d+)") do
+            ports[tonumber(port)] = true
+          end
+          local found = vim.tbl_keys(ports)
+          if #found == 1 then
+            return take(found[1])
+          end
+          -- 複数の Electron が動いている等で一意に決まらない場合だけ、遅くても確実な ls に頼る
+          vim.system({ bin, "ls", "--all", "--json" }, { text = true }, function(res)
+            local ok, data = pcall(vim.json.decode, res.stdout or "")
+            local browsers = ok and type(data) == "table" and data.browsers or {}
+            for _, browser in ipairs(browsers) do
+              if browser.cdpPort and (browser.tty == tty or #browsers == 1) then
+                return take(browser.cdpPort)
               end
             end
-          end
-          if not key then
-            return warn("terminal-browser のセッションを特定できませんでした")
-          end
-          vim.system({ bin, "action", "--browser", key, "--", "tab", "new" }, { text = true }, function()
-            vim.system({ bin, "action", "--browser", key, "--", "open", url }, { text = true }, function(open_res)
-              if open_res.code ~= 0 then
-                warn("URL を開けませんでした: " .. url)
-              end
+            warn(
+              ("terminal-browser: CDP ポート特定に失敗 (ps 候補=%d pty=%s ls 候補=%d)"):format(
+                #found,
+                tostring(tty),
+                #browsers
+              )
+            )
+          end)
+        end)
+      end
+
+      ---@param args string[] agent-browser のコマンドと引数
+      ---@param cb? fun(stdout: string)
+      local function action(buf, args, cb)
+        if not BIN or not AGENT then
+          return warn("terminal-browser: agent-browser が見つかりません")
+        end
+        resolve_port(BIN, buf, function(port)
+          local cmd = vim.list_extend({ AGENT, "--cdp", tostring(port) }, args)
+          vim.system(cmd, { text = true }, function(res)
+            if res.code ~= 0 then
+              return warn(
+                ("terminal-browser: %s 失敗 (code=%s) %s"):format(
+                  table.concat(args, " "),
+                  tostring(res.code),
+                  vim.trim(res.stderr or "")
+                )
+              )
+            end
+            if cb then
+              cb(res.stdout or "")
+            end
+          end)
+        end)
+      end
+
+      -- CDP の Target.createTarget は Electron 非対応なので、ページ側の window.open でタブを作る
+      local function new_tab(buf, url)
+        action(buf, { "eval", ("window.open(%q,'_blank')"):format(url or "about:blank") }, function()
+          action(buf, { "tab", "list" }, function(stdout)
+            local n = select(2, stdout:gsub("%[t%d+%]", ""))
+            vim.schedule(function()
+              vim.notify("terminal-browser: タブ " .. n .. " 枚")
             end)
           end)
         end)
       end
 
+      -- 現在タブは直前に → が付き、id は t1 形式 (裸の数値は不可)。改行が \n とは限らないため行分割に頼らない
+      local function each_tab(buf, cb)
+        action(buf, { "tab", "list" }, function(stdout)
+          local ids, current = {}, nil
+          for prefix, id in stdout:gmatch("([^%[]*)%[(t%d+)%]") do
+            ids[#ids + 1] = id
+            if prefix:find("→", 1, true) then
+              current = #ids
+            end
+          end
+          cb(ids, current, stdout)
+        end)
+      end
+
+      local function switch_tab(buf, delta)
+        each_tab(buf, function(ids, current, raw)
+          if not current or #ids < 2 then
+            return warn("terminal-browser: 切替先なし (認識タブ=" .. #ids .. ")\n" .. vim.trim(raw))
+          end
+          action(buf, { "tab", ids[(current - 1 + delta) % #ids + 1] })
+        end)
+      end
+
+      -- 最後の 1 枚は agent-browser が閉じるのを拒むため、手前で止めて余計なエラーを出さない
+      local function close_tab(buf)
+        each_tab(buf, function(ids, _, raw)
+          if #ids < 2 then
+            return warn(
+              "terminal-browser: 最後のタブは閉じられません (認識タブ="
+                .. #ids
+                .. ")\n"
+                .. vim.trim(raw)
+            )
+          end
+          action(buf, { "tab", "close" })
+        end)
+      end
+
+      local function prompt_open(buf, in_new_tab)
+        vim.ui.input({ prompt = "URL: " }, function(url)
+          if not url or url == "" then
+            return
+          end
+          if in_new_tab then
+            new_tab(buf, url)
+          else
+            action(buf, { "open", url })
+          end
+        end)
+      end
+
+      local function yank_url(buf)
+        action(buf, { "get", "url" }, function(stdout)
+          local url = vim.trim(stdout)
+          vim.schedule(function()
+            vim.fn.setreg("+", url)
+            vim.notify("yanked: " .. url)
+          end)
+        end)
+      end
+
+      ---@type table<string, { args?: string[], run?: fun(buf: integer), desc: string }>
+      local CONTROL_KEYS = {
+        ["j"] = { args = { "scroll", "down", tostring(SCROLL_STEP) }, desc = "下スクロール" },
+        ["k"] = { args = { "scroll", "up", tostring(SCROLL_STEP) }, desc = "上スクロール" },
+        ["<C-d>"] = { args = { "scroll", "down", tostring(SCROLL_PAGE) }, desc = "半ページ下" },
+        ["<C-u>"] = { args = { "scroll", "up", tostring(SCROLL_PAGE) }, desc = "半ページ上" },
+        ["gg"] = { args = { "eval", "window.scrollTo(0,0)" }, desc = "先頭へ" },
+        ["G"] = { args = { "eval", "window.scrollTo(0,document.body.scrollHeight)" }, desc = "末尾へ" },
+        ["H"] = { args = { "back" }, desc = "戻る" },
+        ["L"] = { args = { "forward" }, desc = "進む" },
+        ["r"] = { args = { "reload" }, desc = "リロード" },
+        ["t"] = {
+          run = function(buf)
+            new_tab(buf)
+          end,
+          desc = "新規タブ",
+        },
+        ["x"] = { run = close_tab, desc = "タブを閉じる" },
+        ["<Tab>"] = {
+          run = function(buf)
+            switch_tab(buf, 1)
+          end,
+          desc = "次のタブ",
+        },
+        ["<S-Tab>"] = {
+          run = function(buf)
+            switch_tab(buf, -1)
+          end,
+          desc = "前のタブ",
+        },
+        ["o"] = {
+          run = function(buf)
+            prompt_open(buf, false)
+          end,
+          desc = "URL を開く",
+        },
+        ["O"] = {
+          run = function(buf)
+            prompt_open(buf, true)
+          end,
+          desc = "URL を新規タブで開く",
+        },
+        ["y"] = { run = yank_url, desc = "URL をヤンク" },
+      }
+
+      local function show_help()
+        local lines = {}
+        for key, entry in pairs(CONTROL_KEYS) do
+          lines[#lines + 1] = ("  %-8s %s"):format(key, entry.desc)
+        end
+        table.sort(lines)
+        table.insert(lines, 1, "terminal-browser 操作モード")
+        vim.list_extend(lines, {
+          "  1-9      その番号のタブへ",
+          "  i        入力モード (キーをページへ渡す)",
+          "  <Esc><Esc> 入力モードを抜ける",
+          "  q        閉じる",
+        })
+        vim.notify(table.concat(lines, "\n"))
+      end
+
+      -- nvim の normal / terminal モードをそのままブラウザ操作 / 入力モードとして使う
+      local attached = {} ---@type table<integer, true>
+      local function attach_control_mode(win)
+        local buf = type(win) == "table" and win.buf or win
+        if not buf or attached[buf] or not vim.api.nvim_buf_is_valid(buf) then
+          return
+        end
+        attached[buf] = true
+        local function map(key, fn, desc)
+          vim.keymap.set("n", key, fn, { buffer = buf, silent = true, desc = "browser: " .. desc })
+        end
+        for key, entry in pairs(CONTROL_KEYS) do
+          map(key, function()
+            if entry.run then
+              entry.run(buf)
+            else
+              action(buf, entry.args)
+            end
+          end, entry.desc)
+        end
+        for n = 1, 9 do
+          map(tostring(n), function()
+            action(buf, { "tab", "t" .. n })
+          end, n .. " 番タブへ")
+        end
+        map("?", show_help, "キー一覧")
+        map("q", function()
+          if type(win) == "table" then
+            win:hide()
+          end
+        end, "閉じる")
+        map("i", function()
+          vim.cmd.startinsert()
+        end, "入力モードへ")
+        -- 単発 <Esc> はページ側 (モーダルを閉じる等) に渡したいので二度押しで抜ける
+        vim.keymap.set("t", "<Esc><Esc>", function()
+          vim.cmd.stopinsert()
+        end, { buffer = buf, silent = true, desc = "browser: 操作モードへ" })
+
+        vim.api.nvim_create_autocmd("BufWipeout", {
+          buffer = buf,
+          callback = function()
+            ports_by_buf[buf] = nil
+            attached[buf] = nil
+          end,
+        })
+        vim.schedule(function()
+          if vim.api.nvim_get_current_buf() == buf then
+            vim.cmd.stopinsert()
+          end
+        end)
+      end
+
+      -- 開き方によらず取りこぼさないよう、terminal-browser を走らせる端末バッファ全てに付ける
+      vim.api.nvim_create_autocmd("TermOpen", {
+        callback = function(args)
+          if vim.api.nvim_buf_get_name(args.buf):match("terminal%-browser") then
+            attach_control_mode(args.buf)
+          end
+        end,
+      })
+
       local function open_float(url)
-        local bin = terminal_browser_bin()
+        local bin = BIN
         if not bin then
           return false
         end
         if alive() then
           term:show()
           if url and url ~= "" then
-            open_in_existing(bin, url)
+            new_tab(term.buf, url)
           end
           return true
         end
@@ -97,11 +342,12 @@ return {
           table.insert(cmd, url)
         end
         term = Snacks.terminal.open(cmd, { win = float_win })
+        attach_control_mode(term)
         return true
       end
 
       local function open_current(url)
-        local bin = terminal_browser_bin()
+        local bin = BIN
         if not bin then
           return false
         end
@@ -109,7 +355,7 @@ return {
         if url and url ~= "" then
           table.insert(cmd, url)
         end
-        Snacks.terminal.open(cmd, { win = { position = "current" } })
+        attach_control_mode(Snacks.terminal.open(cmd, { win = { position = "current" } }))
         return true
       end
 
@@ -126,6 +372,28 @@ return {
           vim.notify("terminal-browser が見つかりません", vim.log.levels.ERROR)
         end
       end, { nargs = "?", desc = "terminal-browser を現在のウィンドウで開く" })
+
+      vim.api.nvim_create_user_command("TerminalBrowserDebug", function()
+        local buf = vim.api.nvim_get_current_buf()
+        local lines = {
+          "buf=" .. buf .. " name=" .. vim.api.nvim_buf_get_name(buf),
+          "cached_port=" .. tostring(ports_by_buf[buf]),
+          "BIN=" .. tostring(BIN) .. " AGENT=" .. tostring(AGENT),
+        }
+        vim.system({ "ps", "-Ao", "command=" }, { text = true }, function(ps)
+          local ports = {}
+          for port in (ps.stdout or ""):gmatch("remote%-debugging%-port=(%d+)") do
+            ports[tonumber(port)] = true
+          end
+          lines[#lines + 1] = "ps ports=" .. vim.inspect(vim.tbl_keys(ports))
+          action(buf, { "tab", "list" }, function(stdout)
+            lines[#lines + 1] = "tab list:\n" .. vim.trim(stdout)
+            vim.schedule(function()
+              vim.notify(table.concat(lines, "\n"))
+            end)
+          end)
+        end)
+      end, { desc = "terminal-browser の解決状態を表示" })
 
       -- ユーザーコマンドは大文字始まり必須のため、小文字 :tb は先頭でのみ展開する略語で提供する
       vim.cmd([[cnoreabbrev <expr> tb (getcmdtype() ==# ':' && getcmdpos() == 3) ? 'TerminalBrowser' : 'tb']])
