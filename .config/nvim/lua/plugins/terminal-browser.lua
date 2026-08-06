@@ -507,11 +507,6 @@ requestAnimationFrame(step);};requestAnimationFrame(step);}})(%%d,%%d)]]):format
             end
           end, entry.desc)
         end
-        for n = 1, 9 do
-          map(tostring(n), function()
-            action(buf, { "tab", "t" .. n })
-          end, n .. " 番タブへ")
-        end
         -- マウスは normal モードで捕まえて CDP へ流す。terminal モードへ落とさないための要
         local MOUSE = {
           ["<LeftMouse>"] = { { "mouse", "down" }, desc = "クリック" },
@@ -548,11 +543,11 @@ requestAnimationFrame(step);};requestAnimationFrame(step);}})(%%d,%%d)]]):format
         end
         for code = 33, 126 do
           local key = string.char(code)
-          if not CONTROL_KEYS[key] and not PASS_THROUGH[key] and not prefixes[key] and not key:match("%d") then
+          if not CONTROL_KEYS[key] and not PASS_THROUGH[key] and not prefixes[key] then
             map(key, "<Nop>", "未割り当て")
           end
         end
-        for _, key in ipairs({ "0", "<Up>", "<Down>", "<Left>", "<Right>", "<CR>", "<BS>", "<Space>", "<Tab>" }) do
+        for _, key in ipairs({ "<Up>", "<Down>", "<Left>", "<Right>", "<CR>", "<BS>", "<Space>", "<Tab>" }) do
           if not CONTROL_KEYS[key] then
             map(key, "<Nop>", "未割り当て")
           end
