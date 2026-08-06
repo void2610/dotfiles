@@ -217,17 +217,12 @@ return {
         return "https://www.google.com/search?q=" .. vim.uri_encode(text)
       end
 
-      local function prompt_open(buf, in_new_tab)
-        vim.ui.input({ prompt = in_new_tab and "新規タブ 検索 or URL: " or "検索 or URL: " }, function(input)
+      local function prompt_new_tab(buf)
+        vim.ui.input({ prompt = "検索 or URL: " }, function(input)
           if not input or vim.trim(input) == "" then
             return
           end
-          local url = resolve_target(input)
-          if in_new_tab then
-            new_tab(buf, url)
-          else
-            action(buf, { "open", url })
-          end
+          new_tab(buf, resolve_target(input))
         end)
       end
 
@@ -285,7 +280,7 @@ return {
         ["r"] = { args = { "reload" }, desc = "リロード" },
         ["t"] = {
           run = function(buf)
-            prompt_open(buf, true)
+            prompt_new_tab(buf)
           end,
           desc = "新規タブ (検索 or URL)",
         },
@@ -301,18 +296,6 @@ return {
             switch_tab(buf, -1)
           end,
           desc = "前のタブ",
-        },
-        ["o"] = {
-          run = function(buf)
-            prompt_open(buf, false)
-          end,
-          desc = "現在タブで検索 or URL",
-        },
-        ["O"] = {
-          run = function(buf)
-            prompt_open(buf, true)
-          end,
-          desc = "新規タブ (t と同じ)",
         },
         ["y"] = { run = yank_url, desc = "URL をヤンク" },
       }
