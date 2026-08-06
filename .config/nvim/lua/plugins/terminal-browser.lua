@@ -323,7 +323,7 @@ t.style.cssText='position:absolute;left:'+Math.max(0,r.left)+'px;top:'+Math.max(
 box.appendChild(t);});
 d.body.appendChild(box);
 w.__tbHints={map:map,box:box,len:len,clear:function(){this.box.remove();w.__tbHints=null;}};
-return JSON.stringify({len:len,count:n});})(%q)]]):format(HINT_CHARS)
+return len+':'+n;})(%q)]]):format(HINT_CHARS)
 
       local HINT_CLICK = [[(function(l){var h=window.__tbHints;if(!h)return'no-hints';
 var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();return'ok'})(%q)]]
@@ -331,13 +331,13 @@ var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();retur
 
       local function hint_links(buf)
         action(buf, { "eval", HINT_INSTALL }, function(stdout)
-          local ok, info = pcall(vim.json.decode, stdout:match("{.-}") or "")
-          if not ok or not info or info.count == 0 then
-            return warn("terminal-browser: 選択できる要素がありません")
+          local len, count = stdout:match("(%d+):(%d+)")
+          if not len or tonumber(count) == 0 then
+            return warn("terminal-browser: 選択できる要素がありません (" .. vim.trim(stdout) .. ")")
           end
           vim.schedule(function()
             local typed = ""
-            for _ = 1, info.len do
+            for _ = 1, tonumber(len) do
               local got, ch = pcall(vim.fn.getcharstr)
               if not got or ch == "\27" or ch == "" then
                 return action(buf, { "eval", HINT_CLEAR })
