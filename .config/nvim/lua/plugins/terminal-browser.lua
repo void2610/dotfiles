@@ -202,6 +202,38 @@ return {
         end)
       end
 
+      -- ページ座標はセル位置の比で求める。ビューポートは CSS px なのでリサイズで変わる
+      local viewport_by_buf = {} ---@type table<integer, { w: number, h: number }>
+      local function with_viewport(buf, cb)
+        local cached = viewport_by_buf[buf]
+        if cached then
+          return cb(cached)
+        end
+        action(buf, { "eval", "JSON.stringify({w:innerWidth,h:innerHeight})" }, function(stdout)
+          local json = stdout:match("{.-}")
+          local ok, size = pcall(vim.json.decode, json or "")
+          if ok and size and size.w and size.h then
+            viewport_by_buf[buf] = size
+            cb(size)
+          end
+        end)
+      end
+
+      local function mouse_page_pos(buf, cb)
+        local pos = vim.fn.getmousepos()
+        local win = pos.winid
+        if win == 0 or not vim.api.nvim_win_is_valid(win) then
+          return
+        end
+        local cols = vim.api.nvim_win_get_width(win)
+        local rows = vim.api.nvim_win_get_height(win)
+        with_viewport(buf, function(size)
+          local x = math.floor((pos.wincol - 0.5) / cols * size.w)
+          local y = math.floor((pos.winrow - 0.5) / rows * size.h)
+          cb(math.max(0, x), math.max(0, y))
+        end)
+      end
+
       ---@type table<string, { args?: string[], run?: fun(buf: integer), desc: string }>
       local CONTROL_KEYS = {
         ["j"] = { args = { "scroll", "down", tostring(SCROLL_STEP) }, desc = "下スクロール" },
@@ -265,6 +297,7 @@ return {
 
       -- nvim の normal / terminal モードをそのままブラウザ操作 / 入力モードとして使う
       local attached = {} ---@type table<integer, true>
+      local wants_insert = {} ---@type table<integer, true> i で明示的に入力モードへ入ったか
       local function attach_control_mode(win)
         local buf = type(win) == "table" and win.buf or win
         if not buf or attached[buf] or not vim.api.nvim_buf_is_valid(buf) then
@@ -288,6 +321,52 @@ return {
             action(buf, { "tab", "t" .. n })
           end, n .. " 番タブへ")
         end
+        -- マウスは normal モードで捕まえて CDP へ流す。terminal モードへ落とさないための要
+        local MOUSE = {
+          ["<LeftMouse>"] = { { "mouse", "down" }, desc = "クリック" },
+          ["<LeftRelease>"] = { { "mouse", "up" }, desc = "クリック解除" },
+          ["<LeftDrag>"] = { desc = "ドラッグ" },
+          ["<RightMouse>"] = { { "mouse", "down", "right" }, desc = "右クリック" },
+          ["<RightRelease>"] = { { "mouse", "up", "right" }, desc = "右クリック解除" },
+        }
+        for key, spec in pairs(MOUSE) do
+          map(key, function()
+            mouse_page_pos(buf, function(x, y)
+              action(buf, { "mouse", "move", tostring(x), tostring(y) }, function()
+                if spec[1] then
+                  action(buf, spec[1])
+                end
+              end)
+            end)
+          end, spec.desc)
+        end
+        for key, dy in pairs({ ["<ScrollWheelDown>"] = SCROLL_STEP, ["<ScrollWheelUp>"] = -SCROLL_STEP }) do
+          map(key, function()
+            action(buf, { "mouse", "wheel", tostring(dy) })
+          end, "ホイール")
+        end
+
+        -- 割り当てのないキーが vim の編集操作に漏れると表示が崩れるため、閉じたモードにする
+        local PASS_THROUGH = { [":"] = true, ["<C-w>"] = true, ["<C-c>"] = true }
+        -- gg のような多打鍵マッピングは、先頭 1 文字を潰すと発火しなくなる
+        local prefixes = {}
+        for key in pairs(CONTROL_KEYS) do
+          if #key > 1 and not key:match("^<") then
+            prefixes[key:sub(1, 1)] = true
+          end
+        end
+        for code = 33, 126 do
+          local key = string.char(code)
+          if not CONTROL_KEYS[key] and not PASS_THROUGH[key] and not prefixes[key] and not key:match("%d") then
+            map(key, "<Nop>", "未割り当て")
+          end
+        end
+        for _, key in ipairs({ "0", "<Up>", "<Down>", "<Left>", "<Right>", "<CR>", "<BS>", "<Space>", "<Tab>" }) do
+          if not CONTROL_KEYS[key] then
+            map(key, "<Nop>", "未割り当て")
+          end
+        end
+
         map("?", show_help, "キー一覧")
         map("q", function()
           if type(win) == "table" then
@@ -295,18 +374,42 @@ return {
           end
         end, "閉じる")
         map("i", function()
+          wants_insert[buf] = true
           vim.cmd.startinsert()
         end, "入力モードへ")
         -- 単発 <Esc> はページ側 (モーダルを閉じる等) に渡したいので二度押しで抜ける
         vim.keymap.set("t", "<Esc><Esc>", function()
+          wants_insert[buf] = nil
           vim.cmd.stopinsert()
         end, { buffer = buf, silent = true, desc = "browser: 操作モードへ" })
+
+        -- クリックすると nvim が terminal モードに入り操作キーが死ぬため、i 以外での遷移は差し戻す
+        vim.api.nvim_create_autocmd("TermEnter", {
+          buffer = buf,
+          callback = function()
+            if not wants_insert[buf] then
+              vim.schedule(function()
+                if vim.api.nvim_get_current_buf() == buf and not wants_insert[buf] then
+                  vim.cmd.stopinsert()
+                end
+              end)
+            end
+          end,
+        })
 
         vim.api.nvim_create_autocmd("BufWipeout", {
           buffer = buf,
           callback = function()
             ports_by_buf[buf] = nil
             attached[buf] = nil
+            wants_insert[buf] = nil
+            viewport_by_buf[buf] = nil
+          end,
+        })
+
+        vim.api.nvim_create_autocmd({ "WinResized", "VimResized" }, {
+          callback = function()
+            viewport_by_buf[buf] = nil
           end,
         })
         vim.schedule(function()
