@@ -44,6 +44,7 @@ return {
 
       local term ---@type snacks.win?
       local ports_by_buf = {} ---@type table<integer, integer> buf -> CDP ポート
+      local viewport_by_buf = {} ---@type table<integer, { w: number, h: number }>
 
       local function alive()
         return term ~= nil and term:buf_valid()
@@ -66,7 +67,7 @@ return {
       end
 
       -- CLI の ls はペイン検出のリトライで数秒かかるため、Electron の起動スイッチから直接ポートを読む
-      local function resolve_port(bin, buf, cb)
+      local function resolve_port(bin, buf, cb, quiet)
         if ports_by_buf[buf] then
           return cb(ports_by_buf[buf])
         end
@@ -83,6 +84,10 @@ return {
           local found = vim.tbl_keys(ports)
           if #found == 1 then
             return take(found[1])
+          end
+          -- ポート不在でコマンドを投げると agent-browser が自前でブラウザを起動しにいく
+          if #found == 0 then
+            return quiet or warn("terminal-browser: 起動中のブラウザが見つかりません")
           end
           -- 複数の Electron が動いている等で一意に決まらない場合だけ、遅くても確実な ls に頼る
           vim.system({ bin, "ls", "--all", "--json" }, { text = true }, function(res)
@@ -106,14 +111,21 @@ return {
 
       ---@param args string[] agent-browser のコマンドと引数
       ---@param cb? fun(stdout: string)
-      local function action(buf, args, cb)
+      ---@param quiet? boolean マウス等の高頻度操作は失敗しても黙らせる
+      local function action(buf, args, cb, quiet)
         if not BIN or not AGENT then
-          return warn("terminal-browser: agent-browser が見つかりません")
+          return quiet or warn("terminal-browser: agent-browser が見つかりません")
         end
         resolve_port(BIN, buf, function(port)
           local cmd = vim.list_extend({ AGENT, "--cdp", tostring(port) }, args)
           vim.system(cmd, { text = true }, function(res)
             if res.code ~= 0 then
+              -- ブラウザが落ちた後はポートが変わるため、失敗したら引き直させる
+              ports_by_buf[buf] = nil
+              viewport_by_buf[buf] = nil
+              if quiet then
+                return
+              end
               return warn(
                 ("terminal-browser: %s 失敗 (code=%s) %s"):format(
                   table.concat(args, " "),
@@ -126,7 +138,7 @@ return {
               cb(res.stdout or "")
             end
           end)
-        end)
+        end, quiet)
       end
 
       -- CDP の Target.createTarget は Electron 非対応なので、ページ側の window.open でタブを作る
@@ -203,7 +215,6 @@ return {
       end
 
       -- ページ座標はセル位置の比で求める。ビューポートは CSS px なのでリサイズで変わる
-      local viewport_by_buf = {} ---@type table<integer, { w: number, h: number }>
       local function with_viewport(buf, cb)
         local cached = viewport_by_buf[buf]
         if cached then
@@ -216,7 +227,7 @@ return {
             viewport_by_buf[buf] = size
             cb(size)
           end
-        end)
+        end, true)
       end
 
       local function mouse_page_pos(buf, cb)
@@ -334,15 +345,15 @@ return {
             mouse_page_pos(buf, function(x, y)
               action(buf, { "mouse", "move", tostring(x), tostring(y) }, function()
                 if spec[1] then
-                  action(buf, spec[1])
+                  action(buf, spec[1], nil, true)
                 end
-              end)
+              end, true)
             end)
           end, spec.desc)
         end
         for key, dy in pairs({ ["<ScrollWheelDown>"] = SCROLL_STEP, ["<ScrollWheelUp>"] = -SCROLL_STEP }) do
           map(key, function()
-            action(buf, { "mouse", "wheel", tostring(dy) })
+            action(buf, { "mouse", "wheel", tostring(dy) }, nil, true)
           end, "ホイール")
         end
 
