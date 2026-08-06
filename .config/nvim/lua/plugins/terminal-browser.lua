@@ -308,26 +308,45 @@ requestAnimationFrame(step);};requestAnimationFrame(step);}})(%%d,%%d)]]):format
       end
 
       -- 画面上へのヒント描画は本体の担当で手が出せないため、ピッカーで代替する
+      -- ページは Chromium が描画しているので、DOM にラベルを差し込めば Surfingkeys と同じヒントになる
+      local HINT_CHARS = "asdfgqwertzxcvb"
+      local HINT_INSTALL = ([[(function(chars){var w=window,d=document;if(w.__tbHints)w.__tbHints.clear();
+var sel='a[href],button,input:not([type=hidden]),select,textarea,summary,[onclick],[role=button],[role=link],[contenteditable=true]';
+var els=[].slice.call(d.querySelectorAll(sel)).filter(function(e){var r=e.getBoundingClientRect(),s=getComputedStyle(e);
+return r.width>1&&r.height>1&&r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<innerWidth&&s.visibility!=='hidden'&&s.display!=='none';});
+var n=els.length,c=chars.length,len=1;while(Math.pow(c,len)<n)len++;
+function lab(i){var s='',x=i;for(var k=0;k<len;k++){s=chars[x%%c]+s;x=Math.floor(x/c);}return s;}
+var box=d.createElement('div');box.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;pointer-events:none';
+var map={};els.forEach(function(e,i){var L=lab(i);map[L]=e;var r=e.getBoundingClientRect();
+var t=d.createElement('div');t.textContent=L.toUpperCase();
+t.style.cssText='position:absolute;left:'+Math.max(0,r.left)+'px;top:'+Math.max(0,r.top)+'px;background:#fbbf24;color:#111;font:bold 13px monospace;padding:0 3px;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.6);line-height:1.3';
+box.appendChild(t);});
+d.body.appendChild(box);
+w.__tbHints={map:map,box:box,len:len,clear:function(){this.box.remove();w.__tbHints=null;}};
+return JSON.stringify({len:len,count:n});})(%q)]]):format(HINT_CHARS)
+
+      local HINT_CLICK = [[(function(l){var h=window.__tbHints;if(!h)return'no-hints';
+var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();return'ok'})(%q)]]
+      local HINT_CLEAR = [[(function(){var h=window.__tbHints;if(h)h.clear();})()]]
+
       local function hint_links(buf)
-        action(buf, { "snapshot", "-i" }, function(stdout)
-          local items = {}
-          for kind, label, ref in stdout:gmatch('%-%s*(%a+)%s+"([^"]*)"[^%[]*%[[^%]]-ref=(e%d+)%]') do
-            if kind == "link" or kind == "button" or kind == "textbox" then
-              items[#items + 1] = { text = ("%-8s %s"):format(kind, label), ref = ref }
-            end
-          end
-          if #items == 0 then
+        action(buf, { "eval", HINT_INSTALL }, function(stdout)
+          local ok, info = pcall(vim.json.decode, stdout:match("{.-}") or "")
+          if not ok or not info or info.count == 0 then
             return warn("terminal-browser: 選択できる要素がありません")
           end
           vim.schedule(function()
-            vim.ui.select(items, {
-              prompt = "リンク/ボタン",
-              format_item = function(item)
-                return item.text
-              end,
-            }, function(choice)
-              if choice then
-                action(buf, { "click", "@" .. choice.ref })
+            local typed = ""
+            for _ = 1, info.len do
+              local got, ch = pcall(vim.fn.getcharstr)
+              if not got or ch == "\27" or ch == "" then
+                return action(buf, { "eval", HINT_CLEAR })
+              end
+              typed = typed .. ch:lower()
+            end
+            action(buf, { "eval", HINT_CLICK:format(typed) }, function(res)
+              if vim.trim(res):find("miss") then
+                warn("terminal-browser: ヒント " .. typed:upper() .. " はありません")
               end
             end)
           end)
