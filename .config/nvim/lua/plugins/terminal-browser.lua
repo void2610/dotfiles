@@ -141,53 +141,54 @@ return {
         end, quiet)
       end
 
-      -- CDP の Target.createTarget は Electron 非対応なので、ページ側の window.open でタブを作る
-      local function new_tab(buf, url)
-        action(buf, { "eval", ("window.open(%q,'_blank')"):format(url or "about:blank") }, function()
-          action(buf, { "tab", "list" }, function(stdout)
-            local n = select(2, stdout:gsub("%[t%d+%]", ""))
-            vim.schedule(function()
-              vim.notify("terminal-browser: タブ " .. n .. " 枚")
-            end)
-          end)
-        end)
-      end
+      local DAEMON_SOCK = vim.fn.expand("~/.local/state/terminal-browser/daemon.sock")
+      local STATE_DB = vim.fn.expand("~/.local/share/terminal-browser/terminal-browser.db")
+      local sessions_by_buf = {} ---@type table<integer, string>
 
-      -- 現在タブは直前に → が付き、id は t1 形式 (裸の数値は不可)。改行が \n とは限らないため行分割に頼らない
-      local function each_tab(buf, cb)
-        action(buf, { "tab", "list" }, function(stdout)
-          local ids, current = {}, nil
-          for prefix, id in stdout:gmatch("([^%[]*)%[(t%d+)%]") do
-            ids[#ids + 1] = id
-            if prefix:find("→", 1, true) then
-              current = #ids
+      -- 本体のセッション鍵は状態 DB が tty ごとに持っている
+      local function resolve_session(buf, cb)
+        if sessions_by_buf[buf] then
+          return cb(sessions_by_buf[buf])
+        end
+        local tty = buf_terminal_info(buf)
+        local sql = "select key, tty from instances;"
+        vim.system({ "sqlite3", STATE_DB, sql }, { text = true }, function(res)
+          local only, matched, count = nil, nil, 0
+          for key, row_tty in (res.stdout or ""):gmatch("([^|\n]+)|([^\n]*)") do
+            count = count + 1
+            only = key
+            if tty and row_tty == tty then
+              matched = key
             end
           end
-          cb(ids, current, stdout)
+          local key = matched or (count == 1 and only or nil)
+          if not key then
+            return warn("terminal-browser: セッションを特定できません (候補=" .. count .. ")")
+          end
+          sessions_by_buf[buf] = key
+          cb(key)
         end)
       end
 
-      local function switch_tab(buf, delta)
-        each_tab(buf, function(ids, current, raw)
-          if not current or #ids < 2 then
-            return warn("terminal-browser: 切替先なし (認識タブ=" .. #ids .. ")\n" .. vim.trim(raw))
-          end
-          action(buf, { "tab", ids[(current - 1 + delta) % #ids + 1] })
-        end)
-      end
-
-      -- 最後の 1 枚は agent-browser が閉じるのを拒むため、手前で止めて余計なエラーを出さない
-      local function close_tab(buf)
-        each_tab(buf, function(ids, _, raw)
-          if #ids < 2 then
-            return warn(
-              "terminal-browser: 最後のタブは閉じられません (認識タブ="
-                .. #ids
-                .. ")\n"
-                .. vim.trim(raw)
-            )
-          end
-          action(buf, { "tab", "close" })
+      -- タブ操作を CDP でやると TabManager を迂回して表示とずれるため、本体のデーモンへ投げる
+      local function tab_command(buf, tab_action)
+        resolve_session(buf, function(key)
+          local pipe = vim.uv.new_pipe(false)
+          pipe:connect(DAEMON_SOCK, function(err)
+            if err then
+              sessions_by_buf[buf] = nil
+              pcall(function()
+                pipe:close()
+              end)
+              return warn("terminal-browser: デーモンに接続できません (" .. err .. ")")
+            end
+            pipe:write(vim.json.encode({ cmd = "tab", session = key, action = tab_action }) .. "\n")
+            vim.defer_fn(function()
+              pcall(function()
+                pipe:close()
+              end)
+            end, 200)
+          end)
         end)
       end
 
@@ -267,37 +268,111 @@ return {
         end)
       end
 
+      -- 画面上へのヒント描画は本体の担当で手が出せないため、ピッカーで代替する
+      local function hint_links(buf)
+        action(buf, { "snapshot", "-i" }, function(stdout)
+          local items = {}
+          for kind, label, ref in stdout:gmatch('%-%s*(%a+)%s+"([^"]*)"[^%[]*%[[^%]]-ref=(e%d+)%]') do
+            if kind == "link" or kind == "button" or kind == "textbox" then
+              items[#items + 1] = { text = ("%-8s %s"):format(kind, label), ref = ref }
+            end
+          end
+          if #items == 0 then
+            return warn("terminal-browser: 選択できる要素がありません")
+          end
+          vim.schedule(function()
+            vim.ui.select(items, {
+              prompt = "リンク/ボタン",
+              format_item = function(item)
+                return item.text
+              end,
+            }, function(choice)
+              if choice then
+                action(buf, { "click", "@" .. choice.ref })
+              end
+            end)
+          end)
+        end)
+      end
+
+      -- agent-browser の find は要素操作用で本文検索に使えないため、ページ側の window.find を呼ぶ
+      local last_find = {} ---@type table<integer, string>
+      local function run_find(buf, text, backwards)
+        action(
+          buf,
+          { "eval", ("window.find(%s,false,%s,true)"):format(vim.json.encode(text), tostring(backwards)) },
+          function(stdout)
+            if vim.trim(stdout) == "false" then
+              warn("terminal-browser: 見つかりません: " .. text)
+            end
+          end
+        )
+      end
+
+      local function find_in_page(buf)
+        vim.ui.input({ prompt = "/" }, function(text)
+          if not text or text == "" then
+            return
+          end
+          last_find[buf] = text
+          run_find(buf, text, false)
+        end)
+      end
+
+      local function find_again(buf, backwards)
+        local text = last_find[buf]
+        if not text then
+          return warn("terminal-browser: 直前の検索がありません")
+        end
+        run_find(buf, text, backwards)
+      end
+
+      -- Surfingkeys のデフォルトに合わせる
       ---@type table<string, { args?: string[], run?: fun(buf: integer), desc: string }>
       local CONTROL_KEYS = {
         ["j"] = { args = { "scroll", "down", tostring(SCROLL_STEP) }, desc = "下スクロール" },
         ["k"] = { args = { "scroll", "up", tostring(SCROLL_STEP) }, desc = "上スクロール" },
-        ["<C-d>"] = { args = { "scroll", "down", tostring(SCROLL_PAGE) }, desc = "半ページ下" },
-        ["<C-u>"] = { args = { "scroll", "up", tostring(SCROLL_PAGE) }, desc = "半ページ上" },
+        ["d"] = { args = { "scroll", "down", tostring(SCROLL_PAGE) }, desc = "半ページ下" },
+        ["u"] = { args = { "scroll", "up", tostring(SCROLL_PAGE) }, desc = "半ページ上" },
         ["gg"] = { args = { "eval", "window.scrollTo(0,0)" }, desc = "先頭へ" },
         ["G"] = { args = { "eval", "window.scrollTo(0,document.body.scrollHeight)" }, desc = "末尾へ" },
-        ["H"] = { args = { "back" }, desc = "戻る" },
-        ["L"] = { args = { "forward" }, desc = "進む" },
+        ["S"] = { args = { "back" }, desc = "戻る" },
+        ["D"] = { args = { "forward" }, desc = "進む" },
         ["r"] = { args = { "reload" }, desc = "リロード" },
-        ["t"] = {
+        ["t"] = { run = prompt_new_tab, desc = "新規タブ (検索 or URL)" },
+        ["x"] = {
           run = function(buf)
-            prompt_new_tab(buf)
+            tab_command(buf, "close")
           end,
-          desc = "新規タブ (検索 or URL)",
+          desc = "タブを閉じる",
         },
-        ["x"] = { run = close_tab, desc = "タブを閉じる" },
-        ["<Tab>"] = {
+        ["R"] = {
           run = function(buf)
-            switch_tab(buf, 1)
+            tab_command(buf, "next")
           end,
           desc = "次のタブ",
         },
-        ["<S-Tab>"] = {
+        ["E"] = {
           run = function(buf)
-            switch_tab(buf, -1)
+            tab_command(buf, "prev")
           end,
           desc = "前のタブ",
         },
-        ["y"] = { run = yank_url, desc = "URL をヤンク" },
+        ["yy"] = { run = yank_url, desc = "URL をヤンク" },
+        ["f"] = { run = hint_links, desc = "リンクをヒント選択" },
+        ["/"] = { run = find_in_page, desc = "ページ内検索" },
+        ["n"] = {
+          run = function(buf)
+            find_again(buf, false)
+          end,
+          desc = "次の検索結果",
+        },
+        ["N"] = {
+          run = function(buf)
+            find_again(buf, true)
+          end,
+          desc = "前の検索結果",
+        },
       }
 
       local function show_help()
@@ -425,6 +500,8 @@ return {
             attached[buf] = nil
             wants_insert[buf] = nil
             viewport_by_buf[buf] = nil
+            sessions_by_buf[buf] = nil
+            last_find[buf] = nil
           end,
         })
 
