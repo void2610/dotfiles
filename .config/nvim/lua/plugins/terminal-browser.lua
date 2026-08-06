@@ -191,11 +191,38 @@ return {
         end)
       end
 
+      -- ドットを含むだけでは URL と断定できない (lua string.format 等) ため、既知 TLD かパス付きに限る
+      local KNOWN_TLD = {}
+      for tld in
+        ("com net org io dev jp co uk ai app sh me gg to xyz cloud tv info so fm ly rs page site local"):gmatch("%S+")
+      do
+        KNOWN_TLD[tld] = true
+      end
+
+      local function resolve_target(input)
+        local text = vim.trim(input)
+        if text:match("^%a[%w+.-]*://") then
+          return text
+        end
+        if text:match("^localhost[:/]?") and not text:find("%s") then
+          return "http://" .. text
+        end
+        if not text:find("%s") then
+          local host = (text:match("^([^/?#]+)") or ""):gsub(":%d+$", "")
+          local tld = host:match("%.([%a]+)%.?$")
+          if tld and KNOWN_TLD[tld:lower()] then
+            return "https://" .. text
+          end
+        end
+        return "https://www.google.com/search?q=" .. vim.uri_encode(text)
+      end
+
       local function prompt_open(buf, in_new_tab)
-        vim.ui.input({ prompt = "URL: " }, function(url)
-          if not url or url == "" then
+        vim.ui.input({ prompt = in_new_tab and "新規タブ 検索 or URL: " or "検索 or URL: " }, function(input)
+          if not input or vim.trim(input) == "" then
             return
           end
+          local url = resolve_target(input)
           if in_new_tab then
             new_tab(buf, url)
           else
@@ -258,9 +285,9 @@ return {
         ["r"] = { args = { "reload" }, desc = "リロード" },
         ["t"] = {
           run = function(buf)
-            new_tab(buf)
+            prompt_open(buf, true)
           end,
-          desc = "新規タブ",
+          desc = "新規タブ (検索 or URL)",
         },
         ["x"] = { run = close_tab, desc = "タブを閉じる" },
         ["<Tab>"] = {
@@ -279,13 +306,13 @@ return {
           run = function(buf)
             prompt_open(buf, false)
           end,
-          desc = "URL を開く",
+          desc = "現在タブで検索 or URL",
         },
         ["O"] = {
           run = function(buf)
             prompt_open(buf, true)
           end,
-          desc = "URL を新規タブで開く",
+          desc = "新規タブ (t と同じ)",
         },
         ["y"] = { run = yank_url, desc = "URL をヤンク" },
       }
