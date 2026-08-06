@@ -317,16 +317,22 @@ return r.width>1&&r.height>1&&r.bottom>0&&r.right>0&&r.top<innerHeight&&r.left<i
 var n=els.length,c=chars.length,len=1;while(Math.pow(c,len)<n)len++;
 function lab(i){var s='',x=i;for(var k=0;k<len;k++){s=chars[x%%c]+s;x=Math.floor(x/c);}return s;}
 var box=d.createElement('div');box.style.cssText='position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;pointer-events:none';
-var map={};els.forEach(function(e,i){var L=lab(i);map[L]=e;var r=e.getBoundingClientRect();
+var items=[];els.forEach(function(e,i){var L=lab(i);var r=e.getBoundingClientRect();
 var t=d.createElement('div');t.textContent=L.toUpperCase();
 t.style.cssText='position:absolute;left:'+Math.max(0,r.left)+'px;top:'+Math.max(0,r.top)+'px;background:#fbbf24;color:#111;font:bold 13px monospace;padding:0 3px;border-radius:3px;box-shadow:0 1px 3px rgba(0,0,0,.6);line-height:1.3';
-box.appendChild(t);});
+box.appendChild(t);items.push({label:L,el:e,node:t});});
 d.body.appendChild(box);
-w.__tbHints={map:map,box:box,len:len,clear:function(){this.box.remove();w.__tbHints=null;}};
+w.__tbHints={items:items,box:box,len:len,clear:function(){this.box.remove();w.__tbHints=null;},
+filter:function(p){var m=[];this.items.forEach(function(it){var hit=it.label.indexOf(p)===0;
+it.node.style.display=hit?'':'none';
+if(hit){it.node.innerHTML='<span style="color:#b45309">'+p.toUpperCase()+'</span>'+it.label.slice(p.length).toUpperCase();m.push(it);}});
+return m;}};
 return len+':'+n;})(%q)]]):format(HINT_CHARS)
 
-      local HINT_CLICK = [[(function(l){var h=window.__tbHints;if(!h)return'no-hints';
-var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();return'ok'})(%q)]]
+      local HINT_FILTER = [[(function(p){var h=window.__tbHints;if(!h)return'gone';
+var m=h.filter(p);if(m.length===0){h.clear();return'none';}
+if(m.length===1){var e=m[0].el;h.clear();if(e.focus)e.focus();e.click();return'hit';}
+return'more:'+m.length;})(%q)]]
       local HINT_CLEAR = [[(function(){var h=window.__tbHints;if(h)h.clear();})()]]
 
       local function hint_links(buf)
@@ -334,6 +340,10 @@ var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();retur
           local len, count = stdout:match("(%d+):(%d+)")
           if not len or tonumber(count) == 0 then
             return warn("terminal-browser: 選択できる要素がありません (" .. vim.trim(stdout) .. ")")
+          end
+          local port = ports_by_buf[buf]
+          if not port then
+            return action(buf, { "eval", HINT_CLEAR })
           end
           vim.schedule(function()
             local typed = ""
@@ -343,12 +353,18 @@ var e=h.map[l];h.clear();if(!e)return'miss';if(e.focus)e.focus();e.click();retur
                 return action(buf, { "eval", HINT_CLEAR })
               end
               typed = typed .. ch:lower()
-            end
-            action(buf, { "eval", HINT_CLICK:format(typed) }, function(res)
-              if vim.trim(res):find("miss") then
-                warn("terminal-browser: ヒント " .. typed:upper() .. " はありません")
+              -- 1 候補に絞れた時点で確定するので、ラベルを最後まで打つ必要はない
+              local res = vim
+                .system({ AGENT, "--cdp", tostring(port), "eval", HINT_FILTER:format(typed) }, { text = true })
+                :wait()
+              local out = vim.trim(res.stdout or "")
+              if out:find("hit") then
+                return
               end
-            end)
+              if out:find("none") or out:find("gone") then
+                return warn("terminal-browser: ヒント " .. typed:upper() .. " はありません")
+              end
+            end
           end)
         end)
       end
