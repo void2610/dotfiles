@@ -141,6 +141,28 @@ return {
         end, quiet)
       end
 
+      -- agent-browser の scroll は瞬間移動でカクつくため smooth スクロールに寄せ、キーリピートは 1 回にまとめる
+      local SCROLL_COALESCE_MS = 40
+      local pending_scroll = {} ---@type table<integer, number>
+      local function smooth_scroll(buf, delta)
+        if pending_scroll[buf] then
+          pending_scroll[buf] = pending_scroll[buf] + delta
+          return
+        end
+        pending_scroll[buf] = delta
+        vim.defer_fn(function()
+          local total = pending_scroll[buf]
+          pending_scroll[buf] = nil
+          if not total or not vim.api.nvim_buf_is_valid(buf) then
+            return
+          end
+          action(buf, {
+            "eval",
+            ("(document.scrollingElement||document.body).scrollBy({top:%d,behavior:'smooth'})"):format(total),
+          }, nil, true)
+        end, SCROLL_COALESCE_MS)
+      end
+
       local DAEMON_SOCK = vim.fn.expand("~/.local/state/terminal-browser/daemon.sock")
       local STATE_DB = vim.fn.expand("~/.local/share/terminal-browser/terminal-browser.db")
       local sessions_by_buf = {} ---@type table<integer, string>
@@ -335,10 +357,30 @@ return {
       -- Surfingkeys のデフォルトに合わせる
       ---@type table<string, { args?: string[], run?: fun(buf: integer), desc: string }>
       local CONTROL_KEYS = {
-        ["j"] = { args = { "scroll", "down", tostring(SCROLL_STEP) }, desc = "下スクロール" },
-        ["k"] = { args = { "scroll", "up", tostring(SCROLL_STEP) }, desc = "上スクロール" },
-        ["d"] = { args = { "scroll", "down", tostring(SCROLL_PAGE) }, desc = "半ページ下" },
-        ["u"] = { args = { "scroll", "up", tostring(SCROLL_PAGE) }, desc = "半ページ上" },
+        ["j"] = {
+          run = function(buf)
+            smooth_scroll(buf, SCROLL_STEP)
+          end,
+          desc = "下スクロール",
+        },
+        ["k"] = {
+          run = function(buf)
+            smooth_scroll(buf, -SCROLL_STEP)
+          end,
+          desc = "上スクロール",
+        },
+        ["d"] = {
+          run = function(buf)
+            smooth_scroll(buf, SCROLL_PAGE)
+          end,
+          desc = "半ページ下",
+        },
+        ["u"] = {
+          run = function(buf)
+            smooth_scroll(buf, -SCROLL_PAGE)
+          end,
+          desc = "半ページ上",
+        },
         ["gg"] = { args = { "eval", "window.scrollTo(0,0)" }, desc = "先頭へ" },
         ["G"] = { args = { "eval", "window.scrollTo(0,document.body.scrollHeight)" }, desc = "末尾へ" },
         ["S"] = { args = { "back" }, desc = "戻る" },
@@ -443,7 +485,7 @@ return {
         end
         for key, dy in pairs({ ["<ScrollWheelDown>"] = SCROLL_STEP, ["<ScrollWheelUp>"] = -SCROLL_STEP }) do
           map(key, function()
-            action(buf, { "mouse", "wheel", tostring(dy) }, nil, true)
+            smooth_scroll(buf, dy)
           end, "ホイール")
         end
 
@@ -504,6 +546,7 @@ return {
             ports_by_buf[buf] = nil
             attached[buf] = nil
             wants_insert[buf] = nil
+            pending_scroll[buf] = nil
             viewport_by_buf[buf] = nil
             sessions_by_buf[buf] = nil
             last_find[buf] = nil
