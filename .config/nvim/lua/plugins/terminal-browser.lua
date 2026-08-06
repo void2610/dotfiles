@@ -141,25 +141,37 @@ return {
         end, quiet)
       end
 
-      -- agent-browser の scroll は瞬間移動でカクつくため smooth スクロールに寄せ、キーリピートは 1 回にまとめる
-      local SCROLL_COALESCE_MS = 40
-      local pending_scroll = {} ---@type table<integer, number>
-      local function smooth_scroll(buf, delta)
-        if pending_scroll[buf] then
-          pending_scroll[buf] = pending_scroll[buf] + delta
+      -- scrollBy の smooth は 1 回ごとに減速し切るため長押しで止まって見える。残距離に比例して進むスクローラを常駐させる
+      local SCROLL_COALESCE_MS = 30
+      local SCROLL_EASING = 0.3
+      local SCROLLER = ([[(function(dx,dy){var w=window,s=w.__tbScroll;
+if(!s){s=w.__tbScroll={x:0,y:0,run:false};}
+s.el=document.scrollingElement||document.body;s.x+=dx;s.y+=dy;
+if(!s.run){s.run=true;var take=function(r){var v=r*%s;return Math.abs(v)<1?r:v;};
+var step=function(){
+var vx=take(s.x),vy=take(s.y),bx=s.el.scrollLeft,by=s.el.scrollTop;
+s.el.scrollLeft=bx+vx;s.el.scrollTop=by+vy;s.x-=vx;s.y-=vy;
+if(s.el.scrollLeft===bx)s.x=0;
+if(s.el.scrollTop===by)s.y=0;
+if(Math.abs(s.x)<0.5&&Math.abs(s.y)<0.5){s.x=0;s.y=0;s.run=false;return;}
+requestAnimationFrame(step);};requestAnimationFrame(step);}})(%%d,%%d)]]):format(SCROLL_EASING)
+
+      local pending_scroll = {} ---@type table<integer, { x: number, y: number }>
+      local function smooth_scroll(buf, dy, dx)
+        dx = dx or 0
+        local pending = pending_scroll[buf]
+        if pending then
+          pending.x, pending.y = pending.x + dx, pending.y + dy
           return
         end
-        pending_scroll[buf] = delta
+        pending_scroll[buf] = { x = dx, y = dy }
         vim.defer_fn(function()
           local total = pending_scroll[buf]
           pending_scroll[buf] = nil
           if not total or not vim.api.nvim_buf_is_valid(buf) then
             return
           end
-          action(buf, {
-            "eval",
-            ("(document.scrollingElement||document.body).scrollBy({top:%d,behavior:'smooth'})"):format(total),
-          }, nil, true)
+          action(buf, { "eval", SCROLLER:format(total.x, total.y) }, nil, true)
         end, SCROLL_COALESCE_MS)
       end
 
@@ -375,11 +387,35 @@ return {
           end,
           desc = "半ページ下",
         },
-        ["u"] = {
+        ["e"] = {
           run = function(buf)
             smooth_scroll(buf, -SCROLL_PAGE)
           end,
           desc = "半ページ上",
+        },
+        ["P"] = {
+          run = function(buf)
+            smooth_scroll(buf, SCROLL_PAGE * 2)
+          end,
+          desc = "1 ページ下",
+        },
+        ["U"] = {
+          run = function(buf)
+            smooth_scroll(buf, -SCROLL_PAGE * 2)
+          end,
+          desc = "1 ページ上",
+        },
+        ["h"] = {
+          run = function(buf)
+            smooth_scroll(buf, 0, -SCROLL_STEP)
+          end,
+          desc = "左スクロール",
+        },
+        ["l"] = {
+          run = function(buf)
+            smooth_scroll(buf, 0, SCROLL_STEP)
+          end,
+          desc = "右スクロール",
         },
         ["gg"] = { args = { "eval", "window.scrollTo(0,0)" }, desc = "先頭へ" },
         ["G"] = { args = { "eval", "window.scrollTo(0,document.body.scrollHeight)" }, desc = "末尾へ" },
