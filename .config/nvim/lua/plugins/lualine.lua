@@ -21,6 +21,15 @@ return {
       -- シェル直下に子プロセスがいる間だけ「実行中」とみなし、プロンプトに戻れば非表示にする。
       local term_state = { line = "" }
 
+      -- cmd なし = <c-/> のシェル端末。claudecode 等の cmd 付き端末は常に子プロセスを持つため除外する。
+      local function is_shell_terminal(buf)
+        if not buf or not vim.api.nvim_buf_is_valid(buf) then
+          return false
+        end
+        local info = vim.b[buf].snacks_terminal
+        return type(info) == "table" and info.cmd == nil
+      end
+
       local function snacks_terminal_buf()
         local ok, snacks = pcall(require, "snacks")
         if not ok or not snacks.terminal then
@@ -29,13 +38,13 @@ return {
         local terms = snacks.terminal.list()
         local current = vim.api.nvim_get_current_buf()
         for _, t in ipairs(terms) do
-          if t.buf == current then
+          if t.buf == current and is_shell_terminal(t.buf) then
             return t.buf
           end
         end
         local latest
         for _, t in ipairs(terms) do
-          if t.buf and vim.api.nvim_buf_is_valid(t.buf) then
+          if is_shell_terminal(t.buf) then
             latest = t.buf
           end
         end
