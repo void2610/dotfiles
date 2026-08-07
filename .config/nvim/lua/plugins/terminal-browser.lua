@@ -39,10 +39,10 @@ return {
         border = "rounded",
       }
 
-      -- 描画 fps は既定でディスプレイのリフレッシュレート。高すぎると画像転送が追いつかず表示が乱れる
+      -- 本体の既定はディスプレイのリフレッシュレート (144Hz 等) だが、毎フレームの画像転送が追いつかずカクつく
+      local DEFAULT_FPS = 60
       local function browser_env()
-        local fps = vim.g.terminal_browser_fps
-        return fps and { TERMINAL_BROWSER_FPS = tostring(fps) } or nil
+        return { TERMINAL_BROWSER_FPS = tostring(vim.g.terminal_browser_fps or DEFAULT_FPS) }
       end
 
       local SCROLL_STEP = 120
