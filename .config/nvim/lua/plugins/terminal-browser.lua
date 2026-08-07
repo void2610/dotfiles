@@ -39,6 +39,12 @@ return {
         border = "rounded",
       }
 
+      -- 描画 fps は既定でディスプレイのリフレッシュレート。高すぎると画像転送が追いつかず表示が乱れる
+      local function browser_env()
+        local fps = vim.g.terminal_browser_fps
+        return fps and { TERMINAL_BROWSER_FPS = tostring(fps) } or nil
+      end
+
       local SCROLL_STEP = 120
       local SCROLL_PAGE = 480
 
@@ -668,7 +674,7 @@ return'more:'+m.length;})(%q)]]
         if url and url ~= "" then
           table.insert(cmd, url)
         end
-        term = Snacks.terminal.open(cmd, { win = float_win })
+        term = Snacks.terminal.open(cmd, { win = float_win, env = browser_env() })
         attach_control_mode(term)
         return true
       end
@@ -682,7 +688,7 @@ return'more:'+m.length;})(%q)]]
         if url and url ~= "" then
           table.insert(cmd, url)
         end
-        attach_control_mode(Snacks.terminal.open(cmd, { win = { position = "current" } }))
+        attach_control_mode(Snacks.terminal.open(cmd, { win = { position = "current" }, env = browser_env() }))
         return true
       end
 
