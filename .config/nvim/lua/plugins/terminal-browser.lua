@@ -731,7 +731,11 @@ return'more:'+m.length;})(%q)]]
       local fallback = vim.ui.open
       ---@diagnostic disable-next-line: duplicate-set-field
       vim.ui.open = function(path, opts)
-        if type(path) == "string" and path:match("^https?://") and open_float(path) then
+        -- expr マッピング等の textlock 下から呼ばれるとウィンドウを作れない (E565) ので必ず遅延させる
+        if type(path) == "string" and path:match("^https?://") and BIN then
+          vim.schedule(function()
+            open_float(path)
+          end)
           return
         end
         return fallback(path, opts)
