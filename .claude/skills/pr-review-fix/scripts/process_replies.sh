@@ -11,9 +11,15 @@ fi
 
 mapping_file="${1:?mapping.json のパスが必須です}"
 dry_run=false
-if [[ "${2:-}" == "--dry-run" ]]; then
-  dry_run=true
-fi
+# ローカルのブランチ名が PR の head ブランチと違うと gh がブランチから PR を引けないため、番号を明示できるようにする
+pr_number=""
+for arg in "${@:2}"; do
+  if [[ "$arg" == "--dry-run" ]]; then
+    dry_run=true
+  else
+    pr_number="$arg"
+  fi
+done
 
 if [[ ! -f "$mapping_file" ]]; then
   echo "エラー: mapping ファイルが存在しません: ${mapping_file}" >&2
@@ -88,7 +94,7 @@ for ((i = 0; i < count; i++)); do
   fi
 
   echo "[send] #${seq} comment_id=${comment_id}" >&2
-  if ! printf '%s' "$body" | "${script_dir}/reply_to_comment.sh" "$comment_id" -; then
+  if ! printf '%s' "$body" | "${script_dir}/reply_to_comment.sh" "$comment_id" - "$pr_number"; then
     echo "[error] #${seq}: 返信に失敗しました。resolve はスキップします。" >&2
     continue
   fi
