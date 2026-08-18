@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --fg: #1f2328; --bg: #ffffff; --muted: #57606a;
+    --accent: #0969da; --border: #d0d7de;
+    --callout-bg: #ddf4ff; --callout-border: #54aeff;
+    --code-bg: #f6f8fa;
+    --ok: #1a7f37; --ng: #cf222e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fg: #e6edf3; --bg: #0d1117; --muted: #8b949e;
+      --accent: #58a6ff; --border: #30363d;
+      --callout-bg: #121d2f; --callout-border: #1f6feb;
+      --code-bg: #161b22;
+      --ok: #3fb950; --ng: #f85149;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; padding: 2rem 1.25rem; max-width: 46rem;
+    color: var(--fg); background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+    line-height: 1.8;
+  }
+  h1, h2, h3 { line-height: 1.4; }
+  h2 { border-bottom: 1px solid var(--border); padding-bottom: .3em; margin-top: 3rem; }
+  a { color: var(--accent); }
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px;
+    padding: 1rem; overflow-x: auto; white-space: pre; line-height: 1.5;
+    font-size: .875rem;
+  }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  :not(pre) > code { background: var(--code-bg); padding: .15em .35em; border-radius: 4px; font-size: .875em; }
+  figure { margin: 1.5rem 0; }
+  figcaption { color: var(--muted); font-size: .875rem; text-align: center; margin-top: .5rem; }
+  table { border-collapse: collapse; width: 100%; display: block; overflow-x: auto; }
+  th, td { border: 1px solid var(--border); padding: .4em .8em; }
+  .callout {
+    background: var(--callout-bg); border-left: 4px solid var(--callout-border);
+    border-radius: 6px; padding: .75rem 1rem; margin: 1.5rem 0;
+  }
+  .callout-title { font-weight: 700; }
+  nav#toc {
+    border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.5rem; margin: 2rem 0;
+  }
+  nav#toc ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+  /* クイズ */
+  .quiz-question { border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; margin: 1.5rem 0; }
+  .quiz-options { list-style: none; padding: 0; margin: .75rem 0 0; }
+  .quiz-options li { margin: .5rem 0; }
+  .quiz-options button {
+    width: 100%; text-align: left; padding: .6rem .9rem; cursor: pointer;
+    background: var(--code-bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; line-height: 1.5;
+  }
+  .quiz-options button:hover { border-color: var(--accent); }
+  .quiz-options button.correct { border-color: var(--ok); outline: 2px solid var(--ok); }
+  .quiz-options button.incorrect { border-color: var(--ng); outline: 2px solid var(--ng); }
+  .quiz-feedback { display: none; margin-top: .75rem; padding: .6rem .9rem; border-radius: 6px; }
+  .quiz-feedback.shown { display: block; }
+  .quiz-feedback.ok { background: color-mix(in srgb, var(--ok) 12%, transparent); }
+  .quiz-feedback.ng { background: color-mix(in srgb, var(--ng) 12%, transparent); }
+  /* 用語集 */
+  dl.glossary dt { font-weight: 700; margin-top: 1rem; }
+  dl.glossary dd { margin-left: 0; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>{{TITLE}}</h1>
+
+<nav id="toc">
+  <strong>目次</strong>
+  <!-- 本文の h2 から自動生成される -->
+</nav>
+
+<!--
+  ここに本文セクションを書く。想定構成:
+  <section id="background"><h2>背景</h2>…</section>
+  <section id="intuition"><h2>直観</h2>…</section>
+  <section id="code"><h2>コード</h2>…</section>
+  <section id="quiz"><h2>クイズ</h2>…</section>
+  <section id="glossary"><h2>用語集</h2><dl class="glossary">…</dl></section>
+
+  コールアウトの書き方:
+  <div class="callout"><span class="callout-title">💡 キーコンセプト:</span> …</div>
+
+  クイズ1問の書き方 (data-correct に正解ボタンの data-key を入れる。
+  正解の位置は問題ごとにばらけさせ、選択肢の長さは揃えること):
+  <div class="quiz-question" data-correct="b">
+    <p><strong>Q1.</strong> 質問文…</p>
+    <ul class="quiz-options">
+      <li><button data-key="a">選択肢A</button></li>
+      <li><button data-key="b">選択肢B</button></li>
+      <li><button data-key="c">選択肢C</button></li>
+      <li><button data-key="d">選択肢D</button></li>
+    </ul>
+    <div class="quiz-feedback" data-key="a">不正解のときのフィードバック…</div>
+    <div class="quiz-feedback" data-key="b">正解のときのフィードバック…</div>
+    <div class="quiz-feedback" data-key="c">…</div>
+    <div class="quiz-feedback" data-key="d">…</div>
+  </div>
+-->
+
+{{BODY}}
+
+<script>
+  // 目次を h2 から自動生成
+  (function () {
+    var toc = document.querySelector('#toc');
+    var ul = document.createElement('ul');
+    document.querySelectorAll('section > h2').forEach(function (h, i) {
+      if (!h.id) h.id = 'sec-' + (i + 1);
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
+    toc.appendChild(ul);
+  })();
+
+  // クイズの正誤判定
+  document.querySelectorAll('.quiz-question').forEach(function (q) {
+    var correct = q.dataset.correct;
+    q.querySelectorAll('.quiz-options button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var isCorrect = btn.dataset.key === correct;
+        q.querySelectorAll('.quiz-options button').forEach(function (b) {
+          b.classList.remove('correct', 'incorrect');
+        });
+        btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        q.querySelectorAll('.quiz-feedback').forEach(function (f) {
+          var mine = f.dataset.key === btn.dataset.key;
+          f.classList.toggle('shown', mine);
+          if (mine) { f.classList.toggle('ok', isCorrect); f.classList.toggle('ng', !isCorrect); }
+        });
+      });
+    });
+  });
+</script>
+</body>
+</html>
