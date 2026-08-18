@@ -1,5 +1,5 @@
 {
-  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.3",
+  "$schema" : "https:\/\/schema.linearmouse.app\/0.11.4",
   "schemes" : [
     {
       "if" : {
@@ -77,6 +77,33 @@
         },
         "distance" : {
           "vertical" : 7
+        },
+        "smoothed" : {
+          "vertical" : {
+            "enabled" : false
+          }
+        },
+        "speed" : {
+          "vertical" : 0
+        }
+      }
+    },
+    {
+      "if" : {
+        "device" : {
+          "category" : "trackpad",
+          "productID" : "0x0",
+          "productName" : "Apple Internal Keyboard \/ Trackpad",
+          "serialNumber" : "FM7HMM0C30R0000YCJ+ANBB",
+          "vendorID" : "0x0"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1
+        },
+        "distance" : {
+          "vertical" : "auto"
         },
         "smoothed" : {
           "vertical" : {
