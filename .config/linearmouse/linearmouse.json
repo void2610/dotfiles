@@ -114,6 +114,26 @@
           "vertical" : 0
         }
       }
+    },
+    {
+      "if" : {
+        "app" : "company.thebrowser.Browser",
+        "device" : {
+          "category" : "trackpad",
+          "productID" : "0x0",
+          "productName" : "Apple Internal Keyboard \/ Trackpad",
+          "serialNumber" : "FM7HMM0C30R0000YCJ+ANBB",
+          "vendorID" : "0x0"
+        }
+      },
+      "scrolling" : {
+        "acceleration" : {
+          "vertical" : 1.24
+        },
+        "speed" : {
+          "vertical" : 0
+        }
+      }
     }
   ]
 }
