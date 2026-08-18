@@ -20,7 +20,6 @@
   },
   "permissions": {
     "allow": [
-      "Bash(*)",
       "Edit",
       "Write",
       "Read",
@@ -38,6 +37,15 @@
   "model": "claude-fable-5",
   "hooks": {
     "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/manual-mode-ask-all.sh"
+          }
+        ]
+      },
       {
         "matcher": "Bash",
         "hooks": [
