@@ -2,6 +2,8 @@ return {
   {
     dir = vim.fn.expand("~/Documents/GitHub/zetema"),
     name = "zetema",
+    -- ローカルリポジトリを持たないマシンでは lazy.nvim が起動毎に不存在エラーを出すため無効化する。
+    enabled = vim.fn.isdirectory(vim.fn.expand("~/Documents/GitHub/zetema")) == 1,
     cmd = { "Zetema", "ZetemaSource", "ZetemaAsk", "ZetemaMore", "ZetemaChat", "ZetemaReview", "ZetemaHistory", "ZetemaMode", "ZetemaViewed", "ZetemaView", "ZetemaJump", "ZetemaJumpBack" },
     keys = {
       { "<leader>zo", "<cmd>Zetema<cr>", desc = "zetema: diff を開く" },
