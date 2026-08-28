@@ -35,6 +35,27 @@ fi
 "${DOTFILES_DIR}/link.sh"
 
 echo "=========================================="
+echo "ログインシェルを zsh に変更"
+echo "=========================================="
+echo ""
+if ! command -v zsh >/dev/null 2>&1; then
+  echo "zsh が見つかりません。インストール後に手動で変更してください。"
+else
+  ZSH_PATH="$(command -v zsh)"
+  # getent は macOS に無いため $SHELL で判定する
+  if [ "${SHELL}" = "${ZSH_PATH}" ]; then
+    echo "ログインシェルは既に zsh です。スキップします。"
+  else
+    # chsh は /etc/shells に登録されたシェルのみ受け付ける
+    if ! grep -qx "${ZSH_PATH}" /etc/shells; then
+      echo "${ZSH_PATH}" | sudo tee -a /etc/shells >/dev/null
+    fi
+    chsh -s "${ZSH_PATH}"
+    echo "ログインシェルを ${ZSH_PATH} に変更しました。再ログイン後に反映されます。"
+  fi
+fi
+
+echo "=========================================="
 echo "  セットアップが完了しました！"
 echo "=========================================="
 echo ""
