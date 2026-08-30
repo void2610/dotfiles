@@ -2,10 +2,11 @@
   "ignorePatterns": [
     "docs/",
     "**/test/",
+    "**/Test/",
     "**/tests/",
+    "**/Tests/",
     "**/__tests__/",
     "*.md",
-
     "*.meta",
     "*.unity",
     "*.prefab",
