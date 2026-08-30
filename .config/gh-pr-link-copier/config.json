@@ -1,0 +1,25 @@
+{
+  "ignorePatterns": [
+    "docs/",
+    "**/test/",
+    "**/tests/",
+    "**/__tests__/",
+    "*.md",
+
+    "*.meta",
+    "*.unity",
+    "*.prefab",
+    "*.asset",
+    "*.mat",
+    "*.anim",
+    "*.controller",
+    "*.overrideController",
+    "*.spriteatlas",
+    "*.physicMaterial",
+    "*.physicsMaterial2D",
+    "*.asmdef",
+    "*.inputactions",
+    "ProjectSettings/",
+    "Packages/packages-lock.json"
+  ]
+}
