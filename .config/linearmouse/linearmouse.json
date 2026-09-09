@@ -49,7 +49,7 @@
       "scrolling" : {
         "acceleration" : 1,
         "distance" : {
-          "horizontal" : 2,
+          "horizontal" : "14.3px",
           "vertical" : 5
         },
         "reverse" : true,
