@@ -36,7 +36,17 @@ cur=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
 [[ -n "$cur" && -n "$default" && "$cur" != "$default" ]] || exit 0
 prstate=$(gh pr view --json state --jq .state 2>/dev/null || true)
 if [[ "$prstate" == "OPEN" ]]; then
-  echo "ブランチ操作をブロック: 現在ブランチ '$cur' には OPEN な PR があります (フロー進行中)。作業中のブランチ切り替え・新規作成は禁止です。別ブランチが必要ならユーザーに報告し指示を待つこと。ユーザーが明示的に承認した場合のみ、同じコマンドを 'SHIP_ALLOW_BRANCH_SWITCH=1 <cmd>' の形で再実行すること。" >&2
+  # clean かつ push 済みなら失う作業が無いため許可する (worktree で連続してタスクを受ける運用で毎回の承認待ちになる)
+  if [[ -z "$(git status --porcelain 2>/dev/null)" ]]; then
+    remote_ref=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)
+    if [[ -z "$remote_ref" ]] && git rev-parse --verify -q "origin/$cur" >/dev/null 2>&1; then
+      remote_ref="origin/$cur"
+    fi
+    if [[ -n "$remote_ref" && "$(git rev-list --count "$remote_ref..HEAD" 2>/dev/null || echo 1)" == "0" ]]; then
+      exit 0
+    fi
+  fi
+  echo "ブランチ操作をブロック: 現在ブランチ '$cur' には OPEN な PR があり、未コミットまたは未 push の変更が残っています。commit / push で提出を完了させてから移動すること。それでも移動が必要ならユーザーに報告し指示を待ち、明示承認があった場合のみ 'SHIP_ALLOW_BRANCH_SWITCH=1 <cmd>' で再実行すること。" >&2
   exit 2
 fi
 exit 0
