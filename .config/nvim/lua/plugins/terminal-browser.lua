@@ -733,19 +733,19 @@ return'more:'+m.length;})(%q)]]
 
       vim.keymap.set({ "n", "t" }, "<C-=>", toggle, { silent = true, desc = "terminal-browser を開閉" })
 
-      -- gx (netrw 代替) は vim.ui.open を呼ぶため、URL だけ terminal-browser のフロートへ横取りする
-      local fallback = vim.ui.open
-      ---@diagnostic disable-next-line: duplicate-set-field
-      vim.ui.open = function(path, opts)
-        -- expr マッピング等の textlock 下から呼ばれるとウィンドウを作れない (E565) ので必ず遅延させる
-        if type(path) == "string" and path:match("^https?://") and BIN then
-          vim.schedule(function()
-            open_float(path)
-          end)
-          return
-        end
-        return fallback(path, opts)
-      end
+      -- gx をデフォルトブラウザでなく terminal-browser のフロートで開きたくなったら以下を復活させる
+      -- local fallback = vim.ui.open
+      -- ---@diagnostic disable-next-line: duplicate-set-field
+      -- vim.ui.open = function(path, opts)
+      --   -- expr マッピング等の textlock 下から呼ばれるとウィンドウを作れない (E565) ので必ず遅延させる
+      --   if type(path) == "string" and path:match("^https?://") and BIN then
+      --     vim.schedule(function()
+      --       open_float(path)
+      --     end)
+      --     return
+      --   end
+      --   return fallback(path, opts)
+      -- end
     end,
   },
 }
