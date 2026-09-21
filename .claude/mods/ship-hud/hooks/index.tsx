@@ -59,6 +59,29 @@ async function refresh($: EngineInterface): Promise<boolean> {
 
 const isPending = (p: Phase) => p.state !== "done" && p.state !== "skip";
 
+// 人が閉じた後は自動再オープンで抗わない
+let userClosed = false;
+let pollerStarted = false;
+
+async function poll($: EngineInterface): Promise<void> {
+  const changed = await refresh($);
+  const active = status.active && status.phases.some(isPending);
+  // セッション途中でフローが始まったケースも自動で開く
+  if (active && !paneOpen && !userClosed) {
+    await $.ui.open({ id: PANE_ID, title: "ship" });
+    paneOpen = true;
+    return;
+  }
+  if (changed && paneOpen) $.ui.invalidate("ui.render");
+}
+
+// リロード時はタイマー破棄 + session.start 非再発火のため、任意のフックから遅延起動できるようにする
+function ensurePoller($: EngineInterface): void {
+  if (pollerStarted) return;
+  pollerStarted = true;
+  $.clock.every(5000, () => poll($));
+}
+
 export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
     await $.tool.register({
@@ -70,19 +93,21 @@ export const register: Register = (on) => {
       name: "ship-hud",
       description: "ship フローの状態ペインを開閉する",
     });
-    await refresh($);
-    // 常に開く (144 桁未満の端末では engine 側が描画を保留する)
-    await $.ui.open({ id: PANE_ID, title: "ship" });
-    paneOpen = true;
-    $.clock.every(5000, async () => {
-      if (!paneOpen) return;
-      if (await refresh($)) $.ui.invalidate("ui.render");
-    });
+    ensurePoller($);
+    await poll($);
+    return next(e);
+  });
+
+  on("prompt.submit", ($, e, next) => {
+    ensurePoller($);
     return next(e);
   });
 
   on("ui.close", (_$, e, next) => {
-    if (e.id === PANE_ID) paneOpen = false;
+    if (e.id === PANE_ID) {
+      paneOpen = false;
+      if (e.origin.kind === "person") userClosed = true;
+    }
     return next(e);
   });
 
