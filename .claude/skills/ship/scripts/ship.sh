@@ -91,7 +91,12 @@ verify_knowledge() {
 }
 
 verify_commit() {
-  git diff --quiet && git diff --cached --quiet || die "未コミットの変更が残っている。commit スキルでコミットすること"
+  # ship.json の ignoreDirty (パス配列) は clean 判定から除外する (フローと無関係なユーザー変更でブロックしないため)
+  local -a ex=()
+  while IFS= read -r p; do [[ -n "$p" ]] && ex+=(":(exclude)$p"); done \
+    < <(jq -r '(.ignoreDirty // [])[]' "$config_file" 2>/dev/null || true)
+  git diff --quiet -- . ${ex[@]+"${ex[@]}"} && git diff --cached --quiet -- . ${ex[@]+"${ex[@]}"} \
+    || die "未コミットの変更が残っている。commit スキルでコミットすること (無関係な変更は ship.json の ignoreDirty に登録可)"
   local base; base=$(base_ref)
   if [[ -n "$base" ]]; then
     [[ $(git rev-list --count "$base..HEAD") -gt 0 ]] || die "コミットが 1 件も積まれていない"
