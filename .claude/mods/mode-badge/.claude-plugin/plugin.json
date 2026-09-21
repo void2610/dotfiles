@@ -1,0 +1,6 @@
+{
+  "name": "mode-badge",
+  "author": { "name": "void2610" },
+  "description": "Manual (default) モード中、フッターのモード表示に MANUAL バッジを即時描画する",
+  "version": "0.1.0"
+}
