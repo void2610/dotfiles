@@ -71,11 +71,9 @@ export const register: Register = (on) => {
       description: "ship フローの状態ペインを開閉する",
     });
     await refresh($);
-    // 進行中フローがあれば自動で開く (144 桁未満の端末では engine 側が描画を保留する)
-    if (status.active && status.phases.some(isPending)) {
-      await $.ui.open({ id: PANE_ID, title: "ship" });
-      paneOpen = true;
-    }
+    // 常に開く (144 桁未満の端末では engine 側が描画を保留する)
+    await $.ui.open({ id: PANE_ID, title: "ship" });
+    paneOpen = true;
     $.clock.every(5000, async () => {
       if (!paneOpen) return;
       if (await refresh($)) $.ui.invalidate("ui.render");
