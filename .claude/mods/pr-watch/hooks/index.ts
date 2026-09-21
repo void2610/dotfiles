@@ -12,6 +12,9 @@ type Watched = {
 
 let watched: Watched | undefined;
 let pollerStarted = false;
+let tick = 0;
+
+const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
 function ciStateOf(
   rollup: readonly { state?: string; conclusion?: string; status?: string }[],
@@ -56,6 +59,7 @@ async function poll($: EngineInterface): Promise<void> {
     ])) ?? ""
   ).replace(/^origin\//, "");
   if (!branch || branch === defaultBranch) {
+    if (watched) $.ui.status(undefined);
     watched = undefined;
     return;
   }
@@ -68,6 +72,7 @@ async function poll($: EngineInterface): Promise<void> {
     "number,state,statusCheckRollup,reviews",
   ]);
   if (!json) {
+    if (watched) $.ui.status(undefined);
     watched = undefined;
     return;
   }
@@ -87,6 +92,7 @@ async function poll($: EngineInterface): Promise<void> {
     return;
   }
   if (pr.state !== "OPEN") {
+    if (watched) $.ui.status(undefined);
     watched = undefined;
     return;
   }
@@ -107,6 +113,14 @@ async function poll($: EngineInterface): Promise<void> {
   const w = watched;
 
   const ci = ciStateOf(pr.statusCheckRollup ?? []);
+  // ポーリングが生きていることを示すため、回転グリフ付きで status 行に常時表示する
+  tick = (tick + 1) % SPINNER.length;
+  const review = w.notifiedReview
+    ? "レビュー対応中"
+    : copilotReviews > w.reviewBaseline
+      ? "レビュー到着"
+      : "レビュー待ち";
+  $.ui.status(`${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
   if (ci !== w.lastCi) {
     if (ci === "fail" && !w.notifiedCiFail) {
       w.notifiedCiFail = true;
