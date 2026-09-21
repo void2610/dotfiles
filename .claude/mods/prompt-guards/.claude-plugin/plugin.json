@@ -1,0 +1,6 @@
+{
+  "name": "prompt-guards",
+  "author": { "name": "void2610" },
+  "description": "プロンプト内容に応じた文脈注入 (開放的依頼の契約確認・reset 積み直し・gh stack help)",
+  "version": "0.1.0"
+}

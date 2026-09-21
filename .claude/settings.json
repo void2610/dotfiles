@@ -1,5 +1,10 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":[" — Fiverr — Build your web app now"]},
+  "spinnerVerbs": {
+    "mode": "replace",
+    "verbs": [
+      " — EaseUS — Recover lost data and manage disk partitions wi…"
+    ]
+  },
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -117,28 +122,13 @@
           }
         ]
       }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/detect-open-ended-task.sh"
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/detect-reset-restack.sh"
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/inject-gh-stack-help.sh"
-          }
-        ]
-      }
     ]
   },
-  "statusLine": {"type":"command","command":"node \"/Users/shuya/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
+  "statusLine": {
+    "type": "command",
+    "command": "node \"/Users/shuya/.kickbacks/vibe-ads-statusline.mjs\"",
+    "padding": 0
+  },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
