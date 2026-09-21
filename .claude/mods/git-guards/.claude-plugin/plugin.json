@@ -1,0 +1,6 @@
+{
+  "name": "git-guards",
+  "author": { "name": "void2610" },
+  "description": "git commit/push/PR 作成のスキル経由強制と、作業中ブランチのロック",
+  "version": "0.1.0"
+}
