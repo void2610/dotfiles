@@ -8,7 +8,7 @@ export const register: Register = (on) => {
       const tok = e.usage
         ? ` · ${(e.usage.input_tokens + e.usage.output_tokens).toLocaleString()} tok`
         : "";
-      $.ui.toast(`⏱ ${sec}s${tok}`);
+      $.ui.toast(`⏱ ${sec}s${tok}`, { timeoutMs: 10000 });
     }
     return next(e);
   });
