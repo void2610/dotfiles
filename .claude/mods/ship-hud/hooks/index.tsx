@@ -62,11 +62,6 @@ const isPending = (p: Phase) => p.state !== "done" && p.state !== "skip";
 // 人が閉じた後は自動再オープンで抗わない
 let userClosed = false;
 let pollerStarted = false;
-// asked (コマンド経由) の open は 110 桁から、unasked (自動) は 144 桁から描画される
-let paneAsked = false;
-
-const paneDrawn = (columns: number | undefined) =>
-  paneOpen && columns !== undefined && columns >= (paneAsked ? 110 : 144);
 
 async function poll($: EngineInterface): Promise<void> {
   const changed = await refresh($);
@@ -125,7 +120,6 @@ export const register: Register = (on) => {
     await refresh($);
     await $.ui.open({ id: PANE_ID, title: "ship" });
     paneOpen = true;
-    paneAsked = true;
     return { text: "ship HUD を開きました" };
   });
 
@@ -133,26 +127,6 @@ export const register: Register = (on) => {
   on("tool.call", { tool: /^mcp__ship-hud__status$/ }, async ($, _e, _next) => {
     await refresh($);
     return { result: raw };
-  });
-
-  // Pane が幅ゲート (paneDrawn 参照) で描かれない環境向けに、最低限の現在地を 1 行出す
-  on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
-    if (!status.active || paneDrawn(e.viewport?.columns)) return next(e);
-    const s = status;
-    const cur = s.phases.find(isPending);
-    if (!cur) return next(e);
-    const done = s.phases.filter((p) => !isPending(p)).length;
-    const { Box, Text } = $.ui.resolve(e);
-    return (
-      <Box>
-        <Text dimColor>{"⛵ ship: "}</Text>
-        <Text color="cyan" bold>{`→${cur.name}`}</Text>
-        <Text dimColor>{` (${done}/${s.phases.length})`}</Text>
-        {s.extras.worktree_dirty === "yes" && (
-          <Text color="yellow">{" ⚠dirty"}</Text>
-        )}
-      </Box>
-    );
   });
 
   on("ui.render", { component: "Pane" }, ($, e, next) => {
