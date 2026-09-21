@@ -16,3 +16,4 @@
 .config/ghostty/config-linux
 /.config/terminal-browser/extensions/
 .config/gh/config.yml
+outputs/
