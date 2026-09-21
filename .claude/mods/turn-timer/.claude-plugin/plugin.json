@@ -1,0 +1,6 @@
+{
+  "name": "turn-timer",
+  "author": { "name": "void2610" },
+  "description": "各ターンの所要時間とトークン消費をトーストで表示する",
+  "version": "0.1.0"
+}
