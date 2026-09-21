@@ -60,6 +60,7 @@ return {
       opts.picker.sources.explorer = vim.tbl_deep_extend("force", opts.picker.sources.explorer or {}, {
         layout = { layout = { width = 25 } },
         hidden = true, -- ドットファイル (隠しファイル) を表示する
+        ignored = true, -- gitignore 対象 (.env 等) も表示する
         exclude = vim.deepcopy(unity_exclude),
         actions = {
           explorer_fix_all = function(picker)
