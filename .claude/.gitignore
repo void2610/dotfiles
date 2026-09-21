@@ -12,7 +12,7 @@
 !/hooks/**
 !/mods/
 !/mods/**
-# /plugin-types の生成型定義と依存はローカルのみ (Mods API 変更時の追従を楽にする)
+# plugin-types コマンドが生成する型定義と依存はローカルのみ (Mods API 変更時の追従を楽にする)
 /mods/types/
 /mods/node_modules/
 !/notify.sh
