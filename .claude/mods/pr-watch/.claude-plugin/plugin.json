@@ -1,0 +1,6 @@
+{
+  "name": "pr-watch",
+  "author": { "name": "void2610" },
+  "description": "現在ブランチの OPEN PR を常駐監視し、CI fail / Copilot レビュー到着でセッションを起こす (pr-create の background スクリプト置き換え)",
+  "version": "0.1.0"
+}
