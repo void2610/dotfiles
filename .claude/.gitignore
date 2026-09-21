@@ -14,6 +14,8 @@
 !/settings.json
 !/skills/
 !/skills/**
+# claude.ai から自動同期されるビルトインスキルのキャッシュは追跡しない
+/skills/synced/
 !/statusline.sh
 !/statusline.py
 **/.DS_Store
