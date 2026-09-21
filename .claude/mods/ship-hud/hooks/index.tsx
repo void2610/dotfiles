@@ -136,21 +136,20 @@ export const register: Register = (on) => {
       return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
     }
     const s = status;
-    const cur = s.phases.findIndex(isPending);
+    const shown = s.phases.filter((p) => p.state !== "skip");
+    const cur = shown.findIndex(isPending);
     return (
       <Box flexDirection="column">
         <Text bold>{s.goal}</Text>
         <Text dimColor>{s.branch}</Text>
         <Box flexWrap="wrap">
-          {s.phases.map((p, i) => {
+          {shown.map((p, i) => {
             const [icon, color] =
               p.state === "done"
                 ? ["✓", "green"]
-                : p.state === "skip"
-                  ? ["−", "yellow"]
-                  : i === cur
-                    ? ["→", "cyan"]
-                    : ["○", undefined];
+                : i === cur
+                  ? ["→", "cyan"]
+                  : ["○", undefined];
             return (
               <Text key={p.name} color={color} bold={i === cur}>
                 {`${icon}${p.name} `}
@@ -159,7 +158,7 @@ export const register: Register = (on) => {
           })}
         </Box>
         {s.extras.worktree_dirty === "yes" && (
-          <Text color="yellow">⚠ 未コミット変更あり</Text>
+          <Text dimColor>⚠ 未コミット変更あり</Text>
         )}
         {s.extras.pr && <Text dimColor>{`PR: ${s.extras.pr}`}</Text>}
         {s.extras.ci && <Text dimColor>{`CI: ${s.extras.ci}`}</Text>}
