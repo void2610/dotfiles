@@ -1,4 +1,4 @@
-import type { EngineInterface, Register } from "claude-code";
+import type { Run } from "./caps";
 
 const MARKERS: readonly [RegExp, string][] = [
   [
@@ -14,7 +14,7 @@ const MARKERS: readonly [RegExp, string][] = [
   [/\.(el|lisp|clj)$/, ";"],
 ];
 
-const MULTILINE_MSG = (path: string, found: string) =>
+const MSG = (path: string, found: string) =>
   `CLAUDE.md の Comments ルール違反の可能性: ${path} に複数行コメントブロックが追加された。
 以下のワークフローを今回の Edit 1 回で完結させる (段階的な削減はしない):
 
@@ -30,11 +30,6 @@ const MULTILINE_MSG = (path: string, found: string) =>
 
 ## 検出ブロック
 ${found}`;
-
-const FEEDBACK_MEMORY_MSG = `feedback メモリが保存された。この指導の適用スコープを判定し、正しい階層へ配置し直せ:
-1. 全プロジェクト普遍 → 決定論化できるなら hook 化をユーザーに提案。できなければ ~/.claude/CLAUDE.md へ昇格し、メモリは削除
-2. リポジトリ普遍 → repo の CLAUDE.md / .claude/skills へ (git 同期で全 worktree に届き、乖離が構造的に消える)。メモリは削除
-3. このリポジトリの一時的・作業固有の知識 → メモリのままでよい。ただし陳腐化条件 (何が完了したら消すか) を本文に明記せよ`;
 
 // 2行以上連続するフルラインコメントブロックを抽出 (shebang・@ディレクティブ行は除外)
 function extractBlocks(text: string, m: string, dm: string): string[] {
@@ -53,7 +48,7 @@ function extractBlocks(text: string, m: string, dm: string): string[] {
     ) {
       let r = l.slice(m.length);
       r = r.replace(/^[-!/*#";]*[ \t]*/, "");
-      // awk の next 相当: @行は flush せず読み飛ばす (既存ブロックの非連続化と対で old_blocks 比較が必要)
+      // awk の next 相当: @行は flush せず読み飛ばす (既存ブロックの非連続化と対で old 側の抽出結果比較が必要)
       if (r.startsWith("@")) continue;
       buf.push(line);
     } else flush();
@@ -62,8 +57,8 @@ function extractBlocks(text: string, m: string, dm: string): string[] {
   return blocks;
 }
 
-async function detectMultilineComments(
-  $: EngineInterface,
+export async function commentStyleNote(
+  run: Run,
   path: string,
   newText: string,
   oldText: string,
@@ -78,7 +73,7 @@ async function detectMultilineComments(
   let old = oldText;
   if (isWrite) {
     const dir = path.replace(/\/[^/]+$/, "");
-    const rel = await $.process.run([
+    const rel = await run([
       "git",
       "-C",
       dir,
@@ -89,13 +84,7 @@ async function detectMultilineComments(
     ]);
     const relPath = rel.stdout.trim().split("\n")[0];
     if (rel.exitCode === 0 && relPath) {
-      const show = await $.process.run([
-        "git",
-        "-C",
-        dir,
-        "show",
-        `HEAD:${relPath}`,
-      ]);
+      const show = await run(["git", "-C", dir, "show", `HEAD:${relPath}`]);
       if (show.exitCode === 0) old = show.stdout;
     }
   }
@@ -109,51 +98,5 @@ async function detectMultilineComments(
     .filter((b) => !old.includes(b) && !oldBlocks.includes(b))
     .map((b) => `${b}\n----`)
     .join("\n");
-  return found ? MULTILINE_MSG(path, found) : undefined;
+  return found ? MSG(path, found) : undefined;
 }
-
-async function detectFeedbackMemory(
-  $: EngineInterface,
-  path: string,
-): Promise<string | undefined> {
-  if (!/\/\.claude\/projects\/[^/]+\/memory\/[^/]+\.md$/.test(path))
-    return undefined;
-  try {
-    const text = await $.fs.read(path);
-    if (/^\s*type:\s*feedback/m.test(text)) return FEEDBACK_MEMORY_MSG;
-  } catch {
-    return undefined;
-  }
-  return undefined;
-}
-
-async function inspect<R extends { context?: readonly string[] }>(
-  $: EngineInterface,
-  r: R,
-  path: string,
-  newText: string,
-  oldText: string,
-  isWrite: boolean,
-): Promise<R> {
-  const notes: string[] = [];
-  const c = await detectMultilineComments($, path, newText, oldText, isWrite);
-  if (c) notes.push(c);
-  const f = await detectFeedbackMemory($, path);
-  if (f) notes.push(f);
-
-  if (notes.length === 0) return r;
-  return { ...r, context: [...(r.context ?? []), ...notes] };
-}
-
-export const register: Register = (on) => {
-  on("tool.call", { tool: "Edit" }, async ($, e, next) => {
-    const r = await next(e);
-    if (r.deny !== undefined || r.isError) return r;
-    return inspect($, r, e.file_path, e.new_string, e.old_string, false);
-  });
-  on("tool.call", { tool: "Write" }, async ($, e, next) => {
-    const r = await next(e);
-    if (r.deny !== undefined || r.isError) return r;
-    return inspect($, r, e.file_path, e.content, "", true);
-  });
-};

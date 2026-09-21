@@ -1,0 +1,6 @@
+{
+  "name": "guards",
+  "author": { "name": "void2610" },
+  "description": "dotfiles のガード群 (git 操作のスキル強制・ブランチロック・コメント規約・文脈注入)。機能ごとに hooks/ 配下の 1 ファイル",
+  "version": "0.2.0"
+}
