@@ -141,24 +141,23 @@ export const register: Register = (on) => {
       <Box flexDirection="column">
         <Text bold>{s.goal}</Text>
         <Text dimColor>{s.branch}</Text>
-        <Text> </Text>
-        {s.phases.map((p, i) => {
-          const [icon, color] =
-            p.state === "done"
-              ? ["✓", "green"]
-              : p.state === "skip"
-                ? ["−", "yellow"]
-                : i === cur
-                  ? ["→", "cyan"]
-                  : ["○", undefined];
-          const label = p.state === "skip" ? `${p.name} (skip)` : p.name;
-          return (
-            <Text key={p.name} color={color} bold={i === cur}>
-              {`${icon} ${label}`}
-            </Text>
-          );
-        })}
-        <Text> </Text>
+        <Box flexWrap="wrap">
+          {s.phases.map((p, i) => {
+            const [icon, color] =
+              p.state === "done"
+                ? ["✓", "green"]
+                : p.state === "skip"
+                  ? ["−", "yellow"]
+                  : i === cur
+                    ? ["→", "cyan"]
+                    : ["○", undefined];
+            return (
+              <Text key={p.name} color={color} bold={i === cur}>
+                {`${icon}${p.name} `}
+              </Text>
+            );
+          })}
+        </Box>
         {s.extras.worktree_dirty === "yes" && (
           <Text color="yellow">⚠ 未コミット変更あり</Text>
         )}
