@@ -123,19 +123,11 @@ EOF
 - `--base <branch>` — base ブランチを明示 (省略時はリポジトリのデフォルトブランチ)
 - `--assignee <user>` — アサイン指定
 
-### Phase 5 — Copilot レビュー依頼 + 監視起動 (必須・毎回)
+### Phase 5 — Copilot レビュー依頼 (必須・毎回)
 
-PR 作成直後、まず CI チェック完了の監視を **background で** 起動する (`run_in_background: true` の Bash で実行し、セッションをブロックしない)。Copilot 依頼の成否に関わらず起動する:
+CI とレビュー到着の監視は **pr-watch Mod (`~/.claude/mods/pr-watch`) が常駐で担う**ため、pr-create からの監視起動は不要。Mod が 5 秒間隔で現在ブランチの OPEN PR を見て、CI fail / レビュー到着時に prompt 自動投入でセッションを起こす。
 
-```bash
-bash ~/.claude/skills/pr-create/scripts/poll-ci-checks.sh <PR番号>
-```
-
-- pending が消えるまで待機し、`ci=pass|fail|none` を出力して終了する
-- push 直後のチェック未登録は grace 期間 (デフォルト 120s) 内なら登録待ちとして扱い、grace を過ぎても現れなければ `ci=none` (CI なしリポジトリ) と判定する
-- CI 修正後の再 push 時も、このスクリプト単体を background で再起動して再監視する
-
-続けて、付属スクリプトで GitHub Copilot を PR レビュアーに登録する。**省略禁止**。
+PR 作成直後、付属スクリプトで GitHub Copilot を PR レビュアーに登録する。**省略禁止**。
 
 ```bash
 bash "${CLAUDE_PROJECT_DIR:-$HOME}/.claude/skills/pr-create/scripts/request-copilot-review.sh" <PR番号>
@@ -146,39 +138,24 @@ bash "${CLAUDE_PROJECT_DIR:-$HOME}/.claude/skills/pr-create/scripts/request-copi
 - 内部で `gh api graphql` の `requestReviews` mutation を `botIds` 付きで呼び、Copilot PR Reviewer (固定 bot ノード `BOT_kgDOCnlnWA`) を依頼する
 - Copilot レビュー機能未有効・既に依頼済み・権限不足などで失敗する場合があるが、**PR 作成自体は成功している**ので終了コード 1 でも警告扱いとし、ユーザーには「Copilot 依頼に失敗 (理由)」と PR URL の両方を伝える
 
-依頼に成功したら、続けてレビュー到着のポーリングも **background で** 起動する。依頼に失敗した場合はこちらは起動しない (CI 監視は起動済みのまま維持する):
-
-```bash
-bash ~/.claude/skills/pr-create/scripts/poll-copilot-review.sh <PR番号>
-```
-
 ### Phase 6 — 完了報告
 
-作成された PR URL・Copilot 依頼結果・監視起動 (レビュー / CI の 2 本) を報告していったん終了。
+作成された PR URL・Copilot 依頼結果を報告していったん終了 (監視は pr-watch Mod が常駐)。
 
 ```
 ✅ PR #<N> を作成しました: <URL>
-✅ Copilot にレビューを依頼しました (レビュー到着 / CI 完了をバックグラウンドで監視中)
+✅ Copilot にレビューを依頼しました (CI / レビュー到着は pr-watch Mod が監視中)
 ```
 
-(Copilot 依頼が失敗した場合は ⚠️ で警告のみ表示し、PR 作成成功と CI 監視は維持する)
+(Copilot 依頼が失敗した場合は ⚠️ で警告のみ表示する)
 
-### Phase 7 — 監視完了時の自動対応
+### Phase 7 — pr-watch Mod からの起床時の自動対応
 
-監視は 2 本 (レビュー / CI) が独立して動くため、完了通知 (task-notification) も個別に届く。それぞれの出力に応じて自動で動く:
+pr-watch Mod は CI fail / レビュー到着を検知すると、指示文を prompt として自動投入しセッションを起こす。投入された指示に従って動く:
 
-**poll-ci-checks.sh の通知:**
-
-- `ci=fail` → **CI の失敗原因を確認・修正して push** し、`poll-ci-checks.sh` を background で再起動する (レビュー指摘対応と重なる場合はまとめて対応してよい)。ship フローの最中は CI が fail のままだと `ship.sh done review` が通らない
-- `ci=pass|none` → 報告のみ (レビュー対応の進行はレビュー側の通知に従う)
-- exit 1 (タイムアウト) → その旨を報告し、`gh pr checks` で現状を確認して再起動か手動確認を提案
-
-**poll-copilot-review.sh の通知:**
-
-- `copilot_review=arrived` かつ `unresolved_threads` > 0 → **pr-review-fix スキルを起動**して対応を開始する (修正計画の承認は pr-review-fix 内のフローが担うため、起動自体に確認は不要)。ship フローの最中なら先に `ship.sh done review` を打つ (CI が未完 / fail だと通らない点に注意)
-- `unresolved_threads` = 0 → 「Copilot レビュー到着、未解決の指摘なし」と報告して終了
-- `unresolved_threads` = `?` → スレッド数の取得に失敗している。`fetch_unresolved_threads.sh` を手動実行して確認してから判断する (0 件と誤認しない)
-- exit 1 (タイムアウト) → その旨を報告し、必要なら `poll-copilot-review.sh` を再起動するか手動確認を提案 (再起動時のレビュー待機は開始時点からの増分基準なので、到着済みレビューがある場合は `gh pr view --json reviews` で直接確認する)
+- **CI fail 起床** → `gh pr checks <N>` で失敗原因を確認・修正して push (レビュー指摘対応と重なる場合はまとめて対応してよい)。ship フローの最中は CI が fail のままだと `ship.sh done review` が通らない。再監視は Mod が継続する
+- **レビュー到着起床 (未解決 > 0)** → **pr-review-fix スキルを起動**して対応を開始する (修正計画の承認は pr-review-fix 内のフローが担うため、起動自体に確認は不要)。ship フローの最中なら先に `ship.sh done review` を打つ (CI が未完 / fail だと通らない点に注意)
+- 未解決 0 件は toast 通知のみで起床しない。未解決数が `?` (取得失敗) の場合は `fetch_unresolved_threads.sh` を手動実行して確認してから判断する (0 件と誤認しない)
 
 ## トラブルシューティング
 
