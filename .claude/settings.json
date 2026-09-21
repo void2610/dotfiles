@@ -1,5 +1,5 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":[" — Fiverr — Build your web app now"]},
+  "spinnerVerbs": {"mode":"replace","verbs":[" — EaseUS — Recover lost data and manage disk partitions wi…"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -39,21 +39,6 @@
           {
             "type": "command",
             "command": "~/.claude/hooks/manual-mode-ask-all.sh"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/detect-multiline-comments.sh"
-          },
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/route-feedback-memory.sh"
           }
         ]
       }

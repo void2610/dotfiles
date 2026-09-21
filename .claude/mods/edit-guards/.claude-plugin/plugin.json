@@ -1,0 +1,6 @@
+{
+  "name": "edit-guards",
+  "author": { "name": "void2610" },
+  "description": "Edit/Write 後の検査 (複数行コメントブロック検知・feedback メモリのスコープ判定強制)",
+  "version": "0.1.0"
+}
