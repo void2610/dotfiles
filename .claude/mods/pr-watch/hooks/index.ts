@@ -155,7 +155,7 @@ async function poll($: EngineInterface): Promise<void> {
 function ensurePoller($: EngineInterface): void {
   if (pollerStarted) return;
   pollerStarted = true;
-  $.clock.every(30000, () => poll($));
+  $.clock.every(5000, () => poll($));
 }
 
 export const register: Register = (on) => {
