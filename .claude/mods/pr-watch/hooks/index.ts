@@ -5,7 +5,6 @@ type CiState = "pass" | "fail" | "pending" | "none";
 type Watched = {
   prNumber: number;
   lastCi?: CiState;
-  reviewBaseline: number;
   notifiedReview: boolean;
   notifiedCiFail: boolean;
 };
@@ -102,10 +101,8 @@ async function poll($: EngineInterface): Promise<void> {
   ).length;
 
   if (!watched || watched.prNumber !== pr.number) {
-    // 監視開始時点のレビュー数を基準にし、以後の増分だけを「到着」と扱う
     watched = {
       prNumber: pr.number,
-      reviewBaseline: copilotReviews,
       notifiedReview: false,
       notifiedCiFail: false,
     };
@@ -116,8 +113,8 @@ async function poll($: EngineInterface): Promise<void> {
   // ポーリングが生きていることを示すため、回転グリフ付きで status 行に常時表示する
   tick = (tick + 1) % SPINNER.length;
   const review = w.notifiedReview
-    ? "レビュー対応中"
-    : copilotReviews > w.reviewBaseline
+    ? "レビュー通知済"
+    : copilotReviews > 0
       ? "レビュー到着"
       : "レビュー待ち";
   $.ui.status(`${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
@@ -135,8 +132,8 @@ async function poll($: EngineInterface): Promise<void> {
     w.lastCi = ci;
   }
 
-  if (!w.notifiedReview && copilotReviews > w.reviewBaseline) {
-    w.notifiedReview = true;
+  // 増分ではなく未解決スレッドの有無で判定する (監視開始前に到着したレビューも拾うため)
+  if (!w.notifiedReview && copilotReviews > 0) {
     const home = await $.env.get("HOME");
     let unresolved = "?";
     if (home) {
@@ -151,17 +148,17 @@ async function poll($: EngineInterface): Promise<void> {
         );
       }
     }
+    if (unresolved === "0") return;
+    w.notifiedReview = true;
     $.ui.toast(
-      `PR #${w.prNumber}: Copilot レビュー到着 (未解決 ${unresolved} 件)`,
+      `PR #${w.prNumber}: Copilot レビュー (未解決 ${unresolved} 件)`,
       {
         timeoutMs: 10000,
       },
     );
-    if (unresolved !== "0") {
-      await $.prompt.submit({
-        text: `PR #${w.prNumber} に Copilot レビューが到着した (未解決スレッド ${unresolved} 件)。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。0 件または取得失敗 (?) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
-      });
-    }
+    await $.prompt.submit({
+      text: `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
+    });
   }
 }
 
@@ -179,6 +176,8 @@ export const register: Register = (on) => {
   });
   on("prompt.submit", ($, e, next) => {
     ensurePoller($);
+    // タイマーの $ がリロード等で死んでいても、ターンごとに表示が更新されるようにする
+    void poll($);
     return next(e);
   });
 };
