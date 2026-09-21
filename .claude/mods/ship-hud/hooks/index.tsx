@@ -89,6 +89,36 @@ export const register: Register = (on) => {
       description:
         "ship フロー (開発パイプライン状態機械) の現在状態を返す。ship.sh status と同等の出力。Bash で ship.sh status を叩く代わりに使える。",
     });
+    await $.tool.register({
+      name: "init",
+      description:
+        "ship フローを開始する (ship.sh init)。goal に開発目標を渡す。",
+      inputSchema: {
+        type: "object",
+        properties: { goal: { type: "string" } },
+        required: ["goal"],
+      },
+    });
+    await $.tool.register({
+      name: "done",
+      description:
+        "ship フローのフェーズ完了を検証して次へ進める (ship.sh done <phase>)。postcondition NG なら理由が返る。",
+      inputSchema: {
+        type: "object",
+        properties: { phase: { type: "string" } },
+        required: ["phase"],
+      },
+    });
+    await $.tool.register({
+      name: "skip",
+      description:
+        "ship フローのフェーズを理由付きで skip する (ship.sh skip <phase> <理由>)。ユーザー指示がある場合のみ使う。",
+      inputSchema: {
+        type: "object",
+        properties: { phase: { type: "string" }, reason: { type: "string" } },
+        required: ["phase", "reason"],
+      },
+    });
     await $.command.register({
       name: "ship-hud",
       description: "ship フローの状態ペインを開閉する",
@@ -129,15 +159,58 @@ export const register: Register = (on) => {
     return { result: raw };
   });
 
+  on(
+    "tool.call",
+    { tool: /^mcp__ship-hud__(init|done|skip)$/ },
+    async ($, e, _next) => {
+      const a = e as unknown as {
+        tool: string;
+        goal?: string;
+        phase?: string;
+        reason?: string;
+      };
+      const home = await $.env.get("HOME");
+      if (!home) return { deny: "HOME が取得できません" };
+      const ship = `${home}/.claude/skills/ship/scripts/ship.sh`;
+      const argv =
+        a.tool === "mcp__ship-hud__init"
+          ? [ship, "init", a.goal ?? ""]
+          : a.tool === "mcp__ship-hud__done"
+            ? [ship, "done", a.phase ?? ""]
+            : [ship, "skip", a.phase ?? "", a.reason ?? ""];
+      const r = await $.process.run(["bash", ...argv]);
+      await refresh($);
+      $.ui.invalidate("ui.render");
+      return { result: (r.stdout + r.stderr).trim() || `exit=${r.exitCode}` };
+    },
+  );
+
   on("ui.render", { component: "Pane" }, ($, e, next) => {
     if (e.component !== "Pane" || e.requestId !== PANE_ID) return next(e);
-    const { Box, Text } = $.ui.resolve(e);
+    const { Box, Text, Button } = $.ui.resolve(e);
     if (!status.active) {
       return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
     }
     const s = status;
     const shown = s.phases.filter((p) => p.state !== "skip");
     const cur = shown.findIndex(isPending);
+    // report / quiz は承認コマンドをボタン化 (approve は HEAD SHA に紐づく)
+    const approvable = s.phases.find(isPending)?.name;
+    const approve =
+      approvable === "report" || approvable === "quiz"
+        ? async () => {
+            const home = await $.env.get("HOME");
+            if (!home) return;
+            await $.process.run([
+              "bash",
+              `${home}/.claude/skills/ship/scripts/ship.sh`,
+              approvable,
+              "approve",
+            ]);
+            await refresh($);
+            $.ui.invalidate("ui.render");
+          }
+        : undefined;
     return (
       <Box flexDirection="column">
         <Text bold>{s.goal}</Text>
@@ -162,6 +235,13 @@ export const register: Register = (on) => {
         )}
         {s.extras.pr && <Text dimColor>{`PR: ${s.extras.pr}`}</Text>}
         {s.extras.ci && <Text dimColor>{`CI: ${s.extras.ci}`}</Text>}
+        {approve && (
+          <Button
+            key="ship-approve"
+            label={`${approvable} approve`}
+            onPress={approve}
+          />
+        )}
       </Box>
     );
   });
