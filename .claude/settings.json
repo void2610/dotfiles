@@ -1,7 +1,8 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":[" — Norton — Comprehensive antivirus, privacy, and identity…"]},
+  "spinnerVerbs": {"mode":"replace","verbs":[" — Fiverr — Build your web app now"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
     "OTEL_LOGS_EXPORTER": "otlp",
     "OTEL_METRICS_EXPORTER": "otlp",
