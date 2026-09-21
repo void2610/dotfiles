@@ -1,7 +1,5 @@
 import type { EngineInterface, Register } from "claude-code";
 
-const PANE_ID = "ship-hud";
-
 type Phase = { name: string; state: string };
 type ShipStatus =
   | { active: false }
@@ -40,7 +38,8 @@ function parseStatus(out: string): ShipStatus {
 // モジュール環境はセッション中維持される。ポーリングとレンダの共有状態
 let status: ShipStatus = { active: false };
 let raw = "";
-let paneOpen = false;
+let hidden = false;
+let pollerStarted = false;
 
 async function refresh($: EngineInterface): Promise<boolean> {
   const home = await $.env.get("HOME");
@@ -57,30 +56,16 @@ async function refresh($: EngineInterface): Promise<boolean> {
   return changed;
 }
 
-const isPending = (p: Phase) => p.state !== "done" && p.state !== "skip";
-
-// 人が閉じた後は自動再オープンで抗わない
-let userClosed = false;
-let pollerStarted = false;
-
-async function poll($: EngineInterface): Promise<void> {
-  const changed = await refresh($);
-  const active = status.active && status.phases.some(isPending);
-  // セッション途中でフローが始まったケースも自動で開く
-  if (active && !paneOpen && !userClosed) {
-    await $.ui.open({ id: PANE_ID, title: "ship" });
-    paneOpen = true;
-    return;
-  }
-  if (changed && paneOpen) $.ui.invalidate("ui.render");
-}
-
 // リロード時はタイマー破棄 + session.start 非再発火のため、任意のフックから遅延起動できるようにする
 function ensurePoller($: EngineInterface): void {
   if (pollerStarted) return;
   pollerStarted = true;
-  $.clock.every(5000, () => poll($));
+  $.clock.every(5000, async () => {
+    if (await refresh($)) $.ui.invalidate("ui.render");
+  });
 }
+
+const isPending = (p: Phase) => p.state !== "done" && p.state !== "skip";
 
 export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
@@ -91,10 +76,10 @@ export const register: Register = (on) => {
     });
     await $.command.register({
       name: "ship-hud",
-      description: "ship フローの状態ペインを開閉する",
+      description: "ship フローの状態表示 (プロンプト上の帯) を開閉する",
     });
     ensurePoller($);
-    await poll($);
+    await refresh($);
     return next(e);
   });
 
@@ -103,24 +88,13 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  on("ui.close", (_$, e, next) => {
-    if (e.id === PANE_ID) {
-      paneOpen = false;
-      if (e.origin.kind === "person") userClosed = true;
-    }
-    return next(e);
-  });
-
   on("command.run", { command: "ship-hud" }, async ($, _e, _next) => {
-    if (paneOpen) {
-      await $.ui.close({ id: PANE_ID });
-      paneOpen = false;
-      return { text: "ship HUD を閉じました" };
-    }
-    await refresh($);
-    await $.ui.open({ id: PANE_ID, title: "ship" });
-    paneOpen = true;
-    return { text: "ship HUD を開きました" };
+    hidden = !hidden;
+    if (!hidden) await refresh($);
+    $.ui.invalidate("ui.render");
+    return {
+      text: hidden ? "ship HUD を隠しました" : "ship HUD を表示しました",
+    };
   });
 
   // 自前登録ツールは生成済み型の union に無いため RegExp matcher で束ねる
@@ -129,41 +103,46 @@ export const register: Register = (on) => {
     return { result: raw };
   });
 
-  on("ui.render", { component: "Pane" }, ($, e, next) => {
-    if (e.component !== "Pane" || e.requestId !== PANE_ID) return next(e);
-    const { Box, Text } = $.ui.resolve(e);
-    if (!status.active) {
-      return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
-    }
+  // Pane は 144/110 桁の幅ゲートで狭い端末に描かれないため、幅制限の無い AbovePrompt 帯に描く
+  on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
+    if (hidden || !status.active) return next(e);
     const s = status;
+    if (!s.phases.some(isPending)) return next(e);
+    const { Box, Text } = $.ui.resolve(e);
     const cur = s.phases.findIndex(isPending);
     return (
       <Box flexDirection="column">
-        <Text bold>{s.goal}</Text>
-        <Text dimColor>{s.branch}</Text>
-        <Text> </Text>
-        {s.phases.map((p, i) => {
-          const [icon, color] =
-            p.state === "done"
-              ? ["✓", "green"]
-              : p.state === "skip"
-                ? ["−", "yellow"]
-                : i === cur
-                  ? ["→", "cyan"]
-                  : ["○", undefined];
-          const label = p.state === "skip" ? `${p.name} (skip)` : p.name;
-          return (
-            <Text key={p.name} color={color} bold={i === cur}>
-              {`${icon} ${label}`}
-            </Text>
-          );
-        })}
-        <Text> </Text>
-        {s.extras.worktree_dirty === "yes" && (
-          <Text color="yellow">⚠ 未コミット変更あり</Text>
+        <Text dimColor>{`⛵ ${s.goal}`}</Text>
+        <Box flexWrap="wrap">
+          {s.phases.map((p, i) => {
+            const [icon, color] =
+              p.state === "done"
+                ? ["✓", "green"]
+                : p.state === "skip"
+                  ? ["−", "yellow"]
+                  : i === cur
+                    ? ["→", "cyan"]
+                    : ["○", undefined];
+            return (
+              <Text key={p.name} color={color} bold={i === cur}>
+                {`${icon}${p.name} `}
+              </Text>
+            );
+          })}
+        </Box>
+        {(s.extras.worktree_dirty === "yes" ||
+          (s.extras.pr && s.extras.pr !== "none")) && (
+          <Box flexWrap="wrap">
+            {s.extras.worktree_dirty === "yes" && (
+              <Text color="yellow">{"⚠ dirty "}</Text>
+            )}
+            {s.extras.pr && s.extras.pr !== "none" && (
+              <Text
+                dimColor
+              >{`PR: ${s.extras.pr} (CI: ${s.extras.ci ?? "?"})`}</Text>
+            )}
+          </Box>
         )}
-        {s.extras.pr && <Text dimColor>{`PR: ${s.extras.pr}`}</Text>}
-        {s.extras.ci && <Text dimColor>{`CI: ${s.extras.ci}`}</Text>}
       </Box>
     );
   });
