@@ -1,0 +1,6 @@
+{
+  "name": "ship-hud",
+  "author": { "name": "void2610" },
+  "description": "ship フローの状態機械をペインで可視化する。/ship-hud でトグル、進行中フローがあれば自動で開く。モデル向けに status ツールも提供",
+  "version": "0.1.0"
+}
