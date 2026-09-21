@@ -1,0 +1,6 @@
+{
+  "name": "git-context",
+  "author": { "name": "void2610" },
+  "description": "会話の最初のメッセージに現在ブランチ・git status・main からの差分コミットを注入する",
+  "version": "0.1.0"
+}

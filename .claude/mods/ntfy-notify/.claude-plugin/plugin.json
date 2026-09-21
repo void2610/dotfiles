@@ -1,0 +1,6 @@
+{
+  "name": "ntfy-notify",
+  "author": { "name": "void2610" },
+  "description": "メインループのターン完了を notify.sh 経由で ntfy.sh へプッシュ通知する",
+  "version": "0.1.0"
+}
