@@ -48,20 +48,6 @@
         ]
       }
     ],
-    "StopFailure": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "jq -e '(.last_assistant_message // \"\") | contains(\"could not be parsed (retry also failed)\")' >/dev/null && exit 2 || exit 0",
-            "asyncRewake": true,
-            "rewakeMessage": "前ターンは tool call の parse 失敗（retry も失敗）で異常中断した。出力フォーマットを見直し、中断された作業を、同じ失敗を繰り返さぬよう必要なら別の手段で再開・完遂せよ。",
-            "rewakeSummary": "tool callのparse失敗を検知。再開を促します"
-          }
-        ]
-      }
-    ],
     "Notification": [
       {
         "matcher": "",
