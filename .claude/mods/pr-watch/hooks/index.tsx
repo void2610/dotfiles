@@ -4,6 +4,7 @@ type CiState = "pass" | "fail" | "pending" | "none";
 
 type Watched = {
   prNumber: number;
+  prUrl?: string;
   lastCi?: CiState;
   notifiedReview: boolean;
   notifiedCiFail: boolean;
@@ -96,7 +97,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     "pr",
     "view",
     "--json",
-    "number,state,statusCheckRollup,reviews",
+    "number,state,url,statusCheckRollup,reviews",
   ]);
   const json = view.exitCode === 0 ? view.stdout.trim() : undefined;
   if (!json) {
@@ -124,6 +125,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
   let pr: {
     number: number;
     state: string;
+    url?: string;
     statusCheckRollup?: {
       state?: string;
       conclusion?: string;
@@ -154,6 +156,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     };
   }
   const w = watched;
+  w.prUrl = pr.url;
 
   const ci = ciStateOf(pr.statusCheckRollup ?? []);
   const review = w.notifiedReview
@@ -248,9 +251,22 @@ export const register: Register = (on) => {
   // 1 行で足りるので、$.ui.status (黄色) や Pane ではなくプロンプト直上の帯に描く
   on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
     if (!hint) return next(e);
-    const { Text } = $.ui.resolve(e);
+    const { Text, Button } = $.ui.resolve(e);
     const failing = watched?.lastCi === "fail";
     const line = `${SPINNER[tick]} ${hint}`;
+    const url = watched?.prUrl;
+    if (url) {
+      // Button に色は付けられないため fail 時は非 dim で目立たせる
+      return (
+        <Button
+          key="pr-watch-ci"
+          label={line}
+          plain
+          dimColor={!failing}
+          onPress={() => void $.process.run(["open", `${url}/checks`])}
+        />
+      );
+    }
     return failing ? (
       <Text color="red">{line}</Text>
     ) : (
