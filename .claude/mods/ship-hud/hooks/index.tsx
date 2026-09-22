@@ -1,6 +1,11 @@
-import type { EngineInterface, Register } from "claude-code";
-
-const PANE_ID = "ship-hud";
+import type {
+  BoxProps,
+  ButtonProps,
+  ElementConstructor,
+  EngineInterface,
+  Register,
+  TextProps,
+} from "claude-code";
 
 type Phase = { name: string; state: string };
 type ShipStatus =
@@ -40,7 +45,7 @@ function parseStatus(out: string): ShipStatus {
 // モジュール環境はセッション中維持される。ポーリングとレンダの共有状態
 let status: ShipStatus = { active: false };
 let raw = "";
-let paneOpen = false;
+let hudHidden = false;
 
 async function refresh($: EngineInterface): Promise<boolean> {
   const home = await $.env.get("HOME");
@@ -59,20 +64,11 @@ async function refresh($: EngineInterface): Promise<boolean> {
 
 const isPending = (p: Phase) => p.state !== "done" && p.state !== "skip";
 
-// 人が閉じた後は自動再オープンで抗わない
-let userClosed = false;
 let pollerStarted = false;
 
 async function poll($: EngineInterface): Promise<void> {
   const changed = await refresh($);
-  const active = status.active && status.phases.some(isPending);
-  // セッション途中でフローが始まったケースも自動で開く
-  if (active && !paneOpen && !userClosed) {
-    await $.ui.open({ id: PANE_ID, title: "ship" });
-    paneOpen = true;
-    return;
-  }
-  if (changed && paneOpen) $.ui.invalidate("ui.render");
+  if (changed) $.ui.invalidate("ui.render");
 }
 
 // リロード時はタイマー破棄 + session.start 非再発火のため、任意のフックから遅延起動できるようにする
@@ -80,6 +76,73 @@ function ensurePoller($: EngineInterface): void {
   if (pollerStarted) return;
   pollerStarted = true;
   $.clock.every(5000, () => poll($));
+}
+
+type Resolved = {
+  Box: ElementConstructor<BoxProps>;
+  Text: ElementConstructor<TextProps>;
+  Button: ElementConstructor<ButtonProps>;
+};
+
+// Pane は plugin 発だと fullscreen で「110 桁以上 = dock / 144 桁未満 = 不可視」になるため使わない (承認済み仕様: 常に AbovePrompt)
+function renderHud($: EngineInterface, ui: Resolved) {
+  const { Box, Text, Button } = ui;
+  const s = status;
+  if (!s.active) {
+    return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
+  }
+  const shown = s.phases.filter((p) => p.state !== "skip");
+  const cur = shown.findIndex(isPending);
+  // report / quiz は承認コマンドをボタン化 (approve は HEAD SHA に紐づく)
+  const approvable = s.phases.find(isPending)?.name;
+  const approve =
+    approvable === "report" || approvable === "quiz"
+      ? async () => {
+          const home = await $.env.get("HOME");
+          if (!home) return;
+          await $.process.run([
+            "bash",
+            `${home}/.claude/skills/ship/scripts/ship.sh`,
+            approvable,
+            "approve",
+          ]);
+          await refresh($);
+          $.ui.invalidate("ui.render");
+        }
+      : undefined;
+  return (
+    <Box flexDirection="column">
+      <Text bold wrap="truncate">
+        {s.goal}
+      </Text>
+      <Text dimColor>{s.branch}</Text>
+      <Box flexWrap="wrap">
+        {shown.map((p, i) => {
+          const [icon, color] =
+            p.state === "done"
+              ? ["✓", "green"]
+              : i === cur
+                ? ["→", "cyan"]
+                : ["○", undefined];
+          return (
+            <Text key={p.name} color={color} bold={i === cur}>
+              {`${icon}${p.name} `}
+            </Text>
+          );
+        })}
+      </Box>
+      {s.extras.worktree_dirty === "yes" && (
+        <Text dimColor>未コミット変更あり</Text>
+      )}
+      {approve && (
+        <Button
+          key="ship-approve"
+          label={`${approvable} approve`}
+          onPress={approve}
+        />
+      )}
+    </Box>
+  );
 }
 
 export const register: Register = (on) => {
@@ -121,7 +184,7 @@ export const register: Register = (on) => {
     });
     await $.command.register({
       name: "ship-hud",
-      description: "ship フローの状態ペインを開閉する",
+      description: "ship フローの HUD 表示を切り替える",
     });
     ensurePoller($);
     await poll($);
@@ -133,24 +196,13 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  on("ui.close", (_$, e, next) => {
-    if (e.id === PANE_ID) {
-      paneOpen = false;
-      if (e.origin.kind === "person") userClosed = true;
-    }
-    return next(e);
-  });
-
   on("command.run", { command: "ship-hud" }, async ($, _e, _next) => {
-    if (paneOpen) {
-      await $.ui.close({ id: PANE_ID });
-      paneOpen = false;
-      return { text: "ship HUD を閉じました" };
-    }
-    await refresh($);
-    await $.ui.open({ id: PANE_ID, title: "ship" });
-    paneOpen = true;
-    return { text: "ship HUD を開きました" };
+    hudHidden = !hudHidden;
+    if (!hudHidden) await refresh($);
+    $.ui.invalidate("ui.render");
+    return {
+      text: hudHidden ? "ship HUD を閉じました" : "ship HUD を開きました",
+    };
   });
 
   // 自前登録ツールは生成済み型の union に無いため RegExp matcher で束ねる
@@ -185,62 +237,16 @@ export const register: Register = (on) => {
     },
   );
 
-  on("ui.render", { component: "Pane" }, ($, e, next) => {
-    if (e.component !== "Pane" || e.requestId !== PANE_ID) return next(e);
-    const { Box, Text, Button } = $.ui.resolve(e);
-    if (!status.active) {
-      return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
-    }
-    const s = status;
-    const shown = s.phases.filter((p) => p.state !== "skip");
-    const cur = shown.findIndex(isPending);
-    // report / quiz は承認コマンドをボタン化 (approve は HEAD SHA に紐づく)
-    const approvable = s.phases.find(isPending)?.name;
-    const approve =
-      approvable === "report" || approvable === "quiz"
-        ? async () => {
-            const home = await $.env.get("HOME");
-            if (!home) return;
-            await $.process.run([
-              "bash",
-              `${home}/.claude/skills/ship/scripts/ship.sh`,
-              approvable,
-              "approve",
-            ]);
-            await refresh($);
-            $.ui.invalidate("ui.render");
-          }
-        : undefined;
+  on("ui.render", { component: "AbovePrompt" }, async ($, e, next) => {
+    const active = status.active && status.phases.some(isPending);
+    if (hudHidden || !active) return next(e);
+    const ui = $.ui.resolve(e);
+    const rest = await next(e);
     return (
-      <Box flexDirection="column">
-        <Text bold>{s.goal}</Text>
-        <Text dimColor>{s.branch}</Text>
-        <Box flexWrap="wrap">
-          {shown.map((p, i) => {
-            const [icon, color] =
-              p.state === "done"
-                ? ["✓", "green"]
-                : i === cur
-                  ? ["→", "cyan"]
-                  : ["○", undefined];
-            return (
-              <Text key={p.name} color={color} bold={i === cur}>
-                {`${icon}${p.name} `}
-              </Text>
-            );
-          })}
-        </Box>
-        {s.extras.worktree_dirty === "yes" && (
-          <Text dimColor>未コミット変更あり</Text>
-        )}
-        {approve && (
-          <Button
-            key="ship-approve"
-            label={`${approvable} approve`}
-            onPress={approve}
-          />
-        )}
-      </Box>
+      <ui.Box flexDirection="column">
+        {rest}
+        {renderHud($, ui)}
+      </ui.Box>
     );
   });
 };
