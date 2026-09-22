@@ -127,6 +127,8 @@ async function poll($: EngineInterface): Promise<void> {
   setHint($, `${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
 
   if (ci !== w.lastCi) {
+    // fail から抜けたら通知済みフラグを戻し、次の fail も拾えるようにする
+    if (ci !== "fail") w.notifiedCiFail = false;
     if (ci === "fail" && !w.notifiedCiFail) {
       w.notifiedCiFail = true;
       await $.prompt.submit({
