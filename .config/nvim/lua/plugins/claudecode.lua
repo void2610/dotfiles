@@ -6,11 +6,7 @@ return {
     "coder/claudecode.nvim",
     dependencies = { "folke/snacks.nvim" },
     opts = {
-      -- ドラッグ追跡 (?1002h/?1003h) だけ落とす。Claude Code の選択実装は改行を NUL に化けさせるため使わず、
-      -- ホイール (?1000h) は残して Claude Code 側の仮想スクロールを生かす (alt screen でバッファに履歴が残らないため)
-      env = {
-        CLAUDE_CODE_DISABLE_MOUSE_CLICKS = "1",
-      },
+      -- DISABLE_MOUSE_CLICKS はクリック処理ごと "scroll" に落とし Button が死ぬため使わない (改行を NUL 化する CC 側選択は、下のマッピングが押下/ドラッグを消費するため full でも発動しない)
       diff_opts = {
         open_in_new_tab = true,
       },
@@ -42,10 +38,19 @@ return {
                 local url = require("util.url").at_mouse(pos)
                 if url then
                   vim.ui.open(url)
+                  return
+                end
+                -- マッピングがクリックを消費すると Claude Code の Button に届かないため、SGR で押下+解放を合成転送する
+                local chan = vim.bo.channel
+                if chan and chan > 0 and pos.winid == vim.api.nvim_get_current_win() then
+                  -- winrow は winbar を含むウィンドウ枠基準のため、端末グリッド行へは winbar 分を引く
+                  local row = pos.winrow - (vim.wo.winbar ~= "" and 1 or 0)
+                  local seq = string.format("\27[<0;%d;%dM\27[<0;%d;%dm", pos.wincol, row, pos.wincol, row)
+                  vim.api.nvim_chan_send(chan, seq)
                 end
               end,
               mode = "t",
-              desc = "Record mouse origin / open URL",
+              desc = "Record mouse origin / open URL / forward click",
             },
             -- ドラッグ開始時に起点から選択を組み立てる。以降の <LeftDrag> は visual 側の既定動作で伸びる
             start_mouse_select = {
