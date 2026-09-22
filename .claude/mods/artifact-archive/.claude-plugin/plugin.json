@@ -1,6 +1,8 @@
 {
   "name": "artifact-archive",
-  "author": { "name": "void2610" },
-  "description": "Artifact 公開時に元ファイルを ~/Documents/claude-artifacts へ集約保存する",
+  "author": {
+    "name": "void2610"
+  },
+  "description": "一時ディレクトリ (tmp/scratchpad) からの Artifact publish を拒否し ~/Documents/claude-artifacts への保存へ誘導する",
   "version": "0.1.0"
 }
