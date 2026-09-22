@@ -11,6 +11,8 @@ type Watched = {
 
 let watched: Watched | undefined;
 let pollerStarted = false;
+// タイマーと prompt.submit から同時に走ると通知が多重化するため直列化する
+let polling = false;
 let tick = 0;
 let hint: string | undefined;
 
@@ -50,6 +52,16 @@ function setHint($: EngineInterface, text: string | undefined): void {
 }
 
 async function poll($: EngineInterface): Promise<void> {
+  if (polling) return;
+  polling = true;
+  try {
+    await pollOnce($);
+  } finally {
+    polling = false;
+  }
+}
+
+async function pollOnce($: EngineInterface): Promise<void> {
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
     return r.exitCode === 0 ? r.stdout.trim() : undefined;
@@ -139,7 +151,8 @@ async function poll($: EngineInterface): Promise<void> {
   }
 
   // 増分ではなく未解決スレッドの有無で判定する (監視開始前に到着したレビューも拾うため)
-  if (!w.notifiedReview && copilotReviews > 0) {
+  if (copilotReviews > 0) {
+    const notifyKey = `notified-review:${w.prNumber}`;
     const home = await $.env.get("HOME");
     let unresolved = "?";
     if (home) {
@@ -154,7 +167,13 @@ async function poll($: EngineInterface): Promise<void> {
         );
       }
     }
-    if (unresolved === "0") return;
+    if (unresolved === "0") {
+      await $.store.set(notifyKey, "0");
+      return;
+    }
+    // モジュールのリロードで通知済みフラグが消えないよう store に持たせる
+    if ((await $.store.get(notifyKey)) === unresolved) return;
+    await $.store.set(notifyKey, unresolved);
     w.notifiedReview = true;
     await $.prompt.submit({
       text: `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
