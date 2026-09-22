@@ -21,6 +21,9 @@ let nextGhAt = 0;
 let backoffMs = 0;
 let tick = 0;
 let hint: string | undefined;
+let paneOpen = false;
+
+const PANE_ID = "pr-watch";
 
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -54,7 +57,7 @@ function ciStateOf(
 function setHint($: EngineInterface, text: string | undefined): void {
   if (hint === text) return;
   hint = text;
-  $.ui.invalidate("ui.render");
+  if (paneOpen) $.ui.invalidate("ui.render");
 }
 
 async function poll($: EngineInterface): Promise<void> {
@@ -227,11 +230,21 @@ export const register: Register = (on) => {
   });
 
   on("command.run", { command: "pr-watch" }, async ($, _e, _next) => {
+    if (paneOpen) {
+      await $.ui.close({ id: PANE_ID });
+      paneOpen = false;
+      return { text: "pr-watch のペインを閉じました" };
+    }
     nextGhAt = 0;
     await poll($);
-    return {
-      text: hint ?? "pr-watch: 監視対象なし (PR のあるブランチにいない)",
-    };
+    await $.ui.open({ id: PANE_ID, title: "pr-watch" });
+    paneOpen = true;
+    return { text: "pr-watch のペインを開きました" };
+  });
+
+  on("ui.close", (_$, e, next) => {
+    if (e.id === PANE_ID) paneOpen = false;
+    return next(e);
   });
 
   on("prompt.submit", ($, e, next) => {
@@ -240,13 +253,21 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  // $.ui.status はエンジンが黄色で描くため、dim 描画されるヒント行に相乗りする
-  on("ui.render", { component: "PromptHint" }, (_$, e, next) => {
-    if (!hint || e.component !== "PromptHint") return next(e);
-    const base = e.props.hint;
-    return next({
-      ...e,
-      props: { ...e.props, hint: base ? `${base} · ${hint}` : hint },
-    });
+  // $.ui.status は黄色、PromptHint は描画されなかったため、色を自前制御できる Pane に描く
+  on("ui.render", { component: "Pane" }, ($, e, next) => {
+    if (e.component !== "Pane" || e.requestId !== PANE_ID) return next(e);
+    const { Box, Text } = $.ui.resolve(e);
+    const w = watched;
+    return (
+      <Box flexDirection="column">
+        <Text bold>{w ? `PR #${w.prNumber}` : "監視対象なし"}</Text>
+        {w && (
+          <Text
+            color={w.lastCi === "fail" ? "red" : "green"}
+          >{`CI: ${w.lastCi ?? "?"}`}</Text>
+        )}
+        <Text dimColor>{hint ?? "状態未取得"}</Text>
+      </Box>
+    );
   });
 };
