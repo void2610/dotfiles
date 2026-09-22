@@ -91,12 +91,20 @@ verify_knowledge() {
 }
 
 verify_commit() {
-  git diff --quiet && git diff --cached --quiet || die "未コミットの変更が残っている。commit スキルでコミットすること"
+  # ship.json の ignoreDirty (パス配列) は clean 判定から除外する (フローと無関係なユーザー変更でブロックしないため)
+  local -a ex=()
+  local ignored
+  while IFS= read -r ignored; do [[ -n "$ignored" ]] && ex+=(":(exclude)$ignored"); done \
+    < <(jq -r '(.ignoreDirty // [])[]' "$config_file" 2>/dev/null || true)
+  # サブディレクトリから呼ばれても全体を見るため、pathspec ごとリポジトリルート基準に固定する
+  git -C "$repo_root" diff --quiet -- . ${ex[@]+"${ex[@]}"} \
+    && git -C "$repo_root" diff --cached --quiet -- . ${ex[@]+"${ex[@]}"} \
+    || die "未コミットの変更が残っている。commit スキルでコミットすること (無関係な変更は ship.json の ignoreDirty に登録可)"
   local base; base=$(base_ref)
   if [[ -n "$base" ]]; then
-    [[ $(git rev-list --count "$base..HEAD") -gt 0 ]] || die "コミットが 1 件も積まれていない"
+    [[ $(git -C "$repo_root" rev-list --count "$base..HEAD") -gt 0 ]] || die "コミットが 1 件も積まれていない"
   fi
-  local untracked; untracked=$(git ls-files --others --exclude-standard | head -5)
+  local untracked; untracked=$(git -C "$repo_root" ls-files --others --exclude-standard | head -5)
   [[ -z "$untracked" ]] || echo "注意: untracked ファイルあり (意図的か確認):"$'\n'"$untracked"
 }
 
@@ -140,7 +148,7 @@ ci_summary() {
 verify_review() {
   local n
   n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\")] | length" 2>/dev/null || echo 0)
-  [[ "$n" -gt 0 ]] || die "Copilot レビューが未到着 (poll-copilot-review.sh の完了を待つこと)"
+  [[ "$n" -gt 0 ]] || die "Copilot レビューが未到着 (pr-watch Mod の通知を待つか gh pr view --json reviews で確認すること)"
   local ci; ci=$(ci_summary)
   case "$ci" in
     pending) die "CI チェックが実行中。完了を待つこと (gh pr checks)" ;;

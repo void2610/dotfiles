@@ -33,8 +33,8 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | commit | commit スキル | working tree clean かつコミットが積まれている |
 | report | 実装報告を提示 (変更内容・設計判断・検証結果)。ユーザーが報告を読み承認したら `ship.sh report approve`。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
 | quiz | push-quiz スキル (全問正答 + ユーザーの push 許可後に `ship.sh quiz approve`)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
-| pr | pr-create スキル (Copilot 依頼 + レビュー/CI ポーリングの background 起動まで担当) | 現ブランチに OPEN な PR |
-| review | ポーリング完了通知を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push する | Copilot レビューが実在し、CI が fail/pending でない |
+| pr | pr-create スキル (Copilot 依頼まで担当。CI / レビュー監視は pr-watch Mod が常駐で行う) | 現ブランチに OPEN な PR |
+| review | pr-watch Mod からの起床を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push する | Copilot レビューが実在し、CI が fail/pending でない |
 | fix | 未解決スレッドが残っていれば pr-review-fix スキル | 未解決レビュースレッド 0 件 |
 
 全フェーズ done になったら PR URL と各フェーズの記録を添えて完了報告する。
