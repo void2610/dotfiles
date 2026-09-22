@@ -1,4 +1,5 @@
 import type { Register } from "claude-code";
+import { branchTrackDeny } from "./branch-track-guard";
 import type { ReadFile, Run } from "./caps";
 import { commentStyleNote } from "./comment-style-guard";
 import { feedbackMemoryNote } from "./feedback-memory-router";
@@ -27,6 +28,7 @@ export const register: Register = (on) => {
     const home = await $.env.get("HOME");
     const deny =
       gitSkillDeny(e.command) ??
+      branchTrackDeny(e.command) ??
       (await shipBranchLockDeny(run, home, e.command));
     if (deny !== undefined) return { deny };
     return next(e);
