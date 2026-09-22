@@ -233,8 +233,6 @@ export const register: Register = (on) => {
         {s.extras.worktree_dirty === "yes" && (
           <Text dimColor>未コミット変更あり</Text>
         )}
-        {s.extras.pr && <Text dimColor>{`PR: ${s.extras.pr}`}</Text>}
-        {s.extras.ci && <Text dimColor>{`CI: ${s.extras.ci}`}</Text>}
         {approve && (
           <Button
             key="ship-approve"

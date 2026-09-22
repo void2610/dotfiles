@@ -189,9 +189,6 @@ case "$cmd" in
       echo "  $p: $mark$cp$cur"
     done
     echo "worktree_dirty=$(git status --porcelain | grep -q . && echo yes || echo no)"
-    pr_url=$(gh pr view --json url --jq .url 2>/dev/null || echo none)
-    echo "pr=$pr_url"
-    if [[ "$pr_url" != none ]]; then echo "ci=$(ci_summary)"; fi
     ;;
   next)
     require_state
