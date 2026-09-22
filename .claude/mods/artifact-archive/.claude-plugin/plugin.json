@@ -1,0 +1,6 @@
+{
+  "name": "artifact-archive",
+  "author": { "name": "void2610" },
+  "description": "Artifact 公開時に元ファイルを ~/Documents/claude-artifacts へ集約保存する",
+  "version": "0.1.0"
+}
