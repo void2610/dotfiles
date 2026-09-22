@@ -21,9 +21,6 @@ let nextGhAt = 0;
 let backoffMs = 0;
 let tick = 0;
 let hint: string | undefined;
-let paneOpen = false;
-
-const PANE_ID = "pr-watch";
 
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -57,7 +54,7 @@ function ciStateOf(
 function setHint($: EngineInterface, text: string | undefined): void {
   if (hint === text) return;
   hint = text;
-  if (paneOpen) $.ui.invalidate("ui.render");
+  $.ui.invalidate("ui.render");
 }
 
 async function poll($: EngineInterface): Promise<void> {
@@ -223,28 +220,18 @@ export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
     await $.command.register({
       name: "pr-watch",
-      description: "pr-watch の監視状態を表示する",
+      description: "pr-watch の監視状態を今すぐ更新して表示する",
     });
     ensurePoller($);
     return next(e);
   });
 
   on("command.run", { command: "pr-watch" }, async ($, _e, _next) => {
-    if (paneOpen) {
-      await $.ui.close({ id: PANE_ID });
-      paneOpen = false;
-      return { text: "pr-watch のペインを閉じました" };
-    }
     nextGhAt = 0;
     await poll($);
-    await $.ui.open({ id: PANE_ID, title: "pr-watch" });
-    paneOpen = true;
-    return { text: "pr-watch のペインを開きました" };
-  });
-
-  on("ui.close", (_$, e, next) => {
-    if (e.id === PANE_ID) paneOpen = false;
-    return next(e);
+    return {
+      text: hint ?? "pr-watch: 監視対象なし (PR のあるブランチにいない)",
+    };
   });
 
   on("prompt.submit", ($, e, next) => {
@@ -253,21 +240,15 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  // $.ui.status は黄色、PromptHint は描画されなかったため、色を自前制御できる Pane に描く
-  on("ui.render", { component: "Pane" }, ($, e, next) => {
-    if (e.component !== "Pane" || e.requestId !== PANE_ID) return next(e);
-    const { Box, Text } = $.ui.resolve(e);
-    const w = watched;
-    return (
-      <Box flexDirection="column">
-        <Text bold>{w ? `PR #${w.prNumber}` : "監視対象なし"}</Text>
-        {w && (
-          <Text
-            color={w.lastCi === "fail" ? "red" : "green"}
-          >{`CI: ${w.lastCi ?? "?"}`}</Text>
-        )}
-        <Text dimColor>{hint ?? "状態未取得"}</Text>
-      </Box>
+  // 1 行で足りるので、$.ui.status (黄色) や Pane ではなくプロンプト直上の帯に描く
+  on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
+    if (!hint) return next(e);
+    const { Text } = $.ui.resolve(e);
+    const failing = watched?.lastCi === "fail";
+    return failing ? (
+      <Text color="red">{hint}</Text>
+    ) : (
+      <Text dimColor>{hint}</Text>
     );
   });
 };
