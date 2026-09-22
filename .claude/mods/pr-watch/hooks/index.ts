@@ -208,9 +208,21 @@ function ensurePoller($: EngineInterface): void {
 }
 
 export const register: Register = (on) => {
-  on("session.start", ($, e, next) => {
+  on("session.start", async ($, e, next) => {
+    await $.command.register({
+      name: "pr-watch",
+      description: "pr-watch の監視状態を表示する",
+    });
     ensurePoller($);
     return next(e);
+  });
+
+  on("command.run", { command: "pr-watch" }, async ($, _e, _next) => {
+    nextGhAt = 0;
+    await poll($);
+    return {
+      text: hint ?? "pr-watch: 監視対象なし (PR のあるブランチにいない)",
+    };
   });
 
   on("prompt.submit", ($, e, next) => {
