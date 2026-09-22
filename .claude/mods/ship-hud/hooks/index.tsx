@@ -231,7 +231,7 @@ export const register: Register = (on) => {
           })}
         </Box>
         {s.extras.worktree_dirty === "yes" && (
-          <Text dimColor>⚠ 未コミット変更あり</Text>
+          <Text dimColor>未コミット変更あり</Text>
         )}
         {s.extras.pr && <Text dimColor>{`PR: ${s.extras.pr}`}</Text>}
         {s.extras.ci && <Text dimColor>{`CI: ${s.extras.ci}`}</Text>}

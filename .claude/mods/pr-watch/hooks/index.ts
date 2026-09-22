@@ -12,6 +12,7 @@ type Watched = {
 let watched: Watched | undefined;
 let pollerStarted = false;
 let tick = 0;
+let hint: string | undefined;
 
 const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -42,6 +43,12 @@ function ciStateOf(
   return "pass";
 }
 
+function setHint($: EngineInterface, text: string | undefined): void {
+  if (hint === text) return;
+  hint = text;
+  $.ui.invalidate("ui.render");
+}
+
 async function poll($: EngineInterface): Promise<void> {
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
@@ -58,8 +65,8 @@ async function poll($: EngineInterface): Promise<void> {
     ])) ?? ""
   ).replace(/^origin\//, "");
   if (!branch || branch === defaultBranch) {
-    if (watched) $.ui.status(undefined);
     watched = undefined;
+    setHint($, undefined);
     return;
   }
 
@@ -71,8 +78,8 @@ async function poll($: EngineInterface): Promise<void> {
     "number,state,statusCheckRollup,reviews",
   ]);
   if (!json) {
-    if (watched) $.ui.status(undefined);
     watched = undefined;
+    setHint($, undefined);
     return;
   }
   let pr: {
@@ -91,8 +98,8 @@ async function poll($: EngineInterface): Promise<void> {
     return;
   }
   if (pr.state !== "OPEN") {
-    if (watched) $.ui.status(undefined);
     watched = undefined;
+    setHint($, undefined);
     return;
   }
 
@@ -110,24 +117,21 @@ async function poll($: EngineInterface): Promise<void> {
   const w = watched;
 
   const ci = ciStateOf(pr.statusCheckRollup ?? []);
-  // ポーリングが生きていることを示すため、回転グリフ付きで status 行に常時表示する
+  // ポーリングが生きていることを示すため回転グリフを付ける
   tick = (tick + 1) % SPINNER.length;
   const review = w.notifiedReview
     ? "レビュー通知済"
     : copilotReviews > 0
       ? "レビュー到着"
       : "レビュー待ち";
-  $.ui.status(`${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
+  setHint($, `${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
+
   if (ci !== w.lastCi) {
     if (ci === "fail" && !w.notifiedCiFail) {
       w.notifiedCiFail = true;
-      $.ui.toast(`PR #${w.prNumber}: CI fail`, { timeoutMs: 10000 });
       await $.prompt.submit({
         text: `PR #${w.prNumber} の CI が fail した。gh pr checks ${w.prNumber} で原因を確認し、修正して push せよ。`,
       });
-    }
-    if (ci === "pass" && w.lastCi !== undefined) {
-      $.ui.toast(`PR #${w.prNumber}: CI pass`);
     }
     w.lastCi = ci;
   }
@@ -150,12 +154,6 @@ async function poll($: EngineInterface): Promise<void> {
     }
     if (unresolved === "0") return;
     w.notifiedReview = true;
-    $.ui.toast(
-      `PR #${w.prNumber}: Copilot レビュー (未解決 ${unresolved} 件)`,
-      {
-        timeoutMs: 10000,
-      },
-    );
     await $.prompt.submit({
       text: `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
     });
@@ -174,10 +172,20 @@ export const register: Register = (on) => {
     ensurePoller($);
     return next(e);
   });
+
   on("prompt.submit", ($, e, next) => {
     ensurePoller($);
-    // タイマーの $ がリロード等で死んでいても、ターンごとに表示が更新されるようにする
     void poll($);
     return next(e);
+  });
+
+  // $.ui.status はエンジンが黄色で描くため、dim 描画されるヒント行に相乗りする
+  on("ui.render", { component: "PromptHint" }, (_$, e, next) => {
+    if (!hint || e.component !== "PromptHint") return next(e);
+    const base = e.props.hint;
+    return next({
+      ...e,
+      props: { ...e.props, hint: base ? `${base} · ${hint}` : hint },
+    });
   });
 };
