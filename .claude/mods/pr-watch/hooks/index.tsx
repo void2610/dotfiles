@@ -23,7 +23,7 @@ let tick = 0;
 let hint: string | undefined;
 
 // 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
-const SPINNER = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"];
+const SPINNER = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
 
 function ciStateOf(
   rollup: readonly { state?: string; conclusion?: string; status?: string }[],
