@@ -13,6 +13,11 @@ let watched: Watched | undefined;
 let pollerStarted = false;
 // タイマーと prompt.submit から同時に走ると通知が多重化するため直列化する
 let polling = false;
+// gh の呼び出し間隔。5 秒毎に叩くと複数セッションで API 上限 (5000/時) を使い切るため下限を設ける
+const MIN_GH_INTERVAL_MS = 15000;
+const MAX_BACKOFF_MS = 300000;
+let nextGhAt = 0;
+let backoffMs = 0;
 let tick = 0;
 let hint: string | undefined;
 
@@ -62,6 +67,8 @@ async function poll($: EngineInterface): Promise<void> {
 }
 
 async function pollOnce($: EngineInterface): Promise<void> {
+  const now = Date.now();
+  if (now < nextGhAt) return;
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
     return r.exitCode === 0 ? r.stdout.trim() : undefined;
@@ -90,10 +97,20 @@ async function pollOnce($: EngineInterface): Promise<void> {
     "number,state,statusCheckRollup,reviews",
   ]);
   if (!json) {
-    watched = undefined;
-    setHint($, undefined);
+    // 失敗の多くは API 上限。間隔を広げて枯渇を助長しない
+    backoffMs = Math.min(
+      backoffMs ? backoffMs * 2 : MIN_GH_INTERVAL_MS,
+      MAX_BACKOFF_MS,
+    );
+    nextGhAt = Date.now() + backoffMs;
+    setHint(
+      $,
+      `pr-watch 待機中 (gh 失敗、${Math.round(backoffMs / 1000)}s 後に再試行)`,
+    );
     return;
   }
+  backoffMs = 0;
+  nextGhAt = Date.now() + MIN_GH_INTERVAL_MS;
   let pr: {
     number: number;
     state: string;
@@ -171,6 +188,8 @@ async function pollOnce($: EngineInterface): Promise<void> {
       await $.store.set(notifyKey, "0");
       return;
     }
+    // 件数不明では起こさない (API 上限等の一時失敗で誤起床しないため)
+    if (unresolved === "?") return;
     // モジュールのリロードで通知済みフラグが消えないよう store に持たせる
     if ((await $.store.get(notifyKey)) === unresolved) return;
     await $.store.set(notifyKey, unresolved);
