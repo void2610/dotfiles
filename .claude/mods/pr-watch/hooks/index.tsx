@@ -26,31 +26,24 @@ let hint: string | undefined;
 // 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
 const SPINNER = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
 
-function ciStateOf(
+const RUNNING_STATES = ["", "PENDING", "IN_PROGRESS", "QUEUED", "EXPECTED"];
+
+function ciSummaryOf(
   rollup: readonly { state?: string; conclusion?: string; status?: string }[],
-): CiState {
-  if (rollup.length === 0) return "none";
+): { state: CiState; done: number; total: number } {
+  const total = rollup.length;
+  if (total === 0) return { state: "none", done: 0, total };
   const states = rollup.map((c) =>
     (c.conclusion || c.state || c.status || "").toUpperCase(),
   );
+  const done = states.filter((s) => !RUNNING_STATES.includes(s)).length;
   if (
     states.some((s) => s === "FAILURE" || s === "ERROR" || s === "TIMED_OUT")
   ) {
-    return "fail";
+    return { state: "fail", done, total };
   }
-  if (
-    states.some(
-      (s) =>
-        s === "" ||
-        s === "PENDING" ||
-        s === "IN_PROGRESS" ||
-        s === "QUEUED" ||
-        s === "EXPECTED",
-    )
-  ) {
-    return "pending";
-  }
-  return "pass";
+  if (done < total) return { state: "pending", done, total };
+  return { state: "pass", done, total };
 }
 
 function setHint($: EngineInterface, text: string | undefined): void {
@@ -158,13 +151,48 @@ async function pollOnce($: EngineInterface): Promise<void> {
   const w = watched;
   w.prUrl = pr.url;
 
-  const ci = ciStateOf(pr.statusCheckRollup ?? []);
-  const review = w.notifiedReview
-    ? "レビュー通知済"
-    : copilotReviews > 0
-      ? "レビュー到着"
-      : "レビュー待ち";
-  setHint($, `pr-watch #${w.prNumber} CI:${ci} ${review}`);
+  const { state: ci, done, total } = ciSummaryOf(pr.statusCheckRollup ?? []);
+
+  // レビュースレッドは isResolved のみの軽量クエリで全件/解決済みを数える
+  let threads: { total: number; resolved: number } | undefined;
+  if (copilotReviews > 0 && pr.url) {
+    const m = pr.url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\//);
+    if (m) {
+      const r = await $.process.run([
+        "gh",
+        "api",
+        "graphql",
+        "--paginate",
+        "-F",
+        `owner=${m[1]}`,
+        "-F",
+        `repo=${m[2]}`,
+        "-F",
+        `number=${w.prNumber}`,
+        "-f",
+        "query=query($owner:String!,$repo:String!,$number:Int!,$endCursor:String){repository(owner:$owner,name:$repo){pullRequest(number:$number){reviewThreads(first:100,after:$endCursor){pageInfo{hasNextPage endCursor}nodes{isResolved}}}}}",
+        "--jq",
+        ".data.repository.pullRequest.reviewThreads.nodes[].isResolved",
+      ]);
+      if (r.exitCode === 0) {
+        const flags = r.stdout.split("\n").filter((l) => l.trim() !== "");
+        threads = {
+          total: flags.length,
+          resolved: flags.filter((f) => f.trim() === "true").length,
+        };
+      }
+    }
+  }
+
+  const review = threads
+    ? `レビュー ${threads.resolved}/${threads.total}`
+    : w.notifiedReview
+      ? "レビュー通知済"
+      : copilotReviews > 0
+        ? "レビュー到着"
+        : "レビュー待ち";
+  const ciLabel = total > 0 ? `CI:${ci} ${done}/${total}` : `CI:${ci}`;
+  setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`);
 
   if (ci !== w.lastCi) {
     // fail から抜けたら通知済みフラグを戻し、次の fail も拾えるようにする
@@ -181,20 +209,8 @@ async function pollOnce($: EngineInterface): Promise<void> {
   // 増分ではなく未解決スレッドの有無で判定する (監視開始前に到着したレビューも拾うため)
   if (copilotReviews > 0) {
     const notifyKey = `notified-review:${w.prNumber}`;
-    const home = await $.env.get("HOME");
-    let unresolved = "?";
-    if (home) {
-      const t = await $.process.run([
-        "bash",
-        `${home}/.claude/skills/pr-review-fix/scripts/fetch_unresolved_threads.sh`,
-        String(w.prNumber),
-      ]);
-      if (t.exitCode === 0) {
-        unresolved = String(
-          t.stdout.split("\n").filter((l) => l.trim()).length,
-        );
-      }
-    }
+    // 件数不明 (取得失敗) は "?" のままにして誤起床を防ぐ
+    const unresolved = threads ? String(threads.total - threads.resolved) : "?";
     if (unresolved === "0") {
       await $.store.set(notifyKey, "0");
       return;
