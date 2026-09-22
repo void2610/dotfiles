@@ -24,14 +24,9 @@
 ## 基本ルール
 
 - プログラム内のコメントは、[Comments](#comments) の内容に従って記述する。
-- 新規ブランチを `git switch -c <branch> origin/main` で作らない。
-  - upstream を `origin/main` に設定してしまい、`git push` が main を狙う事故につながる。
-  - 最新 main 起点で切る場合は `--no-track` を付け、upstream は初回 push 時に `git push -u origin HEAD` で同名リモートブランチへ紐づける。
 - パッケージやCLIツールのインストールは nix-darwinで管理された Homebrew を第一候補とする。
   - Homebrewにパッケージが存在しない場合、nixpkgs を用いる。
   - いずれにせよ、宣言的でメンテナンス性を考慮したパッケージ管理を心がける。
-- 未検証の仕様・依存関係を断定しない。主張は実物 (ソース・実行結果) で裏取りし、完了報告の前に実ビルド/実行で検証する。不確実なら「未検証」と明示する。
-- GitHub のコード参照リンクは `blob/<完全SHA>` のパーマリンクで書く (branch 参照は後の編集で行番号がズレる)。SHA は `git log -1 --format=%H origin/main -- <path>` で取得する。
 - **知識の永続化は指示を待たず自律的に行う**。調査の結論・採用/見送りの判断・設計上の Why を得たら、その場でプロジェクトの知識ベース (`Knowledge/` 等) へ書く。ship フロー中は knowledge フェーズが機械的に強制するが、ship 外の作業でも同じ基準で書く。
 
 ## Learning mode の適用範囲
