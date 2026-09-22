@@ -22,7 +22,8 @@ let backoffMs = 0;
 let tick = 0;
 let hint: string | undefined;
 
-const SPINNER = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+// 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
+const SPINNER = ["⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"];
 
 function ciStateOf(
   rollup: readonly { state?: string; conclusion?: string; status?: string }[],
@@ -155,14 +156,12 @@ async function pollOnce($: EngineInterface): Promise<void> {
   const w = watched;
 
   const ci = ciStateOf(pr.statusCheckRollup ?? []);
-  // ポーリングが生きていることを示すため回転グリフを付ける
-  tick = (tick + 1) % SPINNER.length;
   const review = w.notifiedReview
     ? "レビュー通知済"
     : copilotReviews > 0
       ? "レビュー到着"
       : "レビュー待ち";
-  setHint($, `${SPINNER[tick]} pr-watch #${w.prNumber} CI:${ci} ${review}`);
+  setHint($, `pr-watch #${w.prNumber} CI:${ci} ${review}`);
 
   if (ci !== w.lastCi) {
     // fail から抜けたら通知済みフラグを戻し、次の fail も拾えるようにする
@@ -214,6 +213,12 @@ function ensurePoller($: EngineInterface): void {
   if (pollerStarted) return;
   pollerStarted = true;
   $.clock.every(5000, () => poll($));
+  // 回転グリフはアニメーションなので gh ポーリングとは別の短周期で回す
+  $.clock.every(120, () => {
+    if (!hint) return;
+    tick = (tick + 1) % SPINNER.length;
+    $.ui.invalidate("ui.render");
+  });
 }
 
 export const register: Register = (on) => {
@@ -245,10 +250,11 @@ export const register: Register = (on) => {
     if (!hint) return next(e);
     const { Text } = $.ui.resolve(e);
     const failing = watched?.lastCi === "fail";
+    const line = `${SPINNER[tick]} ${hint}`;
     return failing ? (
-      <Text color="red">{hint}</Text>
+      <Text color="red">{line}</Text>
     ) : (
-      <Text dimColor>{hint}</Text>
+      <Text dimColor>{line}</Text>
     );
   });
 };
