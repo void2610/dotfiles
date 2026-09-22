@@ -2,12 +2,17 @@ import type { EngineInterface, Register } from "claude-code";
 
 type CiState = "pass" | "fail" | "pending" | "none";
 
+type Threads = { total: number; resolved: number };
+
 type Watched = {
   prNumber: number;
   prUrl?: string;
   lastCi?: CiState;
   notifiedReview: boolean;
   notifiedCiFail: boolean;
+  // reviewThreads クエリの節約用: 前回結果と、その時点の Copilot レビュー数
+  threads?: Threads;
+  threadsAtReviews?: number;
 };
 
 let watched: Watched | undefined;
@@ -153,9 +158,14 @@ async function pollOnce($: EngineInterface): Promise<void> {
 
   const { state: ci, done, total } = ciSummaryOf(pr.statusCheckRollup ?? []);
 
-  // レビュースレッドは isResolved のみの軽量クエリで全件/解決済みを数える
-  let threads: { total: number; resolved: number } | undefined;
-  if (copilotReviews > 0 && pr.url) {
+  // レビュースレッドは isResolved のみの軽量クエリで全件/解決済みを数える。
+  // 新しいレビューが来たか未解決が残っている時だけ再取得する (指摘 0 件・全解決なら止める)
+  const needThreads =
+    copilotReviews > 0 &&
+    (w.threadsAtReviews !== copilotReviews ||
+      (w.threads !== undefined && w.threads.total - w.threads.resolved > 0));
+  let threads = w.threads;
+  if (needThreads && pr.url) {
     const m = pr.url.match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\//);
     if (m) {
       const r = await $.process.run([
@@ -180,6 +190,8 @@ async function pollOnce($: EngineInterface): Promise<void> {
           total: flags.length,
           resolved: flags.filter((f) => f.trim() === "true").length,
         };
+        w.threads = threads;
+        w.threadsAtReviews = copilotReviews;
       }
     }
   }
