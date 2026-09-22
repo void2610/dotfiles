@@ -93,7 +93,8 @@ verify_knowledge() {
 verify_commit() {
   # ship.json の ignoreDirty (パス配列) は clean 判定から除外する (フローと無関係なユーザー変更でブロックしないため)
   local -a ex=()
-  while IFS= read -r p; do [[ -n "$p" ]] && ex+=(":(exclude)$p"); done \
+  local ignored
+  while IFS= read -r ignored; do [[ -n "$ignored" ]] && ex+=(":(exclude)$ignored"); done \
     < <(jq -r '(.ignoreDirty // [])[]' "$config_file" 2>/dev/null || true)
   # サブディレクトリから呼ばれても全体を見るため、pathspec ごとリポジトリルート基準に固定する
   git -C "$repo_root" diff --quiet -- . ${ex[@]+"${ex[@]}"} \
