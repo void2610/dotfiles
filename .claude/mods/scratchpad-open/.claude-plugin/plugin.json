@@ -1,0 +1,6 @@
+{
+  "name": "scratchpad-open",
+  "author": { "name": "void2610" },
+  "description": "現セッションの scratchpad を Finder で開くボタンと /scratchpad コマンド",
+  "version": "0.1.0"
+}
