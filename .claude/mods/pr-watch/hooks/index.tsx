@@ -33,10 +33,18 @@ type Parts = {
   ciColor?: string;
   review: string;
   reviewColor?: string;
-  // CI 成功かつレビュー未解決 0 件
+  // CI 成功かつレビュー未解決 0 件。スピナーを止める判定に使う
   done: boolean;
 };
 let parts: Parts | undefined;
+
+// 完了・要対応はポーリング待ちではなく人/モデルの対応待ちなので、回転させず固定記号にする
+function staticGlyph(p: Parts | undefined): string | undefined {
+  if (!p) return undefined;
+  if (p.ciColor === "red" || p.reviewColor === "red") return "✗";
+  if (p.done) return "✓";
+  return undefined;
+}
 
 // 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
 const SPINNER = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
@@ -296,6 +304,7 @@ function ensurePoller($: EngineInterface): void {
   // 回転グリフはアニメーションなので gh ポーリングとは別の短周期で回す
   $.clock.every(120, () => {
     if (!hint) return;
+    if (staticGlyph(parts)) return;
     tick = (tick + 1) % SPINNER.length;
     $.ui.invalidate("ui.render");
   });
@@ -346,7 +355,7 @@ export const register: Register = (on) => {
     return (
       <Box>
         <Text color={spinnerColor} dimColor={!spinnerColor}>
-          {`${SPINNER[tick]} `}
+          {`${staticGlyph(parts) ?? SPINNER[tick]} `}
         </Text>
         {url ? (
           <Button
