@@ -33,6 +33,8 @@ type Parts = {
   ciColor?: string;
   review: string;
   reviewColor?: string;
+  // CI 成功かつレビュー未解決 0 件
+  done: boolean;
 };
 let parts: Parts | undefined;
 
@@ -230,12 +232,28 @@ async function pollOnce($: EngineInterface): Promise<void> {
     : threads.total - threads.resolved > 0
       ? "red"
       : "green";
+  const allDone =
+    (ci === "pass" || ci === "none") &&
+    threads !== undefined &&
+    threads.total - threads.resolved === 0;
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
     ciColor,
     review,
     reviewColor,
+    done: allDone,
   });
+
+  // 全完了は一度だけ起こす。未完了に戻ったら (再 push 等) 次の完了も拾えるよう解除する
+  const doneKey = `notified-done:${w.prNumber}`;
+  if (!allDone) {
+    if (await $.store.get(doneKey)) await $.store.set(doneKey, "");
+  } else if (!(await $.store.get(doneKey))) {
+    await $.store.set(doneKey, "1");
+    await $.prompt.submit({
+      text: `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
+    });
+  }
 
   if (ci !== w.lastCi) {
     // fail から抜けたら通知済みフラグを戻し、次の fail も拾えるようにする
