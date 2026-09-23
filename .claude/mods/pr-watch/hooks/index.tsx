@@ -27,6 +27,14 @@ let nextGhAt = 0;
 let backoffMs = 0;
 let tick = 0;
 let hint: string | undefined;
+// 部位別配色用。監視中のみ設定し、エラー表示等では undefined (hint を dim 単色で出す)
+type Parts = {
+  ci: string;
+  ciColor?: string;
+  review: string;
+  reviewColor?: string;
+};
+let parts: Parts | undefined;
 
 // 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
 const SPINNER = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
@@ -51,9 +59,14 @@ function ciSummaryOf(
   return { state: "pass", done, total };
 }
 
-function setHint($: EngineInterface, text: string | undefined): void {
+function setHint(
+  $: EngineInterface,
+  text: string | undefined,
+  next?: Parts,
+): void {
   if (hint === text) return;
   hint = text;
+  parts = next;
   $.ui.invalidate("ui.render");
 }
 
@@ -204,7 +217,25 @@ async function pollOnce($: EngineInterface): Promise<void> {
         ? "レビュー到着"
         : "レビュー待ち";
   const ciLabel = total > 0 ? `CI:${ci} ${done}/${total}` : `CI:${ci}`;
-  setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`);
+  const ciColor =
+    ci === "pass"
+      ? "green"
+      : ci === "fail"
+        ? "red"
+        : ci === "pending"
+          ? "cyan"
+          : undefined;
+  const reviewColor = !threads
+    ? undefined
+    : threads.total - threads.resolved > 0
+      ? "cyan"
+      : "green";
+  setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
+    ci: ciLabel,
+    ciColor,
+    review,
+    reviewColor,
+  });
 
   if (ci !== w.lastCi) {
     // fail から抜けたら通知済みフラグを戻し、次の fail も拾えるようにする
@@ -279,26 +310,35 @@ export const register: Register = (on) => {
   // 1 行で足りるので、$.ui.status (黄色) や Pane ではなくプロンプト直上の帯に描く
   on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
     if (!hint) return next(e);
-    const { Text, Button } = $.ui.resolve(e);
-    const failing = watched?.lastCi === "fail";
-    const line = `${SPINNER[tick]} ${hint}`;
+    const { Box, Text, Button } = $.ui.resolve(e);
     const url = watched?.prUrl;
-    if (url) {
-      // Button に色は付けられないため fail 時は非 dim で目立たせる
-      return (
-        <Button
-          key="pr-watch-ci"
-          label={line}
-          plain
-          dimColor={!failing}
-          onPress={() => void $.process.run(["open", `${url}/checks`])}
-        />
-      );
+    if (!parts || !watched) {
+      return <Text dimColor>{`${SPINNER[tick]} ${hint}`}</Text>;
     }
-    return failing ? (
-      <Text color="red">{line}</Text>
-    ) : (
-      <Text dimColor>{line}</Text>
+    // Button のラベルは単色のため、クリック対象は #番号 のみにして残りを部位別の色で描く
+    return (
+      <Box>
+        <Text dimColor>{`${SPINNER[tick]} pr-watch `}</Text>
+        {url ? (
+          <Button
+            key="pr-watch-ci"
+            label={`#${watched.prNumber}`}
+            plain
+            dimColor
+            onPress={() => void $.process.run(["open", `${url}/checks`])}
+          />
+        ) : (
+          <Text dimColor>{`#${watched.prNumber}`}</Text>
+        )}
+        <Text> </Text>
+        <Text color={parts.ciColor} dimColor={!parts.ciColor}>
+          {parts.ci}
+        </Text>
+        <Text> </Text>
+        <Text color={parts.reviewColor} dimColor={!parts.reviewColor}>
+          {parts.review}
+        </Text>
+      </Box>
     );
   });
 };
