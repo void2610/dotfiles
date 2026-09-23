@@ -1,6 +1,7 @@
 import type { Run } from "./caps";
 
-const BRANCH_OP_RE = /\bgit(\s+-C\s+\S+)?\s+(switch|checkout|worktree\s+add)\b/;
+const BRANCH_OP_RE =
+  /\bgit(?:\s+-C\s+(\S+))?\s+(switch|checkout|worktree\s+add)\b/;
 // "git checkout -- <path>" のファイル復元はブランチ移動ではないため許可
 const CHECKOUT_PATHS_RE = /\bgit(\s+-C\s+\S+)?\s+checkout(\s+\S+)*\s+--(\s|$)/;
 // ユーザー明示承認の escape (open PR ロックのみ。ship ロックは絶対)
@@ -11,15 +12,21 @@ export async function shipBranchLockDeny(
   home: string | undefined,
   cmd: string,
 ): Promise<string | undefined> {
-  if (!BRANCH_OP_RE.test(cmd) || CHECKOUT_PATHS_RE.test(cmd)) return undefined;
+  const op = BRANCH_OP_RE.exec(cmd);
+  if (!op || CHECKOUT_PATHS_RE.test(cmd)) return undefined;
+
+  // -C 先 (サブモジュール等) のロックはそのリポジトリの ship 状態・PR で判定する
+  const target = op[1]?.replace(/^(["'])(.*)\1$/, "$2");
+  const runIn: Run = (argv, init) =>
+    run(argv, target ? { ...init, cwd: target } : init);
 
   const inRepo =
-    (await run(["git", "rev-parse", "--is-inside-work-tree"])).exitCode === 0;
+    (await runIn(["git", "rev-parse", "--is-inside-work-tree"])).exitCode === 0;
   if (!inRepo) return undefined;
 
   // (1) ship フローのロック。exit 3 のみがロック検知 (guard 自体の失敗で誤ブロックしない)
   if (home) {
-    const guard = await run([
+    const guard = await runIn([
       "bash",
       `${home}/.claude/skills/ship/scripts/ship.sh`,
       "guard",
@@ -33,7 +40,7 @@ export async function shipBranchLockDeny(
 
   // (2) ship 未 init でも open PR があれば禁止
   const out = async (argv: readonly string[]) => {
-    const r = await run(argv);
+    const r = await runIn(argv);
     return r.exitCode === 0 ? r.stdout.trim() : "";
   };
   const defaultBranch = (
@@ -64,7 +71,7 @@ export async function shipBranchLockDeny(
       "@{u}",
     ]);
     if (!remoteRef) {
-      const chk = await run([
+      const chk = await runIn([
         "git",
         "rev-parse",
         "--verify",
@@ -74,7 +81,7 @@ export async function shipBranchLockDeny(
       if (chk.exitCode === 0) remoteRef = `origin/${current}`;
     }
     if (remoteRef) {
-      const count = await run([
+      const count = await runIn([
         "git",
         "rev-list",
         "--count",

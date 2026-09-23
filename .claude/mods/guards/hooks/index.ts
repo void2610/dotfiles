@@ -13,7 +13,7 @@ import { taskContractNote } from "./task-contract-trigger";
 // そのためイベント登録と $ の呼び出しは本ファイルに閉じ、機能本体は各ファイルの純関数に置く
 export const register: Register = (on) => {
   on("prompt.submit", async ($, e, next) => {
-    const run: Run = (argv) => $.process.run(argv);
+    const run: Run = (argv, init) => $.process.run(argv, init);
     const notes = [
       taskContractNote(e.text),
       resetRestackNote(e.text),
@@ -24,7 +24,7 @@ export const register: Register = (on) => {
   });
 
   on("tool.call", { tool: "Bash" }, async ($, e, next) => {
-    const run: Run = (argv) => $.process.run(argv);
+    const run: Run = (argv, init) => $.process.run(argv, init);
     const home = await $.env.get("HOME");
     const deny =
       gitSkillDeny(e.command) ??
@@ -37,7 +37,7 @@ export const register: Register = (on) => {
   on("tool.call", { tool: "Edit" }, async ($, e, next) => {
     const r = await next(e);
     if (r.deny !== undefined || r.isError) return r;
-    const run: Run = (argv) => $.process.run(argv);
+    const run: Run = (argv, init) => $.process.run(argv, init);
     const readFile: ReadFile = (path) => $.fs.read(path);
     const notes = [
       await commentStyleNote(
@@ -56,7 +56,7 @@ export const register: Register = (on) => {
   on("tool.call", { tool: "Write" }, async ($, e, next) => {
     const r = await next(e);
     if (r.deny !== undefined || r.isError) return r;
-    const run: Run = (argv) => $.process.run(argv);
+    const run: Run = (argv, init) => $.process.run(argv, init);
     const readFile: ReadFile = (path) => $.fs.read(path);
     const notes = [
       await commentStyleNote(run, e.file_path, e.content, "", true),
