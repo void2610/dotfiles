@@ -226,9 +226,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
           ? "cyan"
           : undefined;
   const reviewColor = !threads
-    ? undefined
+    ? "cyan"
     : threads.total - threads.resolved > 0
-      ? "cyan"
+      ? "red"
       : "green";
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
@@ -315,20 +315,31 @@ export const register: Register = (on) => {
     if (!parts || !watched) {
       return <Text dimColor>{`${SPINNER[tick]} ${hint}`}</Text>;
     }
-    // Button のラベルは単色のため、クリック対象は #番号 のみにして残りを部位別の色で描く
+    // 失敗 (赤) > 未完了 (シアン) > 両方完了 (緑) の優先で CI とレビューの色を合成する
+    const colors = [parts.ciColor, parts.reviewColor];
+    const spinnerColor = colors.includes("red")
+      ? "red"
+      : colors.includes("cyan")
+        ? "cyan"
+        : colors.every((c) => c === "green")
+          ? "green"
+          : undefined;
+    // Button のラベルは単色のため、クリック対象は「pr-watch #番号」までにして残りを部位別の色で描く
     return (
       <Box>
-        <Text dimColor>{`${SPINNER[tick]} pr-watch `}</Text>
+        <Text color={spinnerColor} dimColor={!spinnerColor}>
+          {`${SPINNER[tick]} `}
+        </Text>
         {url ? (
           <Button
             key="pr-watch-ci"
-            label={`#${watched.prNumber}`}
+            label={`pr-watch #${watched.prNumber}`}
             plain
             dimColor
             onPress={() => void $.process.run(["open", `${url}/checks`])}
           />
         ) : (
-          <Text dimColor>{`#${watched.prNumber}`}</Text>
+          <Text dimColor>{`pr-watch #${watched.prNumber}`}</Text>
         )}
         <Text> </Text>
         <Text color={parts.ciColor} dimColor={!parts.ciColor}>
