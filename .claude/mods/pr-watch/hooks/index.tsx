@@ -228,7 +228,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
         : "レビュー待ち";
   const ciLabel = total > 0 ? `CI:${ci} ${done}/${total}` : `CI:${ci}`;
   const ciColor =
-    ci === "pass"
+    ci === "pass" || ci === "none"
       ? "green"
       : ci === "fail"
         ? "red"
