@@ -13,7 +13,9 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 1. **現在地と次アクションは必ず `ship.sh` に聞く** (`status` / `next`)。自分の記憶でフェーズを進めない。セッション途中参加・再開時も最初に `status` を打つ
 2. **フェーズ遷移は必ず `ship.sh done <phase>` 経由**。postcondition が実測検証され、NG の間は次へ進めない。NG を解消してから再実行する (検証の握りつぶし・skip での回避は禁止)
 3. `ship.sh next` が `checkpoint=yes` を返したら、**そのフェーズの作業を始めずに**現状を報告してユーザーの指示を待つ
-4. **branch フェーズ完了後はフロー完走までブランチを固定する**。全フェーズが done になるまで、新しいブランチの作成 (`git switch -c` / `git checkout -b` / worktree 追加等) とブランチ移動 (`git switch` / `git checkout <branch>`) を一切行わない。別ブランチでの作業が必要になったらユーザーに報告して指示を待つ (enforce-ship-branch-lock.sh hook が `ship.sh guard` で機械的にもブロックする)
+4. **branch フェーズ完了後はフロー完走まで「いま居るスタック」を固定する**。全フェーズが done になるまで、新しいブランチの作成 (`git switch -c` / `git checkout -b` / worktree 追加等) と、**スタック外**のブランチへの移動を行わない。別ブランチでの作業が必要になったらユーザーに報告して指示を待つ (guards Mod の ship-branch-lock が `ship.sh guard <移動先>` で機械的にもブロックする)
+   - **stacked PR の段の追加・段間の移動・restack は禁止に当たらない** (`gh stack add` / `up` / `down` / `switch` / `checkout` / `sync` / `rebase` / `submit`)。同一スタック内なら `git switch <段>` も通る。詳細は下の「stacked PR での運用」
+   - `gh stack unstack` (スタックをローカルと GitHub から削除する) はフロー中は禁止。ユーザーの明示承認がある場合だけ `SHIP_ALLOW_BRANCH_SWITCH=1 <cmd>` を付ける
 5. **柔軟性はユーザーの自然言語をそのまま状態に反映する**。選択肢の提示はしない
    - 「コミット前で毎回止めて」→ `ship.sh checkpoint add commit`
    - 「もう止めなくていい」→ `ship.sh checkpoint remove <phase>`
@@ -25,7 +27,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | phase | 担当 | `done` の検証内容 |
 |---|---|---|
 | plan | 依頼が開放的なら task-contract で契約確認 → `ship.sh init "<goal>"` | goal 記録済み (init が plan を done にする) |
-| branch | branch-create スキル | デフォルトブランチ以外にいる |
+| branch | branch-create スキル (stacked PR の 2 段目以降は `gh stack add`) | デフォルトブランチ以外にいる |
 | impl | 本体実装 (このセッション) | 差分が存在する |
 | test | `ship.sh done test` 自体が実行 | `.claude/ship.json` の test コマンドが exit 0 |
 | format | 同上 | format コマンドが exit 0 |
@@ -38,6 +40,22 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | fix | 未解決スレッドが残っていれば pr-review-fix スキル | 未解決レビュースレッド 0 件 |
 
 全フェーズ done になったら PR URL と各フェーズの記録を添えて完了報告する。
+
+## stacked PR (gh stack) での運用
+
+**1 段 = 1 PR = 1 ship フロー**。グローバル CLAUDE.md の「1 PR = 1 段階」がそのまま段の単位になる。状態はブランチごとに持つので、段を足したらその段で `ship.sh init "<その段の goal>"` を打って plan から回す。下段へ戻れば `status` がその段の続きを返す。
+
+| やること | 使うコマンド | ship 側の扱い |
+|---|---|---|
+| 次の段を始める | `gh stack add <branch>` (`git switch -c` は使わない) | 新しい段で `ship.sh init` → plan から |
+| 段を移動する | `gh stack up` / `down` / `top` / `bottom` / `switch`、`gh stack checkout <PR 番号>` | ロック対象外。移動先の段の状態で再開する |
+| 下段を直した後の積み直し | `gh stack rebase` / `gh stack sync` | ロック対象外。SHA が変わるのは正常 |
+| PR を作る・更新する | 段が 1 本なら pr-create、複数段をまとめて出すなら `gh stack submit` | pr フェーズは**現在の段**に OPEN な PR があるかだけを見る |
+
+- 下段の PR が open のまま上段を進めるのはスタックの正常状態で、ロックはそれを妨げない。妨げるのは**スタックの外へ出ること**だけ
+- **未コミットの変更を抱えたままの段移動はスタック内でもブロックする** (差分を別の段へ引き連れるため)。commit してから移動する
+- `ship.sh status` はスタックに居るとき `stack=<trunk> の n/m 段目` を出す。どの段に居るかを記憶で判断しない
+- 段の構成をユーザーが変えた (PR を畳んだ・段数を変えた) ときは origin を正としてローカルを合わせる。壊れたと診断しない
 
 ## 初回セットアップ (リポジトリごと)
 
