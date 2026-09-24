@@ -21,6 +21,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
    - 「もう止めなくていい」→ `ship.sh checkpoint remove <phase>`
    - 「テストは飛ばして」→ `ship.sh skip test <ユーザーの理由>`
    - 「ここで中断」→ 状態はファイルに残る。次回 `/ship` で status から再開
+   - 「ship やめる / 解除して」→ `ship.sh abort` (状態ファイルを削除。HUD の「[解除]」ボタンも同じ)
 
 ## フェーズと担当
 

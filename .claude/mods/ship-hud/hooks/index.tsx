@@ -110,12 +110,39 @@ function renderHud($: EngineInterface, ui: Resolved) {
           $.ui.invalidate("ui.render");
         }
       : undefined;
+  const abort = async () => {
+    const home = await $.env.get("HOME");
+    if (!home) return;
+    await $.process.run([
+      "bash",
+      `${home}/.claude/skills/ship/scripts/ship.sh`,
+      "abort",
+    ]);
+    await refresh($);
+    $.ui.invalidate("ui.render");
+  };
   return (
     <Box flexDirection="column">
       <Text bold wrap="truncate">
         {s.goal}
       </Text>
-      <Text dimColor>{s.branch}</Text>
+      {/* 1 行目の右端はエンジンの折りたたみ [-] が重なるため 2 行目に置く */}
+      <Box width="100%">
+        <Box flexGrow={1} flexShrink={1}>
+          <Text dimColor wrap="truncate">
+            {s.branch}
+          </Text>
+        </Box>
+        <Box flexShrink={0} marginLeft={1}>
+          <Button
+            key="ship-abort"
+            label="[解除]"
+            plain
+            dimColor
+            onPress={abort}
+          />
+        </Box>
+      </Box>
       <Box flexWrap="wrap">
         {shown.map((p, i) => {
           const [icon, color] =

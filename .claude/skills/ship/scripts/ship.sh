@@ -299,11 +299,17 @@ case "$cmd" in
     # ロック検知は専用 exit code 3 (die の 1 と区別し、無関係な失敗で hook が誤ブロックしないため)
     exit 3
     ;;
+  abort)
+    require_state
+    goal=$(state .goal)
+    rm -f "$state_file"
+    echo "解除完了: ship フロー (goal=$goal) の状態を削除した"
+    ;;
   stack-branches)
     # hook 用: 現在ブランチが属する stack の全ブランチ (trunk 含む) を 1 行 1 件で出す
     stack_branches
     ;;
   *)
-    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|quiz|guard|stack-branches"
+    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|quiz|guard|abort|stack-branches"
     ;;
 esac
