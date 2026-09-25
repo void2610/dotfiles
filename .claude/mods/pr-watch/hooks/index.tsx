@@ -90,6 +90,12 @@ async function poll($: EngineInterface): Promise<void> {
   }
 }
 
+// 明示操作 (/pr-watch・↻ ボタン) は間隔待ちを飛ばして即時取得する
+async function refetch($: EngineInterface): Promise<void> {
+  nextGhAt = 0;
+  await poll($);
+}
+
 async function pollOnce($: EngineInterface): Promise<void> {
   const now = Date.now();
   if (now < nextGhAt) return;
@@ -321,8 +327,7 @@ export const register: Register = (on) => {
   });
 
   on("command.run", { command: "pr-watch" }, async ($, _e, _next) => {
-    nextGhAt = 0;
-    await poll($);
+    await refetch($);
     return {
       text: hint ?? "pr-watch: 監視対象なし (PR のあるブランチにいない)",
     };
@@ -376,6 +381,14 @@ export const register: Register = (on) => {
         <Text color={parts.reviewColor} dimColor={!parts.reviewColor}>
           {parts.review}
         </Text>
+        <Text> </Text>
+        <Button
+          key="pr-watch-refetch"
+          label="↻"
+          plain
+          dimColor
+          onPress={() => void refetch($)}
+        />
       </Box>
     );
   });
