@@ -17,3 +17,4 @@
 /.config/terminal-browser/extensions/
 .config/gh/config.yml
 outputs/
+/.config/raycast
