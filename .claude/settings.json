@@ -28,6 +28,7 @@
     ],
     "deny": [],
     "ask": [],
+    "additionalDirectories": ["~/Documents/rclone"],
     "defaultMode": "auto"
   },
   "model": "claude-fable-5",
