@@ -65,6 +65,14 @@ run_rclone_sync() {
   rclone "${args[@]}" "$@"
 }
 
+print_notes() {
+  local notes="${CONFIG_DIR}/notes/${1}.md"
+  [ -f "$notes" ] || return 0
+  echo
+  echo "--- フォルダの補足 (${notes}) ---"
+  cat "$notes"
+}
+
 cmd="${1:-}"
 [ -n "$cmd" ] || usage
 shift
@@ -75,6 +83,7 @@ case "$cmd" in
     run_rclone_sync "$repo" --stats-one-line -v
     python3 "${SCRIPT_DIR}/extract_images.py" "${DEST_ROOT}/${repo}"
     echo "drive-sync: ${DEST_ROOT}/${repo} を更新しました"
+    print_notes "$repo"
     ;;
   status)
     repo="$(resolve_repo "${1:-}")"
@@ -84,6 +93,7 @@ case "$cmd" in
     }
     diff_lines="$(grep 'Skipped' <<<"$out" || true)"
     echo "${diff_lines:-drive-sync: 差分なし}"
+    print_notes "$repo"
     ;;
   ls)
     repo="$(resolve_repo "${1:-}")"
