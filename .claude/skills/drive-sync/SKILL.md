@@ -49,10 +49,8 @@ Google Drive 共有フォルダ → `~/Documents/rclone/<repo>` の**一方向**
 2. ビルドデータ等を除外するなら `filters/<repo>.filter` を作成 (書式: `- /Build/**`。先頭 `/` は同期ルート直下に固定)
 3. `sync.sh ls <repo>` で Drive 側が見えること、除外対象が出ないことを確認 (`ls` はフィルタ非適用なので `status` でも確認)
 4. `sync.sh pull <repo>`
-5. リポジトリの `.claude/settings.local.json` に同期先を追加し、Claude が読めるようにする:
-   ```json
-   { "permissions": { "additionalDirectories": ["~/Documents/rclone/<repo>"] } }
-   ```
+
+各リポジトリ側のファイル (`.claude/settings.local.json` 等) は変更しない。設定は dotfiles に一元管理する。
 
 除外を後から追加しても、同期済みのファイルはローカルに残る (`*.images/` を守るため `--delete-excluded` を使っていない)。不要なら手動で削除する。
 
