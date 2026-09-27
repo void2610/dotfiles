@@ -6,6 +6,8 @@ PROJECTS_CONF="${CONFIG_DIR}/projects.conf"
 DEST_ROOT="${HOME}/Documents/rclone"
 REMOTE="${DRIVE_SYNC_REMOTE:-gdrive}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# 他人所有の共有フォルダでは ListR (--fast-list 含む) がフォルダ単位で中身を取りこぼすため無効化する
+LIST_FLAGS=(--disable ListR)
 
 die() {
   echo "drive-sync: $*" >&2
@@ -54,7 +56,7 @@ run_rclone_sync() {
     --drive-export-formats md,csv,pdf
     # Drive 側の大量削除がローカルへ波及する事故の歯止め
     --max-delete 50
-    --fast-list
+    "${LIST_FLAGS[@]}"
   )
   repo_filter="${CONFIG_DIR}/filters/${repo}.filter"
   [ -f "$repo_filter" ] && args+=(--filter-from "$repo_filter")
@@ -87,7 +89,7 @@ case "$cmd" in
     repo="$(resolve_repo "${1:-}")"
     folder_id="$(lookup_folder_id "$repo")"
     [ -n "$folder_id" ] || die "${repo} は ${PROJECTS_CONF} に未登録です"
-    rclone lsf -R --drive-export-formats md,csv,pdf "${REMOTE},root_folder_id=${folder_id}:"
+    rclone lsf -R "${LIST_FLAGS[@]}" --drive-export-formats md,csv,pdf "${REMOTE},root_folder_id=${folder_id}:"
     ;;
   list)
     awk '$0 !~ /^[[:space:]]*#/ && NF >= 2 { print $1 }' "$PROJECTS_CONF"
