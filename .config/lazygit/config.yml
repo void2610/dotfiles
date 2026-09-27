@@ -4,31 +4,26 @@
 # output = "terminal" のサブプロセス終了後に出る
 # 「Press enter to return to lazygit」の確認を省く。
 promptToReturnFromSubprocess: false
-
 gui:
   # コマンドログパネルを隠して diff 表示域を広げる（@ で一時表示可能）。
   showCommandLog: false
-
   # loadingText 表示時のスピナーが速すぎるので、回転を緩める（デフォルト 50ms → 100ms）。
   spinner:
     rate: 200
-
 # <C-d> でメインビューを下スクロールできるのに対し、上スクロールが <C-u>/K/<PgUp> のみで
 # 左手だけで完結しないため、上スクロールにも <C-e> を割り当てる（vim と上下逆だが対称性優先）。
 keybinding:
   universal:
     scrollUpMain: '<c-e>'
-
 # nvim 内起動時、デフォルトの nvim-remote プリセットは --remote-tab で別タブに開くため --remote に変更。
 os:
   edit: '[ -z "$NVIM" ] && nvim -- {{filename}} || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}})'
   editAtLine: '[ -z "$NVIM" ] && nvim +{{line}} -- {{filename}} || (nvim --server "$NVIM" --remote-send "q" && nvim --server "$NVIM" --remote {{filename}} && nvim --server "$NVIM" --remote-send "{{line}}G")'
-
 git:
   # Unity YAML は prefablens、それ以外は delta で diff 表示するラッパー (delta の引数もスクリプト側に集約)。
-  pagers:
-    - externalDiffCommand: $HOME/.config/lazygit/unity-diff.sh
-
+  diffRenderers:
+    - command: $HOME/.config/lazygit/unity-diff.sh
+      type: extDiff
 customCommands:
   # `C`（shift-c）を上書きし、空のコミットメッセージ入力欄を出す。
   # 空のままエンターすると、選択中ファイルの git status を見て
@@ -61,7 +56,6 @@ customCommands:
         exit 1
       fi
       git commit -m "$msg"
-
   # どの画面でも `X` を押すと、gh で取得したオープン PR の一覧から選択して checkout する。
   # (`X` は lazygit v0.61.1 の全コンテキストでデフォルト未使用。他の空きは I / U / Y)
   # 一覧は「#番号 タイトル 作者 ブランチ」を色付き・列揃えで表示する。
@@ -79,26 +73,12 @@ customCommands:
         title: "Select PR"
         key: PrNumber
         command: >-
-          gh pr list --limit 30 --json number,title,headRefName,author,isDraft,reviewDecision
-          --jq 'def truncpad($w):
-          [explode[] | [., (if . >= 4352 then 2 else 1 end)]] as $cs
-          | reduce $cs[] as $i ({s:[], n:0, done:false};
-          if (.done|not) and (.n + $i[1] <= $w)
-          then {s:(.s+[$i[0]]), n:(.n+$i[1]), done:false}
-          else .done = true end)
-          | (.s|implode) + ((" " * ($w - .n)) // "");
-          .[] | [(.number|tostring),
-          (if .isDraft then "DRAFT"
-          elif .reviewDecision == "APPROVED" then "APPROVED"
-          elif .reviewDecision == "CHANGES_REQUESTED" then "CHANGES"
-          else "PENDING" end),
-          .author.login, .headRefName, (.title | truncpad(50))] | @tsv'
+          gh pr list --limit 30 --json number,title,headRefName,author,isDraft,reviewDecision --jq 'def truncpad($w): [explode[] | [., (if . >= 4352 then 2 else 1 end)]] as $cs | reduce $cs[] as $i ({s:[], n:0, done:false}; if (.done|not) and (.n + $i[1] <= $w) then {s:(.s+[$i[0]]), n:(.n+$i[1]), done:false} else .done = true end) | (.s|implode) + ((" " * ($w - .n)) // ""); .[] | [(.number|tostring), (if .isDraft then "DRAFT" elif .reviewDecision == "APPROVED" then "APPROVED" elif .reviewDecision == "CHANGES_REQUESTED" then "CHANGES" else "PENDING" end), .author.login, .headRefName, (.title | truncpad(50))] | @tsv'
         filter: '(?P<number>\d+)\t(?P<status>[^\t]*)\t(?P<author>[^\t]*)\t(?P<branch>[^\t]*)\t(?P<title>.*)'
         valueFormat: "{{ .number }}"
         labelFormat: '{{ if eq .status "DRAFT" }}{{ printf "#%-5s" .number | magenta | bold }}{{ else if eq .status "APPROVED" }}{{ printf "#%-5s" .number | green | bold }}{{ else if eq .status "CHANGES" }}{{ printf "#%-5s" .number | red | bold }}{{ else }}{{ printf "#%-5s" .number | cyan | bold }}{{ end }} {{ .title }} {{ printf "%-12.12s" .author | yellow }} {{ .branch | green }}'
     command: gh pr checkout {{ .Form.PrNumber }}
     loadingText: "Checking out PR..."
-
   # `c` で claude 生成メッセージのコミット。detach 実行なので lazygit を閉じても完走する (編集は後で `r`)。
   - key: c
     context: files
@@ -106,7 +86,6 @@ customCommands:
     loadingText: "Generating commit message with claude..."
     command: "$HOME/.config/lazygit/llm-commit-msg.sh"
     output: log
-
   # `<c-x>` で実行中の `c` (コミットメッセージ生成) を中止する。
   - key: <c-x>
     context: global
