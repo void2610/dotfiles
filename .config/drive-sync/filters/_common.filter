@@ -1,0 +1,4 @@
+# 全プロジェクト共通の除外。書式は rclone の filter ルール (https://rclone.org/filtering/)
+- .DS_Store
+- Thumbs.db
+- desktop.ini
