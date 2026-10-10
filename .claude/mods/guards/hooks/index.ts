@@ -6,7 +6,6 @@ import { feedbackMemoryNote } from "./feedback-memory-router";
 import { ghStackHelpNote } from "./gh-stack-help";
 import { gitSkillDeny } from "./git-skill-enforcer";
 import { resetRestackNote } from "./reset-restack-hint";
-import { shipBranchLockDeny } from "./ship-branch-lock";
 import { taskContractNote } from "./task-contract-trigger";
 
 // エンジンは同一イベントの重複登録を拒否し、検証器は $ を import 越しに追えない。
@@ -23,13 +22,8 @@ export const register: Register = (on) => {
     return next({ ...e, context: [...(e.context ?? []), ...notes] });
   });
 
-  on("tool.call", { tool: "Bash" }, async ($, e, next) => {
-    const run: Run = (argv, init) => $.process.run(argv, init);
-    const home = await $.env.get("HOME");
-    const deny =
-      gitSkillDeny(e.command) ??
-      branchTrackDeny(e.command) ??
-      (await shipBranchLockDeny(run, home, e.command));
+  on("tool.call", { tool: "Bash" }, (_$, e, next) => {
+    const deny = gitSkillDeny(e.command) ?? branchTrackDeny(e.command);
     if (deny !== undefined) return { deny };
     return next(e);
   });

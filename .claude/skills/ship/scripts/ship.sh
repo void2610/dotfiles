@@ -18,19 +18,11 @@ default_file="$state_dir/${default_branch//\//__}.json"
 state_file="$branch_file"
 [[ ! -f "$branch_file" && -f "$default_file" ]] && state_file="$default_file"
 config_file="$repo_root/.claude/ship.json"
-# stacked PR (gh stack) のメタデータ。worktree からでも共通の git-dir を指す
-stack_file="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo /nonexistent)/gh-stack"
+# stacked PR (gh stack) のメタデータ。gh stack は worktree ごとの git-dir に置くため、そこを優先する
+stack_file="$(git rev-parse --absolute-git-dir)/gh-stack"
+[[ -f "$stack_file" ]] || stack_file="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo /nonexistent)/gh-stack"
 
 state() { jq -r "$1" "$state_file" 2>/dev/null; }
-
-# 現在ブランチが属する stack の全ブランチ (trunk 含む)。stack 外・gh stack 未使用なら空
-stack_branches() {
-  [[ -f "$stack_file" ]] || return 0
-  jq -r --arg b "$branch" '
-    .stacks[]? | select([.branches[]?.branch] | index($b)) |
-    ([.trunk.branch] + [.branches[]?.branch])[]
-  ' "$stack_file" 2>/dev/null || true
-}
 
 # status 表示用。"develop の 2/3 段目" 形式。stack 外なら空
 stack_position() {
@@ -280,36 +272,13 @@ case "$cmd" in
       *) die "Usage: ship.sh checkpoint add|remove|list [phase]" ;;
     esac
     ;;
-  guard)
-    # PreToolUse hook 用: branch フェーズ完了〜フロー完走の間は、スタックの外へ出るブランチ操作を禁止する。
-    # 引数に移動先ブランチ名を渡せる (複数可)。同一 stack 内の段への移動は stacked PR の正常運用なので通す
-    [[ -f "$branch_file" ]] || exit 0
-    [[ -n $(state '.done.branch // empty') ]] || exit 0
-    n=$(next_phase)
-    [[ "$n" == complete ]] && exit 0
-    if [[ $# -gt 0 ]]; then
-      instack=$(stack_branches)
-      if [[ -n "$instack" ]]; then
-        for t in "$@"; do
-          grep -qxF -- "$t" <<<"$instack" && exit 0
-        done
-      fi
-    fi
-    echo "ship フロー進行中 (goal=$(state .goal), next=$n)。全フェーズ完了まで、現在のスタックの外へ出るブランチの作成・移動は禁止。別ブランチでの作業が必要ならユーザーに報告して指示を待つこと。stacked PR で次の段を始めるなら gh stack add <branch>、段間の移動は gh stack up/down/switch を使うこと (同一スタック内なら git switch <段> も通る)。"
-    # ロック検知は専用 exit code 3 (die の 1 と区別し、無関係な失敗で hook が誤ブロックしないため)
-    exit 3
-    ;;
   abort)
     require_state
     goal=$(state .goal)
     rm -f "$state_file"
     echo "解除完了: ship フロー (goal=$goal) の状態を削除した"
     ;;
-  stack-branches)
-    # hook 用: 現在ブランチが属する stack の全ブランチ (trunk 含む) を 1 行 1 件で出す
-    stack_branches
-    ;;
   *)
-    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|quiz|guard|abort|stack-branches"
+    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|quiz|abort"
     ;;
 esac
