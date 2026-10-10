@@ -1,0 +1,6 @@
+{
+  "name": "autopilot",
+  "author": { "name": "void2610" },
+  "description": "自走モード。ターンが終わるたびに次のターンを起こし、時間・ターン数・進捗なしの上限で止める。/autopilot と model 用ツールで操作し、状態は ~/.claude/state/autopilot に置く",
+  "version": "0.1.0"
+}

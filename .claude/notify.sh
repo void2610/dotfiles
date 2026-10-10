@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Claude Code通知スクリプト
-# 使用例: ./notify.sh "Stop" "成功"
+# 使用例: ./notify.sh "Stop" "成功" / ./notify.sh "Autopilot" "<本文>"
 
 EVENT_TYPE="$1"
 STATUS="$2"
@@ -31,6 +31,9 @@ case "$EVENT_TYPE" in
         ;;
     "Notification")
         MESSAGE="⏳ 許可待機中..."
+        ;;
+    "Autopilot")
+        MESSAGE="🤖 autopilot: $STATUS"
         ;;
     *)
         MESSAGE="📱 Claude Code通知"
