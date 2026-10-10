@@ -22,7 +22,6 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | --- | --- | --- |
 | `git-skill-enforcer.ts` | Bash | `git commit` / `git push` / `gh pr create` の直接実行を deny し、`CLAUDE_GIT_SKILL=<skill>` マーカー付き (スキル経由) のみ許可 |
 | `branch-track-guard.ts` | Bash | `origin/main` 起点のブランチ作成 (`--no-track` なし) と upstream の main 向け変更を deny |
-| `ship-branch-lock.ts` | Bash | ship フロー中 / open PR ありでのブランチ移動をロック (clean + push 済みなら許可、`SHIP_ALLOW_BRANCH_SWITCH=1` で明示解除) |
 | `comment-style-guard.ts` | Edit / Write | 複数行コメントブロックの追加を検知し、CLAUDE.md の Comments ルールに沿った削減ワークフローを注入 |
 | `feedback-memory-router.ts` | Edit / Write | feedback メモリ保存時に適用スコープの再配置判断 (hook 化提案 / repo 配置 / メモリ維持) を注入 |
 | `task-contract-trigger.ts` | prompt.submit | 開放的依頼の語彙を検知し task-contract スキルの発動を指示 |
@@ -36,3 +35,4 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 - biome はリポジトリルートから実行すると nested root エラーになるため、この `mods/` ディレクトリから実行する
 - 同一イベントの matcher なし重複登録はエンジンに拒否されるため、イベント登録は各 Mod の `index.ts(x)` に束ねる
 - 自前登録ツールや `Artifact` 等、生成型の tool union に無いツールの `tool.call` matcher は RegExp で書く
+- ブランチの移動・作成を機械的に止めるガードは置かない。ship フロー中や open PR ありの移動を禁じる ship-branch-lock は、worktree や段の移動を多用する運用の妨げになったため撤去した
