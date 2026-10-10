@@ -18,8 +18,9 @@ default_file="$state_dir/${default_branch//\//__}.json"
 state_file="$branch_file"
 [[ ! -f "$branch_file" && -f "$default_file" ]] && state_file="$default_file"
 config_file="$repo_root/.claude/ship.json"
-# stacked PR (gh stack) のメタデータ。worktree からでも共通の git-dir を指す
-stack_file="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo /nonexistent)/gh-stack"
+# stacked PR (gh stack) のメタデータ。gh stack は worktree ごとの git-dir に置くため、そこを優先する
+stack_file="$(git rev-parse --absolute-git-dir)/gh-stack"
+[[ -f "$stack_file" ]] || stack_file="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || echo /nonexistent)/gh-stack"
 
 state() { jq -r "$1" "$state_file" 2>/dev/null; }
 
