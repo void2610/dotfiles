@@ -15,7 +15,9 @@ import {
   isForeignOwner,
   type Limits,
   newState,
+  PROGRESS_FILES,
   parseCommand,
+  progressSource,
   requestStop,
   resume,
   setWait,
@@ -47,8 +49,8 @@ let watchdogStarted = false;
 const WATCHDOG_MS = 30_000;
 // ターン終了後この時間たっても次のターンが始まらなければ起こし直す (submit の取りこぼし・リロード対策)
 const STALL_MS = 90_000;
-const FINGERPRINT_SH =
-  'cd "$1" 2>/dev/null && { git rev-parse HEAD; git diff HEAD | shasum; git ls-files -o --exclude-standard | shasum; } 2>/dev/null; cat "$2"/*.md 2>/dev/null | shasum';
+const GIT_FINGERPRINT_SH =
+  'cd "$1" 2>/dev/null && { git rev-parse HEAD; git diff HEAD | shasum; git ls-files -o --exclude-standard | shasum; } 2>/dev/null';
 
 const home = async ($: EngineInterface) => (await $.env.get("HOME")) ?? "";
 const baseDir = (h: string) => `${h}/.claude/state/autopilot`;
@@ -184,19 +186,30 @@ async function perform(
   }
 }
 
+async function fingerprint($: EngineInterface, a: Loaded): Promise<string> {
+  const git = await $.process.run([
+    "bash",
+    "-c",
+    GIT_FINGERPRINT_SH,
+    "_",
+    a.state.root,
+  ]);
+  const files: Record<string, string> = {};
+  for (const f of PROGRESS_FILES) {
+    files[f] = await $.fs.read(`${a.dir}/${f}`).catch(() => "");
+  }
+  const r = await $.process.run(["shasum"], {
+    stdin: progressSource(git.stdout, files),
+  });
+  return r.stdout.trim();
+}
+
 async function drive($: EngineInterface, reason: TurnReason): Promise<void> {
   const a = await loadActive($);
   if (!a) return;
   const now = await $.clock.now();
-  const fp = await $.process.run([
-    "bash",
-    "-c",
-    FINGERPRINT_SH,
-    "_",
-    a.state.root,
-    a.dir,
-  ]);
-  const { state, action } = afterTurn(a.state, reason, now, fp.stdout.trim());
+  const fp = await fingerprint($, a);
+  const { state, action } = afterTurn(a.state, reason, now, fp);
   await save($, a.dir, state);
   await perform($, action, now);
 }
@@ -375,7 +388,7 @@ function renderHud($: EngineInterface, ui: Ui, a: Loaded, now: number) {
   const running = s.status === "running";
   const waiting = s.waitUntil !== undefined && s.waitUntil > now;
   const summary = running
-    ? `${s.turns}/${s.maxTurns} · 残り ${formatRemaining(s.deadlineAt - now)} · 進捗なし ${s.idleTurns}/${s.idleLimit}`
+    ? `${s.turns} ターン · 残り ${formatRemaining(s.deadlineAt - now)} · 進捗なし ${s.idleTurns}/${s.idleLimit}`
     : `一時停止: ${s.reason ?? ""}`;
   const act = (fn: () => Promise<string>) => async () => {
     $.ui.toast(await fn());
@@ -428,7 +441,7 @@ export const register: Register = (on) => {
     await $.command.register({
       name: "autopilot",
       description:
-        "自走モード: start <目標> [--hours N --turns N --idle N] / pause / resume / stop / status",
+        "自走モード: start <目標> [--hours N --idle N] / pause / resume / stop / status",
     });
     await $.tool.register({
       name: "start",
@@ -440,7 +453,6 @@ export const register: Register = (on) => {
         properties: {
           goal: { type: "string", description: "目標" },
           hours: { type: "number", description: "時間の上限 (既定 8)" },
-          turns: { type: "number", description: "ターン数の上限 (既定 300)" },
         },
         required: ["goal"],
       },
@@ -537,7 +549,6 @@ export const register: Register = (on) => {
       tool: string;
       goal?: string;
       hours?: number;
-      turns?: number;
       reason?: string;
       evidence?: string;
       minutes?: number;
@@ -545,7 +556,7 @@ export const register: Register = (on) => {
     const name = TOOL_RE.exec(a.tool)?.[1];
     let result: string;
     if (name === "start") {
-      result = await start($, a.goal ?? "", { hours: a.hours, turns: a.turns });
+      result = await start($, a.goal ?? "", { hours: a.hours });
     } else if (name === "stop") {
       result = await stopByModel($, a.reason ?? "", a.evidence ?? "");
     } else if (name === "wait") {

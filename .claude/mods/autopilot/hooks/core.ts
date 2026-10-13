@@ -8,7 +8,6 @@ export type AutopilotState = {
   root: string;
   startedAt: number;
   deadlineAt: number;
-  maxTurns: number;
   turns: number;
   idleLimit: number;
   idleTurns: number;
@@ -21,14 +20,13 @@ export type AutopilotState = {
   updatedAt: number;
 };
 
-export type Limits = { hours: number; turns: number; idle: number };
+export type Limits = { hours: number; idle: number };
 
-export const DEFAULT_LIMITS: Limits = { hours: 8, turns: 300, idle: 4 };
+export const DEFAULT_LIMITS: Limits = { hours: 8, idle: 4 };
 
 export function withDefaults(p: Partial<Limits>): Limits {
   return {
     hours: p.hours ?? DEFAULT_LIMITS.hours,
-    turns: p.turns ?? DEFAULT_LIMITS.turns,
     idle: p.idle ?? DEFAULT_LIMITS.idle,
   };
 }
@@ -39,6 +37,20 @@ const MAX_ERROR_TURNS = 3;
 const ERROR_BACKOFF_MS = 30_000;
 // 所有セッションがこれ以上更新していなければ、別セッションからの開始・再開を許す
 export const STALE_OWNER_MS = 30 * 60_000;
+
+// log.md は書き足すだけで進捗に見えてしまうため、進捗の判定に含めない
+export const PROGRESS_FILES = [
+  "contract.md",
+  "backlog.md",
+  "decisions.md",
+  "blocked.md",
+] as const;
+
+export const progressSource = (
+  git: string,
+  files: Partial<Record<string, string>>,
+): string =>
+  [git, ...PROGRESS_FILES.map((f) => `${f}\n${files[f] ?? ""}`)].join("\n");
 
 export type TurnReason = "answer" | "aborted" | "refusal" | "error";
 
@@ -64,7 +76,6 @@ export function newState(p: {
     root: p.root,
     startedAt: p.now,
     deadlineAt: p.now + p.limits.hours * HOUR_MS,
-    maxTurns: p.limits.turns,
     turns: 0,
     idleLimit: p.limits.idle,
     idleTurns: 0,
@@ -126,11 +137,9 @@ export function afterTurn(
   });
 
   if (now >= s.deadlineAt) return halted("時間の上限に達した");
-  if (turns >= s.maxTurns)
-    return halted(`ターン数の上限 (${s.maxTurns}) に達した`);
   if (idleTurns >= s.idleLimit) {
     return halted(
-      `${idleTurns} ターン続けて進捗 (差分・状態ファイルの変化) が無い`,
+      `${idleTurns} ターン続けて進捗 (差分・backlog などの変化) が無い`,
     );
   }
   if (waiting && s.waitUntil !== undefined) {
@@ -181,19 +190,11 @@ export function resume(
       : expired
         ? p.now + DEFAULT_LIMITS.hours * HOUR_MS
         : s.deadlineAt;
-  const extra = p.limits.turns;
-  const maxTurns =
-    extra !== undefined
-      ? s.turns + extra
-      : s.turns >= s.maxTurns
-        ? s.turns + DEFAULT_LIMITS.turns
-        : s.maxTurns;
   return {
     ...s,
     status: "running",
     sessionId: p.sessionId,
     deadlineAt,
-    maxTurns,
     idleLimit: p.limits.idle ?? s.idleLimit,
     idleTurns: 0,
     errorTurns: 0,
@@ -221,7 +222,7 @@ export type Command =
   | { kind: "stop" | "pause" | "status" }
   | { kind: "error"; message: string };
 
-const FLAG_RE = /--(hours|turns|idle)(?:=|\s+)(\d+(?:\.\d+)?)/g;
+const FLAG_RE = /--(hours|idle)(?:=|\s+)(\d+(?:\.\d+)?)/g;
 
 export function parseCommand(args: string): Command {
   const limits: Partial<Limits> = {};

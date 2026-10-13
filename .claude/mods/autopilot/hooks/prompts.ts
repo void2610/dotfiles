@@ -19,7 +19,7 @@ export function templates(s: AutopilotState): Record<StateFile, string> {
 - 触ってよい範囲: (着手前に記入)
 - 完了の基準: (着手前に記入)
 - 禁止事項: ゲームバランスや本番の挙動に効くデータの変更 / 取り消せない操作 (main への直接 push・削除・外部への投稿)
-- 上限: ${deadline} まで / 最大 ${s.maxTurns} ターン / 進捗なし ${s.idleLimit} ターンで停止
+- 上限: ${deadline} まで / 進捗なし ${s.idleLimit} ターンで停止
 `,
     "backlog.md":
       "# backlog\n\n<!-- - [ ] 項目 (出典: 目標 / issue #N / テスト失敗 など) -->\n",
@@ -32,7 +32,7 @@ export function templates(s: AutopilotState): Record<StateFile, string> {
 }
 
 const header = (s: AutopilotState, now: number) =>
-  `[autopilot ${s.turns}/${s.maxTurns} ターン · 残り ${formatRemaining(s.deadlineAt - now)}]`;
+  `[autopilot ${s.turns + 1} ターン目 · 残り ${formatRemaining(s.deadlineAt - now)}]`;
 
 export function kickoffPrompt(
   s: AutopilotState,
@@ -77,7 +77,7 @@ export function statusText(
   const lines = [
     `autopilot: ${head}`,
     `目標: ${s.goal}`,
-    `ターン: ${s.turns}/${s.maxTurns} · 残り時間: ${formatRemaining(s.deadlineAt - now)} · 進捗なし: ${s.idleTurns}/${s.idleLimit}`,
+    `ターン: ${s.turns} · 残り時間: ${formatRemaining(s.deadlineAt - now)} · 進捗なし: ${s.idleTurns}/${s.idleLimit}`,
   ];
   if (s.waitUntil !== undefined && s.waitUntil > now) {
     lines.push(

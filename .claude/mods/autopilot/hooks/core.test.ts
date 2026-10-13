@@ -3,6 +3,7 @@ import {
   afterTurn,
   newState,
   parseCommand,
+  progressSource,
   requestStop,
   resume,
   setWait,
@@ -17,7 +18,7 @@ const base = () =>
     goal: "g",
     root: "/repo",
     now: 0,
-    limits: withDefaults({ hours: 1, turns: 5, idle: 2 }),
+    limits: withDefaults({ hours: 1, idle: 2 }),
   });
 
 test("進捗があればターンを数えて次を起こす", async () => {
@@ -35,10 +36,18 @@ test("進捗なしが上限に達したら止める", async () => {
   expect(r.state.status).toBe("stopped");
 });
 
-test("時間とターン数の上限で止める", async () => {
+test("時間の上限で止め、ターン数では止めない", async () => {
   expect(afterTurn(base(), "answer", HOUR, "x").action.kind).toBe("stop");
-  const s = { ...base(), turns: 4 };
-  expect(afterTurn(s, "answer", 1, "x").action.kind).toBe("stop");
+  const s = { ...base(), turns: 10_000 };
+  expect(afterTurn(s, "answer", 1, "x").action.kind).toBe("wake");
+});
+
+test("log.md だけの変化は進捗に数えない", async () => {
+  const files = { "backlog.md": "- [ ] a", "log.md": "1" };
+  const before = progressSource("head", files);
+  expect(progressSource("head", { ...files, "log.md": "1\n2" })).toBe(before);
+  const changed = progressSource("head", { ...files, "backlog.md": "- [x] a" });
+  expect(changed === before).toBe(false);
 });
 
 test("Esc での中断は一時停止にする", async () => {
@@ -73,13 +82,12 @@ test("停止要求は 1 回目を差し戻し、進捗が出たら数え直す",
   expect(requestStop(progressed, 4).accepted).toBe(false);
 });
 
-test("再開は期限切れなら時間とターンを延長する", async () => {
-  const s = { ...base(), status: "paused" as const, turns: 5 };
+test("再開は期限切れなら時間を延長する", async () => {
+  const s = { ...base(), status: "paused" as const };
   const r = resume(s, { sessionId: "s2", now: 2 * HOUR, limits: {} });
   expect(r.status).toBe("running");
   expect(r.sessionId).toBe("s2");
   expect(r.deadlineAt > 2 * HOUR).toBe(true);
-  expect(r.maxTurns > 5).toBe(true);
 });
 
 test("引数を解析する", async () => {
@@ -90,10 +98,10 @@ test("引数を解析する", async () => {
     goal: "テストを直す",
     limits: { hours: 2 },
   });
-  expect(parseCommand("README を整える --turns=50")).toEqual({
+  expect(parseCommand("README を整える --idle=3")).toEqual({
     kind: "start",
     goal: "README を整える",
-    limits: { turns: 50 },
+    limits: { idle: 3 },
   });
   expect(parseCommand("resume --hours 1")).toEqual({
     kind: "resume",

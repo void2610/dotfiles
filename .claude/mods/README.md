@@ -14,7 +14,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | `scratchpad-open` | `ui.render` / `command.run` / `clock` | scratchpad にファイルがある時だけプロンプト直上に `scratchpad (N)` ボタンを表示し、押すと Finder で開く。`/scratchpad` コマンドも同じ動作 |
 | `artifact-archive` | `tool.call` | 一時ディレクトリ (`/tmp`・`/var/folders` = scratchpad) からの Artifact publish を deny し、`~/Documents/claude-artifacts/` への保存へ誘導 |
 | `ntfy-notify` | `turn.complete` | メインループのターン完了を `notify.sh` 経由で ntfy.sh にプッシュ通知 (サブエージェント・中断・autopilot 実行中は除外) |
-| `autopilot` | `turn.complete` / `turn.start` / `prompt.submit` / `session.compact` / `ui.render` / `command.run` / `tool.call` | 自走モード。ターン終了ごとに `$.prompt.submit` で次のターンを起こし、時間・ターン数・進捗なし (git 差分と状態ファイルの指紋)・API エラーの上限で止める。Esc で一時停止。`/autopilot start <目標>` / pause / resume / stop と `mcp__autopilot__start/stop/wait/status` で操作し、状態は `~/.claude/state/autopilot/<repo キー>/` (手順は autopilot-playbook スキル) |
+| `autopilot` | `turn.complete` / `turn.start` / `prompt.submit` / `session.compact` / `ui.render` / `command.run` / `tool.call` | 自走モード。ターン終了ごとに `$.prompt.submit` で次のターンを起こし、時間・進捗なし (git 差分と backlog などの状態ファイルの指紋)・API エラーの上限で止める。Esc で一時停止。`/autopilot start <目標>` / pause / resume / stop と `mcp__autopilot__start/stop/wait/status` で操作し、状態は `~/.claude/state/autopilot/<repo キー>/` (手順は autopilot-playbook スキル) |
 | `turn-timer` | `turn.complete` | ターンの所要時間とトークン消費をトースト表示 |
 
 ## guards の内訳 (`guards/hooks/`)
@@ -39,4 +39,5 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 - ブランチの移動・作成を機械的に止めるガードは置かない。ship フロー中や open PR ありの移動を禁じる ship-branch-lock は、worktree や段の移動を多用する運用の妨げになったため撤去した
 - `--plugin-dir` で読み込んだ Mod には、エンジンが `.claude-plugin/types/` に型定義を生成する (自前の `.gitignore` 付き)。biome.json で対象から外している
 - autopilot は Stop hook ではなく `turn.complete` → `$.prompt.submit` で次のターンを起こす。起床の経路を pr-watch と揃え、Esc による中断を `reason` で見分けて一時停止にするため。コマンドやツールの処理中に submit すると届かないことがあったので、`$.clock.after(0)` で処理を抜けてから送る
+- autopilot にターン数の上限は置かない。通常のターンは平均 4〜5 分で 8 時間なら約 100 ターンに収まり、時間の上限が必ず先に来るため。短いターンの空回りは、追記だけで変わる log.md を指紋から外して進捗なしとして止める
 - autopilot の指示文 (確認を挟まずに進める等) を書き換える変更は、auto mode の判定器に拒否されることがある。manual モードに切り替え、ユーザーの承認を受けながら編集する
