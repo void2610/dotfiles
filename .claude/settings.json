@@ -1,5 +1,5 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":["Kodus — Try Kodus - Open Source AI Code Review"]},
+  "spinnerVerbs": {"mode":"replace","verbs":["Solo — a better place to run your agents"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -52,6 +52,16 @@
           {
             "type": "command",
             "command": "~/.claude/notify.sh Notification"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/stop-unverified-redo.sh"
           }
         ]
       }
