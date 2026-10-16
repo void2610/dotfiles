@@ -1,5 +1,5 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":[" — F-Secure — Comprehensive digital security solutions to…"]},
+  "spinnerVerbs": {"mode":"replace","verbs":["Argent — let Claude inspect your native apps, save tokens"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -28,7 +28,9 @@
     ],
     "deny": [],
     "ask": [],
-    "additionalDirectories": ["~/Documents/rclone"],
+    "additionalDirectories": [
+      "~/Documents/rclone"
+    ],
     "defaultMode": "auto"
   },
   "hooks": {
@@ -52,10 +54,63 @@
             "command": "~/.claude/notify.sh Notification"
           }
         ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/nvim-title-state.sh notification"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/nvim-title-state.sh working"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/nvim-title-state.sh working"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/nvim-title-state.sh done"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/nvim-title-state.sh none"
+          }
+        ]
       }
     ]
   },
-  "statusLine": {"type":"command","command":"node \"/Users/shuya/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
+  "statusLine": {"type":"command","command":"node \"/Users/shuya.izumi/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,

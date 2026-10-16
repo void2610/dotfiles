@@ -11,6 +11,22 @@ function _G.TitleBranch()
   return head and ("(" .. head .. ")") or ""
 end
 
--- ghostty 等のタブに「dir(branch)・file ●」を表示する
+-- 内蔵ターミナルの Claude Code が hook (~/.claude/hooks/nvim-title-state.sh) から --remote-expr で呼ぶ
+local claude_icons = { working = "⏳ ", waiting = "🔔 ", idle = "💤 ", done = "✅ " }
+function _G.ClaudeTitleState(state)
+  vim.g.claude_title_state = state
+  vim.schedule(function()
+    -- titlestring は再設定しないと再評価されない
+    vim.o.titlestring = vim.o.titlestring
+  end)
+  return ""
+end
+
+function _G.TitleClaude()
+  return claude_icons[vim.g.claude_title_state] or ""
+end
+
+-- ghostty 等のタブに「[Claude状態] dir(branch)・file ●」を表示する
 vim.opt.title = true
-vim.opt.titlestring = "%{fnamemodify(getcwd(), ':t')}%{v:lua.TitleBranch()}・%t%{&modified ? ' ●' : ''}"
+vim.opt.titlestring =
+  "%{v:lua.TitleClaude()}%{fnamemodify(getcwd(), ':t')}%{v:lua.TitleBranch()}・%t%{&modified ? ' ●' : ''}"
