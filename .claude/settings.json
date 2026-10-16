@@ -1,5 +1,5 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":["Argent — let Claude inspect your native apps, save tokens"]},
+  "spinnerVerbs": {"mode":"replace","verbs":["Kodus — Try Kodus - Open Source AI Code Review"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -52,59 +52,6 @@
           {
             "type": "command",
             "command": "~/.claude/notify.sh Notification"
-          }
-        ]
-      },
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/nvim-title-state.sh notification"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/nvim-title-state.sh working"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/nvim-title-state.sh working"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/nvim-title-state.sh done"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "~/.claude/hooks/nvim-title-state.sh none"
           }
         ]
       }

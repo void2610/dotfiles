@@ -15,6 +15,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | `artifact-archive` | `tool.call` | 一時ディレクトリ (`/tmp`・`/var/folders` = scratchpad) からの Artifact publish を deny し、`~/Documents/claude-artifacts/` への保存へ誘導 |
 | `ntfy-notify` | `turn.complete` | メインループのターン完了を `notify.sh` 経由で ntfy.sh にプッシュ通知 (サブエージェント・中断は除外) |
 | `turn-timer` | `turn.complete` | ターンの所要時間とトークン消費をトースト表示 |
+| `nvim-title-state` | `turn.start` / `tool.check` / `tool.call` / `turn.complete` / `session.end` | nvim の :terminal 内で動く Claude の状態 (作業中 / 許可待ち / 完了) を `$NVIM` 経由で親 nvim のタブタイトルへ通知 |
 
 ## guards の内訳 (`guards/hooks/`)
 

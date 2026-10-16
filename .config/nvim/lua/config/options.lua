@@ -11,8 +11,8 @@ function _G.TitleBranch()
   return head and ("(" .. head .. ")") or ""
 end
 
--- 内蔵ターミナルの Claude Code が hook (~/.claude/hooks/nvim-title-state.sh) から --remote-expr で呼ぶ
-local claude_icons = { working = "⏳ ", waiting = "🔔 ", idle = "💤 ", done = "✅ " }
+-- 内蔵ターミナルの Claude Code が mod (~/.claude/mods/nvim-title-state) から --remote-expr で呼ぶ
+local claude_icons = { working = "⏳ ", waiting = "🔔 ", done = "✅ " }
 function _G.ClaudeTitleState(state)
   vim.g.claude_title_state = state
   vim.schedule(function()

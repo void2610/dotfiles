@@ -1,0 +1,6 @@
+{
+  "name": "nvim-title-state",
+  "author": { "name": "void2610" },
+  "description": "nvim の内蔵ターミナルで動く Claude の状態を親 nvim のタブタイトルへ通知する",
+  "version": "0.1.0"
+}
