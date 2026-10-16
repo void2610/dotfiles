@@ -20,3 +20,4 @@ outputs/
 /.config/raycast
 # rclone.conf は Google Drive の OAuth トークンを含む
 /.config/rclone/
+/.claude/skills/.trash/
