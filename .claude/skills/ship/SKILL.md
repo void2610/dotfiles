@@ -13,10 +13,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 1. **現在地と次アクションは必ず `ship.sh` に聞く** (`status` / `next`)。自分の記憶でフェーズを進めない。セッション途中参加・再開時も最初に `status` を打つ
 2. **フェーズ遷移は必ず `ship.sh done <phase>` 経由**。postcondition が実測検証され、NG の間は次へ進めない。NG を解消してから再実行する (検証の握りつぶし・skip での回避は禁止)
 3. `ship.sh next` が `checkpoint=yes` を返したら、**そのフェーズの作業を始めずに**現状を報告してユーザーの指示を待つ
-4. **branch フェーズ完了後はフロー完走まで「いま居るスタック」を固定する**。全フェーズが done になるまで、新しいブランチの作成 (`git switch -c` / `git checkout -b` / worktree 追加等) と、**スタック外**のブランチへの移動を行わない。別ブランチでの作業が必要になったらユーザーに報告して指示を待つ (guards Mod の ship-branch-lock が `ship.sh guard <移動先>` で機械的にもブロックする)
-   - **stacked PR の段の追加・段間の移動・restack は禁止に当たらない** (`gh stack add` / `up` / `down` / `switch` / `checkout` / `sync` / `rebase` / `submit`)。同一スタック内なら `git switch <段>` も通る。詳細は下の「stacked PR での運用」
-   - `gh stack unstack` (スタックをローカルと GitHub から削除する) はフロー中は禁止。ユーザーの明示承認がある場合だけ `SHIP_ALLOW_BRANCH_SWITCH=1 <cmd>` を付ける
-5. **柔軟性はユーザーの自然言語をそのまま状態に反映する**。選択肢の提示はしない
+4. **柔軟性はユーザーの自然言語をそのまま状態に反映する**。選択肢の提示はしない
    - 「コミット前で毎回止めて」→ `ship.sh checkpoint add commit`
    - 「もう止めなくていい」→ `ship.sh checkpoint remove <phase>`
    - 「テストは飛ばして」→ `ship.sh skip test <ユーザーの理由>`
@@ -49,12 +46,12 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | やること | 使うコマンド | ship 側の扱い |
 |---|---|---|
 | 次の段を始める | `gh stack add <branch>` (`git switch -c` は使わない) | 新しい段で `ship.sh init` → plan から |
-| 段を移動する | `gh stack up` / `down` / `top` / `bottom` / `switch`、`gh stack checkout <PR 番号>` | ロック対象外。移動先の段の状態で再開する |
-| 下段を直した後の積み直し | `gh stack rebase` / `gh stack sync` | ロック対象外。SHA が変わるのは正常 |
+| 段を移動する | `gh stack up` / `down` / `top` / `bottom` / `switch`、`gh stack checkout <PR 番号>` | 移動先の段の状態で再開する |
+| 下段を直した後の積み直し | `gh stack rebase` / `gh stack sync` | SHA が変わるのは正常 |
 | PR を作る・更新する | 段が 1 本なら pr-create、複数段をまとめて出すなら `gh stack submit` | pr フェーズは**現在の段**に OPEN な PR があるかだけを見る |
 
-- 下段の PR が open のまま上段を進めるのはスタックの正常状態で、ロックはそれを妨げない。妨げるのは**スタックの外へ出ること**だけ
-- **未コミットの変更を抱えたままの段移動はスタック内でもブロックする** (差分を別の段へ引き連れるため)。commit してから移動する
+- 下段の PR が open のまま上段を進めるのはスタックの正常状態
+- 未コミットの変更を抱えたまま段を移動しない (差分を別の段へ引き連れるため)。commit してから移動する
 - `ship.sh status` はスタックに居るとき `stack=<trunk> の n/m 段目` を出す。どの段に居るかを記憶で判断しない
 - 段の構成をユーザーが変えた (PR を畳んだ・段数を変えた) ときは origin を正としてローカルを合わせる。壊れたと診断しない
 
