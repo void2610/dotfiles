@@ -7,6 +7,7 @@ import { ghStackHelpNote } from "./gh-stack-help";
 import { gitSkillDeny } from "./git-skill-enforcer";
 import { resetRestackNote } from "./reset-restack-hint";
 import { taskContractNote } from "./task-contract-trigger";
+import { enterWorktreeDeny, worktreeAddDeny } from "./worktree-guard";
 
 // エンジンは同一イベントの重複登録を拒否し、検証器は $ を import 越しに追えない。
 // そのためイベント登録と $ の呼び出しは本ファイルに閉じ、機能本体は各ファイルの純関数に置く
@@ -23,10 +24,17 @@ export const register: Register = (on) => {
   });
 
   on("tool.call", { tool: "Bash" }, async (_$, e, next) => {
-    const deny = gitSkillDeny(e.command) ?? branchTrackDeny(e.command);
+    const deny =
+      gitSkillDeny(e.command) ??
+      branchTrackDeny(e.command) ??
+      worktreeAddDeny(e.command);
     if (deny !== undefined) return { deny };
     return next(e);
   });
+
+  on("tool.call", { tool: /^EnterWorktree$/ }, async () => ({
+    deny: enterWorktreeDeny(),
+  }));
 
   on("tool.call", { tool: "Edit" }, async ($, e, next) => {
     const r = await next(e);
