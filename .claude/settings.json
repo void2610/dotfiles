@@ -100,5 +100,16 @@
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
   "voiceEnabled": true,
-  "model": "opus"
+  "model": "opus",
+  "autoMode": {
+    "allow": [
+      "Notion の読み取り専用操作 (notion-fetch / notion-search / notion-query-data-sources の SELECT) は外部への書き込みではないので許可する",
+      "ユーザー自身の Claude の auto memory ディレクトリ (~/.claude/projects/*/memory/) にある記憶ファイルの追加・編集・削除は許可する。ただし settings・hooks・skills は対象外",
+      "自分で作った作業ブランチ (main / develop 以外) での git merge / rebase / switch / merge-tree と、force を伴わない push は許可する",
+      "CLAUDE_GIT_SKILL=commit を前置した git add / git commit は、commit スキル経由の正規の操作なので許可する",
+      "~/.claude/skills/ship/scripts/ship.sh のサブコマンド (status / report / skip 等) は、ユーザーが定義したワークフロー操作なので許可する",
+      "gh pr comment による PR へのコメント投稿は許可する",
+      "gh pr checkout と、作業ブランチ上での git reset --soft / --mixed (--hard は対象外) は許可する"
+    ]
+  }
 }
