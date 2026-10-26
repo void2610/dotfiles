@@ -133,6 +133,7 @@ return {
       { "<leader>Af", "<cmd>ClaudeCodeFocus<cr>", desc = "Focus Claude" },
       { "<leader>Ar", "<cmd>ClaudeCode --resume<cr>", desc = "Resume Claude" },
       { "<leader>AC", "<cmd>ClaudeCode --continue<cr>", desc = "Continue Claude" },
+      { "<leader>AD", "<cmd>ClaudeCode --dangerously-skip-permissions<cr>", desc = "Claude (skip permissions)" },
       { "<leader>Am", "<cmd>ClaudeCodeSelectModel<cr>", desc = "Select Claude model" },
       { "<leader>Ab", "<cmd>ClaudeCodeAdd %<cr>", desc = "Add current buffer" },
       { "<leader>As", "<cmd>ClaudeCodeSend<cr>", mode = "v", desc = "Send to Claude" },
