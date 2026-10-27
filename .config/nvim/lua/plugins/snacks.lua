@@ -98,8 +98,9 @@ return {
     end,
     config = function(_, opts)
       require("snacks").setup(opts)
-      -- _G.LazygitHide を定義し、nvim 限定の上書き設定を LG_CONFIG_FILE に追加する (nvim 起動時のみ `q`=hide が効く)。
+      -- _G.LazygitHide / _G.LazygitSendToTerminal を定義し、nvim 限定の上書き設定を LG_CONFIG_FILE に追加する (nvim 起動時のみ `q`=hide が効く)。
       require("util.lazygit_bg")
+      require("util.lazygit_image")
       local override = vim.fn.expand("~/.config/lazygit/nvim-overrides.yml")
       local cur = vim.env.LG_CONFIG_FILE or ""
       if not cur:find(override, 1, true) then

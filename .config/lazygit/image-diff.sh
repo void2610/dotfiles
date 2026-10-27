@@ -1,5 +1,5 @@
 #!/bin/sh
-# lazygit (gocui) はエスケープを素通ししないため、画像転送だけ /dev/tty へ直書きし本文は Unicode placeholder で描く。
+# lazygit (gocui) はエスケープを素通ししないため、画像転送だけ外側の端末 (nvim 内は nvim の TUI 経由、それ以外は実 tty) へ送り本文は Unicode placeholder で描く。
 path=$1
 old=$2
 new=$3
@@ -40,11 +40,24 @@ real_tty() {
   if [ -n "$found" ]; then echo "/dev/$found"; else echo /dev/tty; fi
 }
 
-# 画像を PNG 化して仮想配置 (a=T,U=1) で実端末に転送する。placeholder 出力は行わない
-transmit() { # $1=画像 $2=image id $3=cols $4=rows
+# 標準入力の転送シーケンスを外側の端末へ書く。nvim 内は nvim も同じ tty へ描画しており、直書きすると APC の途中に再描画が割り込んで base64 が画面に漏れるため nvim の TUI に書かせる
+send() {
+  if [ -n "$NVIM" ]; then
+    seq=$(mktemp -t lg-img-seq)
+    cat >"$seq"
+    res=$(nvim --server "$NVIM" --remote-expr "luaeval('_G.LazygitSendToTerminal(_A)', '$seq')" 2>/dev/null)
+    rm -f "$seq"
+    [ "$res" = 0 ]
+    return
+  fi
   out=$(real_tty)
   # -w 判定は tty 非接続でも真になりうるため、実際に開けるかで判定する
   { : >"$out"; } 2>/dev/null || return 1
+  cat >"$out"
+}
+
+# 画像を PNG 化して仮想配置 (a=T,U=1) で実端末に転送する。placeholder 出力は行わない
+transmit() { # $1=画像 $2=image id $3=cols $4=rows
   png=$(mktemp -t lg-img).png
   sips -s format png "$1" --out "$png" >/dev/null 2>&1 || { rm -f "$png"; return 1; }
   # ペイロードは 4096 バイトごとに分割し、m=1 で継続・空の m=0 で終端する
@@ -53,7 +66,7 @@ transmit() { # $1=画像 $2=image id $3=cols $4=rows
       NR == 1 { printf "\033_Ga=T,q=2,U=1,f=100,t=d,i=%d,c=%d,r=%d,m=1;%s\033\\", id, c, r, $0; next }
       { printf "\033_Gm=1;%s\033\\", $0 }
       END { printf "\033_Gm=0\033\\" }
-    ' >"$out"
+    ' | send
   st=$?
   rm -f "$png"
   return $st
