@@ -65,6 +65,17 @@
           }
         ]
       }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/bypass-allow-all.sh"
+          }
+        ]
+      }
     ]
   },
   "statusLine": {"type":"command","command":"node \"/Users/shuya.izumi/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
