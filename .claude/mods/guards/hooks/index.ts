@@ -2,6 +2,7 @@ import type { Register } from "claude-code";
 import { branchTrackDeny } from "./branch-track-guard";
 import type { ReadFile, Run } from "./caps";
 import { commentStyleNote } from "./comment-style-guard";
+import { explainDiffNote } from "./explain-diff-trigger";
 import { feedbackMemoryNote } from "./feedback-memory-router";
 import { ghStackHelpNote } from "./gh-stack-help";
 import { gitSkillDeny } from "./git-skill-enforcer";
@@ -16,6 +17,7 @@ export const register: Register = (on) => {
     const run: Run = (argv, init) => $.process.run(argv, init);
     const notes = [
       taskContractNote(e.text),
+      explainDiffNote(e.text),
       resetRestackNote(e.text),
       await ghStackHelpNote(run, e.text),
     ].filter((n): n is string => n !== undefined);
