@@ -68,6 +68,27 @@
   .quiz-feedback.shown { display: block; }
   .quiz-feedback.ok { background: color-mix(in srgb, var(--ok) 12%, transparent); }
   .quiz-feedback.ng { background: color-mix(in srgb, var(--ng) 12%, transparent); }
+  .quiz-tag {
+    display: inline-block; margin-right: .5em; padding: 0 .6em;
+    border: 1px solid var(--border); border-radius: 999px;
+    color: var(--muted); font-size: .75rem; font-weight: 400; vertical-align: middle;
+  }
+  .quiz-written textarea {
+    width: 100%; margin-top: .75rem; padding: .6rem .9rem; resize: vertical;
+    background: var(--code-bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 6px;
+    font: inherit; line-height: 1.5;
+  }
+  .quiz-reveal {
+    margin-top: .5rem; padding: .4rem 1rem; cursor: pointer;
+    background: var(--accent); color: var(--bg); border: none; border-radius: 6px;
+    font: inherit;
+  }
+  .quiz-reveal:disabled { opacity: .4; cursor: not-allowed; }
+  .quiz-answer { display: none; margin-top: .75rem; padding: .6rem .9rem; border-radius: 6px; background: var(--callout-bg); }
+  .quiz-answer.shown { display: block; }
+  .quiz-rubric { list-style: none; padding: 0; margin: .25rem 0 0; }
+  .quiz-rubric li { margin: .25rem 0; }
   /* 用語集 */
   dl.glossary dt { font-weight: 700; margin-top: 1rem; }
   dl.glossary dd { margin-left: 0; color: var(--muted); }
@@ -93,10 +114,10 @@
   コールアウトの書き方:
   <div class="callout"><span class="callout-title">💡 キーコンセプト:</span> …</div>
 
-  クイズ1問の書き方 (data-correct に正解ボタンの data-key を入れる。
+  仕様の問題 (選択式) の書き方 (data-correct に正解ボタンの data-key を入れる。
   正解の位置は問題ごとにばらけさせ、選択肢の長さは揃えること):
   <div class="quiz-question" data-correct="b">
-    <p><strong>Q1.</strong> 質問文…</p>
+    <p><span class="quiz-tag">仕様・選択式</span><strong>Q1.</strong> 質問文…</p>
     <ul class="quiz-options">
       <li><button data-key="a">選択肢A</button></li>
       <li><button data-key="b">選択肢B</button></li>
@@ -107,6 +128,21 @@
     <div class="quiz-feedback" data-key="b">正解のときのフィードバック…</div>
     <div class="quiz-feedback" data-key="c">…</div>
     <div class="quiz-feedback" data-key="d">…</div>
+  </div>
+
+  技術の問題 (記述式) の書き方 (回答を入力するまで模範解答ボタンは押せない):
+  <div class="quiz-question quiz-written">
+    <p><span class="quiz-tag">技術・記述式</span><strong>Q4.</strong> 質問文…</p>
+    <textarea rows="4" placeholder="自分の言葉で説明してください"></textarea>
+    <button class="quiz-reveal" disabled>模範解答を見る</button>
+    <div class="quiz-answer">
+      <p><strong>模範解答:</strong> …</p>
+      <p><strong>採点観点:</strong></p>
+      <ul class="quiz-rubric">
+        <li><label><input type="checkbox"> 〜に触れているか</label></li>
+        <li><label><input type="checkbox"> 〜に触れているか</label></li>
+      </ul>
+    </div>
   </div>
 -->
 
@@ -129,8 +165,8 @@
     toc.appendChild(ul);
   })();
 
-  // クイズの正誤判定
-  document.querySelectorAll('.quiz-question').forEach(function (q) {
+  // 選択式クイズの正誤判定
+  document.querySelectorAll('.quiz-question[data-correct]').forEach(function (q) {
     var correct = q.dataset.correct;
     q.querySelectorAll('.quiz-options button').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -145,6 +181,18 @@
           if (mine) { f.classList.toggle('ok', isCorrect); f.classList.toggle('ng', !isCorrect); }
         });
       });
+    });
+  });
+
+  // 書く前に模範解答を読めると説明できるかを試せないため、入力されるまで開けない
+  document.querySelectorAll('.quiz-written').forEach(function (q) {
+    var input = q.querySelector('textarea');
+    var reveal = q.querySelector('.quiz-reveal');
+    input.addEventListener('input', function () {
+      reveal.disabled = input.value.trim() === '';
+    });
+    reveal.addEventListener('click', function () {
+      q.querySelector('.quiz-answer').classList.add('shown');
     });
   });
 </script>
