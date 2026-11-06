@@ -69,10 +69,11 @@
   .quiz-feedback.ok { background: color-mix(in srgb, var(--ok) 12%, transparent); }
   .quiz-feedback.ng { background: color-mix(in srgb, var(--ng) 12%, transparent); }
   .quiz-tag {
-    display: inline-block; margin-right: .5em; padding: 0 .6em;
+    display: block; width: fit-content; padding: 0 .6em;
     border: 1px solid var(--border); border-radius: 999px;
-    color: var(--muted); font-size: .75rem; font-weight: 400; vertical-align: middle;
+    color: var(--muted); font-size: .75rem;
   }
+  .quiz-tag + p { margin-top: .4rem; }
   .quiz-written textarea {
     width: 100%; margin-top: .75rem; padding: .6rem .9rem; resize: vertical;
     background: var(--code-bg); color: var(--fg);
@@ -117,7 +118,8 @@
   仕様の問題 (選択式) の書き方 (data-correct に正解ボタンの data-key を入れる。
   正解の位置は問題ごとにばらけさせ、選択肢の長さは揃えること):
   <div class="quiz-question" data-correct="b">
-    <p><span class="quiz-tag">仕様・選択式</span><strong>Q1.</strong> 質問文…</p>
+    <span class="quiz-tag">仕様・選択式</span>
+    <p><strong>Q1.</strong> 質問文…</p>
     <ul class="quiz-options">
       <li><button data-key="a">選択肢A</button></li>
       <li><button data-key="b">選択肢B</button></li>
@@ -132,7 +134,8 @@
 
   技術の問題 (記述式) の書き方 (回答を入力するまで模範解答ボタンは押せない):
   <div class="quiz-question quiz-written">
-    <p><span class="quiz-tag">技術・記述式</span><strong>Q4.</strong> 質問文…</p>
+    <span class="quiz-tag">技術・記述式</span>
+    <p><strong>Q4.</strong> 質問文…</p>
     <textarea rows="4" placeholder="自分の言葉で説明してください"></textarea>
     <button class="quiz-reveal" disabled>模範解答を見る</button>
     <div class="quiz-answer">
