@@ -1,5 +1,4 @@
 {
-  "spinnerVerbs": {"mode":"replace","verbs":["Solo — a better place to run your agents"]},
   "env": {
     "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
@@ -28,11 +27,12 @@
     ],
     "deny": [],
     "ask": [],
+    "defaultMode": "auto",
     "additionalDirectories": [
       "~/Documents/rclone"
-    ],
-    "defaultMode": "auto"
+    ]
   },
+  "model": "opus",
   "hooks": {
     "PreToolUse": [
       {
@@ -78,7 +78,10 @@
       }
     ]
   },
-  "statusLine": {"type":"command","command":"node \"/Users/shuya.izumi/.kickbacks/vibe-ads-statusline.mjs\"","padding":0},
+  "statusLine": {
+    "type": "command",
+    "command": "python3 ~/.claude/statusline.py"
+  },
   "enabledPlugins": {
     "clangd-lsp@claude-plugins-official": true,
     "pyright-lsp@claude-plugins-official": true,
@@ -110,8 +113,6 @@
   "theme": "dark",
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "voiceEnabled": true,
-  "model": "opus",
   "autoMode": {
     "allow": [
       "Notion の読み取り専用操作 (notion-fetch / notion-search / notion-query-data-sources の SELECT) は外部への書き込みではないので許可する",
@@ -129,5 +130,11 @@
       "**Key internal services**: AKARI-Inc の GitHub (PR・Issue・Actions・self-hosted runner)、会社の Notion ワークスペース (タスク DB・ロードマップ)、会社の Slack。これらへの通常業務の読み書き (PR コメント・Notion タスク起票/更新・Slack の下書き) は社内の共有作業領域での業務であり、外部への流出ではない",
       "**Trusted cloud buckets**: ~/Documents/rclone 配下に rclone で同期する会社の Google Drive 共有フォルダ"
     ]
+  },
+  "voiceEnabled": true,
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "effortLevel": "xhigh"
+    }
   }
 }
