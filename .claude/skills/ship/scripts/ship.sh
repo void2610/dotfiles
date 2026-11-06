@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PHASES=(plan branch impl test format knowledge commit report explain pr review fix)
+PHASES=(plan branch impl test format knowledge commit explain report pr review fix)
 COPILOT_LOGIN="copilot-pull-request-reviewer"
 FETCH_THREADS="$HOME/.claude/skills/pr-review-fix/scripts/fetch_unresolved_threads.sh"
 
@@ -48,7 +48,7 @@ base_ref() {
   echo ""
 }
 
-# 報告・解説フェーズはこのホストのみ (dotfiles 共有先の他マシンには課さない)
+# 解説・報告フェーズはこのホストのみ (dotfiles 共有先の他マシンには課さない)
 personal_host() { [[ "$(hostname -s)" == "PCmac24055" ]]; }
 
 phase_mark() {
@@ -140,7 +140,7 @@ verify_explain() {
 }
 
 verify_pr() {
-  # report/explain 完了後に積み直した場合、古い承認・解説のまま push させない
+  # explain/report 完了後に積み直した場合、古い承認・解説のまま push させない
   if personal_host; then
     [[ -n $(state '.skipped.report // empty') ]] || verify_report
     [[ -n $(state '.skipped.explain // empty') ]] || verify_explain
