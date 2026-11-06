@@ -161,8 +161,14 @@ ci_summary() {
 
 verify_review() {
   local n
-  n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\")] | length" 2>/dev/null || echo 0)
-  [[ "$n" -gt 0 ]] || die "Copilot レビューが未到着 (pr-watch Mod の通知を待つか gh pr view --json reviews で確認すること)"
+  # レビュー枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す
+  n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\") | select(.body | startswith(\"Copilot was unable to review\") | not)] | length" 2>/dev/null || echo 0)
+  if [[ "$n" -eq 0 ]]; then
+    local failed
+    failed=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\") | select(.body | startswith(\"Copilot was unable to review\"))] | length" 2>/dev/null || echo 0)
+    [[ "$failed" -gt 0 ]] && die "Copilot がレビューできなかった (レビューの本文に理由がある。枠の不足なら依頼し直すか、ユーザーの指示で skip する)"
+    die "Copilot レビューが未到着 (pr-watch Mod の通知を待つか gh pr view --json reviews で確認すること)"
+  fi
   local ci; ci=$(ci_summary)
   case "$ci" in
     pending) die "CI チェックが実行中。完了を待つこと (gh pr checks)" ;;
