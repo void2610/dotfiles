@@ -1,6 +1,6 @@
 ---
 name: explain-diff-html
-description: ユーザーがコード変更・diff・ブランチ・PR のリッチな解説、または PR のレビューを求めたときに使う (UserPromptSubmit hook が検知して発動を指示する)。HTML 形式の解説ページを生成する。
+description: ユーザーがコード変更・diff・ブランチ・PR のリッチな解説、または PR のレビューを求めたとき (UserPromptSubmit hook が検知して発動を指示する)、および ship フローの explain フェーズで使う。HTML 形式の解説ページを生成する。
 ---
 
 # Explain Diff

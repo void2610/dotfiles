@@ -93,10 +93,10 @@ function renderHud($: EngineInterface, ui: Resolved) {
   }
   const shown = s.phases.filter((p) => p.state !== "skip");
   const cur = shown.findIndex(isPending);
-  // report / quiz は承認コマンドをボタン化 (approve は HEAD SHA に紐づく)
+  // report は承認コマンドをボタン化 (approve は HEAD SHA に紐づく)
   const approvable = s.phases.find(isPending)?.name;
   const approve =
-    approvable === "report" || approvable === "quiz"
+    approvable === "report"
       ? async () => {
           const home = await $.env.get("HOME");
           if (!home) return;

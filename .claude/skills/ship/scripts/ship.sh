@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PHASES=(plan branch impl test format knowledge commit report quiz pr review fix)
+PHASES=(plan branch impl test format knowledge commit report explain pr review fix)
 COPILOT_LOGIN="copilot-pull-request-reviewer"
 FETCH_THREADS="$HOME/.claude/skills/pr-review-fix/scripts/fetch_unresolved_threads.sh"
 
@@ -48,12 +48,12 @@ base_ref() {
   echo ""
 }
 
-# 報告・クイズゲートはこのホストのみ (dotfiles 共有先の他マシンには課さない)
-quiz_enabled() { [[ "$(hostname -s)" == "PCmac24055" ]]; }
+# 報告・解説フェーズはこのホストのみ (dotfiles 共有先の他マシンには課さない)
+personal_host() { [[ "$(hostname -s)" == "PCmac24055" ]]; }
 
 phase_mark() {
   local p="$1"
-  [[ "$p" == quiz || "$p" == report ]] && ! quiz_enabled && { echo skip; return; }
+  [[ "$p" == explain || "$p" == report ]] && ! personal_host && { echo skip; return; }
   [[ $(state ".done.$p // empty") != "" ]] && { echo done; return; }
   [[ $(state ".skipped.$p // empty") != "" ]] && { echo skip; return; }
   echo pending
@@ -120,7 +120,7 @@ verify_commit() {
   [[ -z "$untracked" ]] || echo "注意: untracked ファイルあり (意図的か確認):"$'\n'"$untracked"
 }
 
-# 実装報告のユーザー承認も quiz と同じく HEAD SHA に紐づけて失効管理する
+# 実装報告のユーザー承認は HEAD SHA に紐づけ、その後コミットが積まれたら失効させる
 verify_report() {
   local sha approved
   sha=$(git rev-parse HEAD)
@@ -129,19 +129,21 @@ verify_report() {
   [[ "$approved" == "$sha" ]] || die "報告承認 ($approved) が現 HEAD ($sha) と不一致。実装が変わったので再報告して承認を取り直すこと"
 }
 
-verify_quiz() {
-  local sha approved
+# 解説ページも HEAD SHA に紐づけ、生成後に積んだコミットが解説から漏れたまま push させない
+verify_explain() {
+  local sha path
   sha=$(git rev-parse HEAD)
-  approved=$(state '.quiz.approved_sha // empty')
-  [[ -n "$approved" ]] || die "クイズ未実施。push-quiz スキルで出題し、全問正答 + ユーザー許可後に ship.sh quiz approve を実行すること"
-  [[ "$approved" == "$sha" ]] || die "クイズ承認 ($approved) が現 HEAD ($sha) と不一致。実装が変わったので push-quiz スキルで再出題すること"
+  path=$(state '.explain.path // empty')
+  [[ -n "$path" ]] || die "解説ページが未生成。explain-diff-html スキルで $default_branch からの差分の解説ページを作り、ship.sh explain open <html パス> を実行すること"
+  [[ -f "$path" ]] || die "解説ページ ($path) が見当たらない。explain-diff-html スキルで再生成すること"
+  [[ $(state '.explain.sha // empty') == "$sha" ]] || die "解説ページ ($path) の対象が現 HEAD ($sha) と不一致。実装が変わったので explain-diff-html スキルで再生成すること"
 }
 
 verify_pr() {
-  # report/quiz 完了後に積み直した場合、古い承認のまま push させない
-  if quiz_enabled; then
+  # report/explain 完了後に積み直した場合、古い承認・解説のまま push させない
+  if personal_host; then
     [[ -n $(state '.skipped.report // empty') ]] || verify_report
-    [[ -n $(state '.skipped.quiz // empty') ]] || verify_quiz
+    [[ -n $(state '.skipped.explain // empty') ]] || verify_explain
   fi
   local st; st=$(gh pr view --json state --jq .state 2>/dev/null || true)
   [[ "$st" == "OPEN" ]] || die "現在ブランチに OPEN な PR がない。pr-create スキルで作成すること"
@@ -244,15 +246,22 @@ case "$cmd" in
       *) die "Usage: ship.sh report approve|revoke|status" ;;
     esac
     ;;
-  quiz)
+  explain)
     require_state
     sub=${1:-status}
     case "$sub" in
-      # ユーザーが全問正答し push を明示許可した後にのみ実行してよい (push-quiz スキル参照)
-      approve) update_state ".quiz = {approved_sha: \"$(git rev-parse HEAD)\", approved_at: \"$(date -u +%FT%TZ)\"}"; echo "OK: quiz 承認を HEAD ($(git rev-parse --short HEAD)) に記録" ;;
-      revoke)  update_state "del(.quiz)"; echo "OK: quiz 承認を取り消した" ;;
-      status)  state '.quiz // "未承認"' ;;
-      *) die "Usage: ship.sh quiz approve|revoke|status" ;;
+      open)
+        f=${2:-}
+        [[ -f "$f" ]] || die "Usage: ship.sh explain open <explain-diff-html で生成した HTML のパス>"
+        # verify は別の cwd から呼ばれうるため絶対パスで記録する
+        f="$(cd "$(dirname "$f")" && pwd)/$(basename "$f")"
+        open "$f"
+        update_state --arg path "$f" --arg sha "$(git rev-parse HEAD)" --arg ts "$(date -u +%FT%TZ)" \
+          '.explain = {path: $path, sha: $sha, opened_at: $ts}'
+        echo "OK: 解説ページをブラウザで開き、HEAD ($(git rev-parse --short HEAD)) に紐づけて記録: $f"
+        ;;
+      status) state '.explain // "未生成"' ;;
+      *) die "Usage: ship.sh explain open <html パス>|status" ;;
     esac
     ;;
   knowledge)
@@ -278,6 +287,6 @@ case "$cmd" in
     echo "解除完了: ship フロー (goal=$goal) の状態を削除した"
     ;;
   *)
-    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|quiz|abort"
+    die "Usage: ship.sh init|status|next|done|skip|checkpoint|knowledge|report|explain|abort"
     ;;
 esac
