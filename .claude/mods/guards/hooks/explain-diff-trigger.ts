@@ -3,7 +3,8 @@ const PR_REF_RE = /#\d{3,}|\bPR\b|プルリク|\/pull\/\d+/;
 const PR_REVIEW_RE = /レビュー|review|解説|説明/i;
 const NEXT_PR_RE = /次の.{0,12}PR/;
 // 一覧の依頼・自動化の話・質問 (ファイルを作らない) は対象にしない
-const NOT_PR_REVIEW_RE = /待ち|まとめ|一覧|キュー|溜ま|スキル|フック|自動|[?？]\s*$/;
+const NOT_PR_REVIEW_RE =
+  /待ち|まとめ|一覧|キュー|溜ま|スキル|フック|自動|[?？]\s*$/;
 // pr-watch の起床文やタスク通知も「PR」「レビュー」を含むため、文面ではなく投入元で除く
 const HUMAN_ORIGINS = new Set(["composer", "bridge", "sdk", "slack-ping"]);
 const MSG =
