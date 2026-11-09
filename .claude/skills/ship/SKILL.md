@@ -31,7 +31,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | format | 同上 | format コマンドが exit 0 |
 | knowledge | 得た知見の `Knowledge/` (OKF等) への永続化を検討し、書く/書かないを `ship.sh knowledge "<内容 or 理由>"` で記録 (プロジェクトに知識ベースが無ければ理由に明記して skip 可) | 検討記録が存在する |
 | commit | commit スキル | working tree clean かつコミットが積まれている |
-| explain | explain-diff-html スキルでデフォルトブランチからの差分 (`origin/<default>...HEAD`) の解説ページを生成し、`ship.sh explain open <html パス>` でブラウザで開いて記録する (承認は次の report でまとめて受ける)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 解説ページが存在し、対象 SHA が現 HEAD と一致 |
+| explain | explain-diff-html スキルでデフォルトブランチからの差分 (`origin/<default>...HEAD`) の解説ページを生成し、`ship.sh explain open <html パス>` でブラウザで開いて記録する (このコマンドが開くので、自分で `open` を重ねない。承認は次の report でまとめて受ける)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 解説ページが存在し、対象 SHA が現 HEAD と一致 |
 | report | 実装報告を提示 (変更内容・設計判断・検証結果)。ユーザーが解説ページと報告を読み承認したら `ship.sh report approve`。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
 | pr | pr-create スキル (Copilot 依頼まで担当。CI / レビュー監視は pr-watch Mod が常駐で行う) | 現ブランチに OPEN な PR |
 | review | pr-watch Mod からの起床を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push する | Copilot レビューが実在し、CI が fail/pending でない |
