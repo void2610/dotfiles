@@ -138,13 +138,14 @@ CI とレビュー到着の監視は **pr-watch Mod (`~/.claude/mods/pr-watch`) 
 PR 作成直後、付属スクリプトで GitHub Copilot を PR レビュアーに登録する。**省略禁止**。
 
 ```bash
-bash "${CLAUDE_PROJECT_DIR:-$HOME}/.claude/skills/pr-create/scripts/request-copilot-review.sh" <PR番号>
+bash "$HOME/.claude/skills/pr-create/scripts/request-copilot-review.sh" <PR番号> [lite|balanced|max|auto]
 ```
 
 スクリプト本体: `~/.claude/skills/pr-create/scripts/request-copilot-review.sh`
 
-- 内部で `gh api graphql` の `requestReviews` mutation を `botIds` 付きで呼び、Copilot PR Reviewer (固定 bot ノード `BOT_kgDOCnlnWA`) を依頼する
-- Copilot レビュー機能未有効・既に依頼済み・権限不足などで失敗する場合があるが、**PR 作成自体は成功している**ので終了コード 1 でも警告扱いとし、ユーザーには「Copilot 依頼に失敗 (理由)」と PR URL の両方を伝える
+- 内部で Copilot 専用の `requestCopilotCodeReview` mutation を呼ぶ。既に依頼済みのレビュアー (CODEOWNERS・`--reviewer`) は外れない。第 2 引数でレビューの強さ (`reviewEffort`) を選べ、省略時はリポジトリ・組織の既定
+- Copilot レビュー機能未有効・既に依頼済み・権限不足などで失敗する場合があるが、**PR 作成自体は成功している**ので終了コード 1 でも警告扱いとし、ユーザーには「Copilot 依頼に失敗 (理由)」と PR URL の両方を伝える。理由は `failureReason` (`NO_QUOTA_REMAINING`・`REQUEST_CONFLICT` 等) で出る
+- 依頼が通っても、枠が足りないと Copilot が「insufficient remaining quota … Try requesting a review at a lower effort level」の COMMENTED レビューを返すことがある。そのときは `lite` を付けて頼み直す (2026-11-09、lerobot-akari #8 で既定の強さが 2 回枠不足になり、`lite` では 3 分ほどでレビューが届いた)
 
 ### Phase 6 — 完了報告
 
