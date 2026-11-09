@@ -36,10 +36,10 @@ fi
 # Copilot PR レビュアー bot の global node ID (固定)
 COPILOT_BOT_ID="BOT_kgDOCnlnWA"
 
-# botIds は配列なので GraphQL リテラル形式で埋め込む
+# botIds は GraphQL リテラルで埋め込む。union が無いと依頼済みのレビュアー (CODEOWNERS・--reviewer) が Copilot だけに置き換わる
 mutation=$(cat <<EOF
 mutation {
-  requestReviews(input: {pullRequestId: "$pr_id", botIds: ["$COPILOT_BOT_ID"]}) {
+  requestReviews(input: {pullRequestId: "$pr_id", botIds: ["$COPILOT_BOT_ID"], union: true}) {
     pullRequest { number }
   }
 }
