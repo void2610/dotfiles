@@ -96,6 +96,7 @@ ls .github/PULL_REQUEST_TEMPLATE/ 2>/dev/null
   - 悪い例: 旧 `experiments/sim2real/utils/action_dr.py` を削除し、engine (`LowFreqNoiseInjector` / `dagger_offset_approach_iter` / `sample_duration_scale` / `sample_ee_perturbation` / `taper_weight`) を `polaris/dr/motion_noise.py` に移設
   - 良い例: DR関連のutil関数を正しい場所へ移設
 - **動作確認**: 簡潔に 2〜3 項目程度まで。実行者が実際に確認する最低限に絞り、網羅リストにしない
+- **画像・動画**: 画面・描画・ロボットの動きなど見た目で確かめたものは、撮ったスクリーンショットや動画を本文に貼る (2026-11-09「prに画像をはれ」)。手元に撮った画像があるのに文章だけで「出ることを確かめた」と書かない。本文には `![<何の画面か>](./<file>)` で置き、Phase 4 の `--attach` で上げる
 
 
 ### Phase 4 — PR 作成
@@ -114,6 +115,13 @@ CLAUDE_GIT_SKILL=pr-create gh pr create --title "<承認済みタイトル>" --b
 - [ ] ...
 EOF
 )"
+```
+
+画像・動画は `gh` の `--attach` で上げる (gh 2.99 以降。`gh pr create` / `gh pr edit` / `gh pr comment` にある)。本文の `![alt](./before.png)` と同じパスを `--attach './before.png#<alt>'` で渡すと、gh がアップロード先の URL に書き換える。本文に参照が無いファイルは末尾に足される。1 回に 50 ファイルまで。gh は相対パスをカレントディレクトリから解決するので、画像のあるディレクトリで実行するか、本文と `--attach` のパスをそろえる。
+
+```bash
+cd <画像のあるディレクトリ> && CLAUDE_GIT_SKILL=pr-create gh pr create --title "..." --body-file /tmp/body.md \
+  --attach './live.png#live の表示' --attach './replay.png#replay の表示'
 ```
 
 オプション (ユーザー指示があった時のみ追加):
@@ -162,4 +170,5 @@ pr-watch Mod は CI fail / レビュー到着を検知すると、指示文を p
 - **既に PR が存在**: 新規作成せず既存 PR URL を返す。タイトル / 本文の更新が必要なら `gh pr edit <N> --title/--body-file` で対応
 - **push 失敗 (403 等)**: `gh auth status` / `git remote -v` で認証と remote を確認
 - **作成後にタイトル / 本文を直したい**: `gh pr edit <N> --title "..."` または `gh pr edit <N> --body-file /tmp/body.md`
+- **作成後に画像を足したい**: `gh pr edit <N> --body-file /tmp/body.md --attach './x.png#<alt>'` (本文に `![alt](./x.png)` を置いた位置に入る)。本文を渡さなければ今の本文の末尾に足される
 - **draft ↔ ready の切り替え**: `gh pr ready <N>` / `gh pr ready --undo <N>`
