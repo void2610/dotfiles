@@ -26,7 +26,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | `comment-style-guard.ts` | Edit / Write | 複数行コメントブロックの追加を検知し、CLAUDE.md の Comments ルールに沿った削減ワークフローを注入 |
 | `feedback-memory-router.ts` | Edit / Write | feedback メモリ保存時に適用スコープの再配置判断 (hook 化提案 / repo 配置 / メモリ維持) を注入 |
 | `task-contract-trigger.ts` | prompt.submit | 開放的依頼の語彙を検知し task-contract スキルの発動を指示 |
-| `explain-diff-trigger.ts` | prompt.submit | PR のレビュー・解説の依頼 (#番号・PR・URL とレビュー・解説の語) を検知し explain-diff-html スキルの発動を指示。一覧の依頼・質問は除く |
+| `explain-diff-trigger.ts` | prompt.submit | PR のレビュー・解説の依頼 (#番号・PR・URL とレビュー・解説の語) を検知し explain-diff-html スキルの発動を指示。一覧の依頼・質問と、人が送っていない投入 (pr-watch の起床・タスク通知等) は除く |
 | `reset-restack-hint.ts` | prompt.submit | reset / 積み直し系の依頼で「破壊的操作をせずコミットを積み直せ」と注入 |
 | `gh-stack-help.ts` | prompt.submit | スタック PR 関連の依頼で gh の help をセッション 1 回だけ注入 |
 

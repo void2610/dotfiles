@@ -3,15 +3,20 @@
 input=$(cat)
 transcript=$(echo "$input" | jq -r '.transcript_path // empty')
 session_id=$(echo "$input" | jq -r '.session_id // "none"')
-[ -f "$transcript" ] || exit 0
+# Stop の時点で transcript に最後の応答がまだ書かれていない回があるため、入力の last_assistant_message も見る
+last=$(echo "$input" | jq -r '.last_assistant_message // empty')
 
 # 直近のユーザー入力より後の assistant のテキストだけを見る
-text=$(jq -rs '
-  (map(.type == "user" and ((.message.content | type) == "string" or any(.message.content[]?; .type == "text"))) | rindex(true)) as $u
-  | .[(($u // -1) + 1):]
-  | map(select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text)
-  | join("\n")
-' "$transcript" 2>/dev/null)
+text=""
+if [ -f "$transcript" ]; then
+  text=$(jq -rs '
+    (map(.type == "user" and ((.message.content | type) == "string" or any(.message.content[]?; .type == "text"))) | rindex(true)) as $u
+    | .[(($u // -1) + 1):]
+    | map(select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text)
+    | join("\n")
+  ' "$transcript" 2>/dev/null)
+fi
+text="${text}"$'\n'"${last}"
 
 # 動詞 (確かめる・確認・検証・調べる・裏取り・読む・見る) の未実施と「未確認・未検証・未読」を拾う
 pattern='(確かめ|調べ|見|聞い|試し)て(い)?(ない|ません|なかった)|読んで(い)?(ない|ません|なかった)|(確かめ|調べ)られ(てい)?(ない|ません|なかった)|(確認|検証|照合|突き合わせ|裏取り|実測|動作確認)(は|を|が)?(して|できて|でき|されて)(い)?(ない|ません|なかった)|未確認|未検証|未読|未調査|未照合|裏取りなし|確認なし|要確認|確認待ち'

@@ -17,7 +17,7 @@ export const register: Register = (on) => {
     const run: Run = (argv, init) => $.process.run(argv, init);
     const notes = [
       taskContractNote(e.text),
-      explainDiffNote(e.text),
+      explainDiffNote(e.text, e.origin.kind),
       resetRestackNote(e.text),
       await ghStackHelpNote(run, e.text),
     ].filter((n): n is string => n !== undefined);

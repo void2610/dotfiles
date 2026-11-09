@@ -28,6 +28,13 @@ Google Drive 共有フォルダ → `~/Documents/rclone/<repo>` の**一方向**
 
 `status` / `pull` の末尾に出る「フォルダの補足」に、どのフォルダがゲーム用素材でどれが広報・参考資料かが書いてある。探索範囲はこれに従って決め、ゲーム実装のタスクでは広報・旧版フォルダを参照しない。
 
+## 認証
+
+- `gdrive` / `gdrive-upload` は自前の OAuth クライアント (GCP プロジェクト `rclone`、`mythic-inn-509914-a7`) を使う。rclone 組み込みの client_id は 2026 年中に廃止されるため戻さない
+- このアプリは公開ステータスを「本番環境」にしてある。「テスト中」に戻すと refresh token が 7 日で失効し、毎週 reconnect が要る
+- 本番公開にはブランディングのホームページ (`https://www.void2610.dev`) とプライバシーポリシー (`/privacy`) と承認済みドメイン `void2610.dev` が必須。空だと「アプリを公開」が押せない
+- reconnect した後は、m1server の `~/.config/rclone/rclone.conf` へも同じ内容をコピーする
+
 ## 同期結果の読み方
 
 - Google ドキュメントは `.md`、スプレッドシートは `.csv`、スライドは `.pdf` でエクスポートされる
