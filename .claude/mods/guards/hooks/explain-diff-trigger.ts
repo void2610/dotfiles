@@ -2,6 +2,8 @@
 const PR_REF_RE = /#\d{3,}|\bPR\b|プルリク|\/pull\/\d+/;
 const PR_REVIEW_RE = /レビュー|review|解説|説明/i;
 const NEXT_PR_RE = /次の.{0,12}PR/;
+// 長い手順書で他システムの #番号と別の文の「レビュー」が組にならないよう文単位で見る (URL と依頼を改行で分けて書く形があるので改行では区切らない)
+const SENTENCE_END_RE = /[。！!]/;
 // 一覧の依頼・自動化の話・質問 (ファイルを作らない) は対象にしない
 const NOT_PR_REVIEW_RE =
   /待ち|まとめ|一覧|キュー|溜ま|スキル|フック|自動|[?？]\s*$/;
@@ -12,7 +14,10 @@ const MSG =
 
 export const isPrReviewRequest = (text: string): boolean =>
   !NOT_PR_REVIEW_RE.test(text) &&
-  (NEXT_PR_RE.test(text) || (PR_REF_RE.test(text) && PR_REVIEW_RE.test(text)));
+  (NEXT_PR_RE.test(text) ||
+    text
+      .split(SENTENCE_END_RE)
+      .some((s) => PR_REF_RE.test(s) && PR_REVIEW_RE.test(s)));
 
 export const explainDiffNote = (
   text: string,
