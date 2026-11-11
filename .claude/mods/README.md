@@ -21,7 +21,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 
 | ファイル | 発火 | 内容 |
 | --- | --- | --- |
-| `git-skill-enforcer.ts` | Bash | `git commit` / `git push` / `gh pr create` の直接実行を deny し、`CLAUDE_GIT_SKILL=<skill>` マーカー付き (スキル経由) のみ許可 |
+| `git-skill-enforcer.ts` | Bash | `git commit` / `git push` / `gh pr create` の直接実行を deny し、`CLAUDE_GIT_SKILL=<skill>` マーカー付き (スキル経由) のみ許可。コマンドの位置に来たものだけを見るので、grep のパターン等の引数中の語では止めない |
 | `branch-track-guard.ts` | Bash | `origin/main` 起点のブランチ作成 (`--no-track` なし) と upstream の main 向け変更を deny |
 | `comment-style-guard.ts` | Edit / Write | 複数行コメントブロックの追加を検知し、CLAUDE.md の Comments ルールに沿った削減ワークフローを注入 |
 | `feedback-memory-router.ts` | Edit / Write | feedback メモリ保存時に適用スコープの再配置判断 (hook 化提案 / repo 配置 / メモリ維持) を注入 |
