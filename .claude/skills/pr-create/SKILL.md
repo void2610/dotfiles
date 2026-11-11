@@ -34,7 +34,7 @@ git log --oneline "$(git merge-base HEAD @{u} 2>/dev/null || git merge-base HEAD
 
 ### Phase 2 — push
 
-`git push` は `CLAUDE_GIT_SKILL=pr-create` を前置して実行する (PreToolUse hook `~/.claude/hooks/enforce-git-skill.sh` が本スキル経由かどうかをこのマーカーで判定し、無いと直接実行はブロックされる)。
+`git push` は `CLAUDE_GIT_SKILL=pr-create` を前置して実行する (guards Mod の `git-skill-enforcer.ts` が本スキル経由かどうかをこのマーカーで判定し、無いと直接実行はブロックされる)。
 
 ```bash
 # upstream 未設定の初回 push
