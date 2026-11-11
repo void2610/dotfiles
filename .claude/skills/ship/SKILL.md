@@ -34,7 +34,7 @@ description: 開発フロー (計画 → ブランチ → 実装 → テスト �
 | explain | explain-diff-html スキルでデフォルトブランチからの差分 (`origin/<default>...HEAD`) の解説ページを生成し、`ship.sh explain open <html パス>` でブラウザで開いて記録する (このコマンドが開くので、自分で `open` を重ねない。承認は次の report でまとめて受ける)。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 解説ページが存在し、対象 SHA が現 HEAD と一致 |
 | report | 実装報告を提示 (変更内容・設計判断・検証結果)。ユーザーが解説ページと報告を読み承認したら `ship.sh report approve`。ホスト `PCmac24055` のみ有効 (他マシンでは自動 skip) | 承認済み SHA が現 HEAD と一致 |
 | pr | pr-create スキル (Copilot 依頼まで担当。CI / レビュー監視は pr-watch Mod が常駐で行う) | 現ブランチに OPEN な PR |
-| review | pr-watch Mod からの起床を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push する | Copilot レビューが実在し、CI が fail/pending でない |
+| review | pr-watch Mod からの起床を待つ (催促されたら status で状況報告)。CI が fail なら原因を修正して push スキルで push する | Copilot レビューが実在し、CI が fail/pending でない |
 | fix | 未解決スレッドが残っていれば pr-review-fix スキル | 未解決レビュースレッド 0 件 |
 
 全フェーズ done になったら PR URL と各フェーズの記録を添えて完了報告する。
