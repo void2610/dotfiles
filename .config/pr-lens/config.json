@@ -11,6 +11,7 @@
     "**/debugs/",
     "**/Debugs/",
     "**/__tests__/",
+    "*.json",
     "*.pyi",
     "*.md",
     "*.meta",
