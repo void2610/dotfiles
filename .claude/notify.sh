@@ -30,7 +30,19 @@ case "$EVENT_TYPE" in
         esac
         ;;
     "Notification")
-        MESSAGE="⏳ 許可待機中..."
+        # 入力待ちなど許可以外の通知も同じ hook に来るので、標準入力の notification_type で分ける
+        INPUT=$(cat)
+        case "$(echo "$INPUT" | jq -r '.notification_type // empty' 2>/dev/null)" in
+            "permission_prompt")
+                MESSAGE="⏳ 許可待機中..."
+                ;;
+            "idle_prompt")
+                MESSAGE="💬 入力待ち"
+                ;;
+            *)
+                MESSAGE="🔔 $(echo "$INPUT" | jq -r '.message // "Claude Code通知"' 2>/dev/null)"
+                ;;
+        esac
         ;;
     *)
         MESSAGE="📱 Claude Code通知"
