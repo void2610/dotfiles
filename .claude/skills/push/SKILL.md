@@ -1,11 +1,11 @@
 ---
 name: push
-description: "PR を作らずに `git push` するときに使うスキル。トリガー: 「push して」「プッシュして」「リモートに上げて」等のユーザー指示、main での直接作業を許可された場でのコミット後、OPEN な PR のブランチへ CI の修正等を追加で送るとき。PR を作る・タイトルや本文を更新する push は pr-create、レビュー対応の push は pr-review-fix が担当する。force push は扱わない。"
+description: "`git push` するときは必ずこのスキルを使う。トリガー: 「push して」「プッシュして」「リモートに上げて」等のユーザー指示、およびコミット後に push が要るとき。pr-create・pr-review-fix・ship の中の push もこのスキルで行う。force push は扱わない。"
 ---
 
 # push
 
-コミット済みの変更をリモートへ送るスキル。コミット作成は担当しない (先に commit スキルで済ませる)。
+コミット済みの変更をリモートへ送るスキル。push はすべてこのスキルで行う。コミット作成は担当しない (先に commit スキルで済ませる)。
 ユーザーに手動実行を頼まず、確認が必要なケース以外は確認なしで送る。
 
 ## 確認が必要なケース (これ以外は確認なしで進める)
@@ -44,7 +44,7 @@ description: "PR を作らずに `git push` するときに使うスキル。ト
 
    `--force` / `-f` / `--force-with-lease` / `+<refspec>` は付けない。
 
-4. **報告** — 送ったブランチ、範囲 (`<旧 SHA>..<新 SHA>`)、コミット件数を伝える。ブランチに OPEN な PR があれば (`gh pr view --json url,title`) その URL も添え、PR のタイトル・本文が送った内容と食い違うなら pr-create で更新する
+4. **報告** — 送ったブランチ、範囲 (`<旧 SHA>..<新 SHA>`)、コミット件数を伝える。ブランチに OPEN な PR があれば (`gh pr view --json url`) その URL も添える
 
 ## トラブル
 

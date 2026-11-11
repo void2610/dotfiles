@@ -8,5 +8,5 @@ const MARKER_RE =
 
 export const gitSkillDeny = (command: string): string | undefined =>
   TARGET_RE.test(command) && !MARKER_RE.test(command)
-    ? "git commit / git push / gh pr create の直接実行はブロックされました。スキル経由で (CLAUDE_GIT_SKILL=<skill名> を前置して) 実行してください。git commit は commit、PR を作らない git push は push、PR を作る push と gh pr create は pr-create、レビュー対応は pr-review-fix スキルです。"
+    ? "git commit / git push / gh pr create の直接実行はブロックされました。git commit は commit、git push は push、gh pr create は pr-create スキル経由で (CLAUDE_GIT_SKILL=<skill名> を前置して) 実行してください。"
     : undefined;

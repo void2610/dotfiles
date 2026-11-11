@@ -34,17 +34,7 @@ git log --oneline "$(git merge-base HEAD @{u} 2>/dev/null || git merge-base HEAD
 
 ### Phase 2 — push
 
-`git push` は `CLAUDE_GIT_SKILL=pr-create` を前置して実行する (guards Mod の `git-skill-enforcer.ts` が本スキル経由かどうかをこのマーカーで判定し、無いと直接実行はブロックされる)。
-
-```bash
-# upstream 未設定の初回 push
-CLAUDE_GIT_SKILL=pr-create git push -u origin HEAD
-
-# upstream 設定済みでローカルが先行
-CLAUDE_GIT_SKILL=pr-create git push
-```
-
-push 失敗時は `gh auth status` と `git remote -v` を確認してユーザーに報告。
+push スキルで現ブランチを push する。
 
 ### Phase 3 — タイトル・本文の生成
 

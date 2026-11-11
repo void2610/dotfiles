@@ -103,9 +103,9 @@ Phase 5 を抜けたら (正常系は即時、停止条件に該当した場合�
 
 1. ブランチ状態・依存関係・計画を再確認。
 2. 通し番号順に修正実施。論理単位でコミットを分割する。
-3. コミットメッセージには修正内容を記載。実行コマンドには `CLAUDE_GIT_SKILL=pr-review-fix` を前置する (guards Mod の `git-skill-enforcer.ts` が本スキル経由かどうかをこのマーカーで判定し、無いと `git commit` / `git push` の直接実行はブロックされる): `CLAUDE_GIT_SKILL=pr-review-fix git commit -m "<件名>"`。**コミット直後に対応表 (`outputs/pr-review-fix/pr-<N>-mapping.json`) の該当エントリに `commit_hash` (完全 SHA) を書き込む**。
+3. コミットメッセージには修正内容を記載。実行コマンドには `CLAUDE_GIT_SKILL=pr-review-fix` を前置する (guards Mod の `git-skill-enforcer.ts` が本スキル経由かどうかをこのマーカーで判定し、無いと `git commit` の直接実行はブロックされる): `CLAUDE_GIT_SKILL=pr-review-fix git commit -m "<件名>"`。**コミット直後に対応表 (`outputs/pr-review-fix/pr-<N>-mapping.json`) の該当エントリに `commit_hash` (完全 SHA) を書き込む**。
 4. lint / typecheck / test を実行してグリーンを確認。
-5. `CLAUDE_GIT_SKILL=pr-review-fix git push` でリモート反映。
+5. push スキルでリモート反映。
 
 > **注意**: push 前に resolve するとコミットが GitHub に未到達で返信リンクが壊れる可能性がある。
 > 必ず push 後に Phase 7 に進む。
