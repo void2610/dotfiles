@@ -8,6 +8,7 @@ import {
   initialSchedule,
   observeLocal,
   park,
+  slowDown,
 } from "../hooks/schedule.ts";
 
 const now = 1_000_000;
@@ -77,4 +78,18 @@ test("マージ・クローズ済みの PR は、時間が経っても手元が�
 test("止めていても明示の取り直しでは取りに行く", () => {
   const s = park(afterSuccess(initialSchedule, now));
   assert.equal(due(forced(s), now), true);
+});
+
+test("CI とレビューが片付いた PR は 5 分おきに取り直す", () => {
+  const s = slowDown(afterSuccess(initialSchedule, now), now);
+  assert.equal(due(s, now + 299_999), false);
+  assert.equal(due(s, now + 300_000), true);
+});
+
+test("片付いた PR でも push やコミットで手元が変わったらすぐ取り直す", () => {
+  const s = slowDown(
+    afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now),
+    now,
+  );
+  assert.equal(due(observeLocal(s, "b h1 u2"), now), true);
 });
