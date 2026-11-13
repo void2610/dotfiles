@@ -123,7 +123,7 @@ cd <画像のあるディレクトリ> && CLAUDE_GIT_SKILL=pr-create gh pr creat
 
 ### Phase 5 — Copilot レビュー依頼 (必須・毎回)
 
-CI とレビュー到着の監視は **pr-watch Mod (`~/.claude/mods/pr-watch`) が常駐で担う**ため、pr-create からの監視起動は不要。Mod が 60 秒おき (push・コミットで HEAD か upstream が変わったときは即時) に現在ブランチの OPEN PR を見て、CI fail / レビュー到着時に prompt 自動投入でセッションを起こす。
+CI とレビュー到着の監視は **pr-watch Mod (`~/.claude/mods/pr-watch`) が常駐で担う**ため、pr-create からの監視起動は不要。Mod が 60 秒おき (CI が通り Copilot レビューの未解決スレッドも無い PR は 5 分おき、push・コミットで HEAD か upstream が変わったときは即時) に現在ブランチの OPEN PR を見て、CI fail / レビュー到着時に prompt 自動投入でセッションを起こす。
 
 PR 作成直後、付属スクリプトで GitHub Copilot を PR レビュアーに登録する。**省略禁止**。
 
