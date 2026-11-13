@@ -7,6 +7,7 @@ import {
   forced,
   initialSchedule,
   observeLocal,
+  park,
 } from "../hooks/schedule.ts";
 
 const now = 1_000_000;
@@ -65,4 +66,15 @@ test("push やコミットで手元が変わったら、待ちと失敗の空け
   s = observeLocal(s, "b h1 u2");
   assert.equal(due(s, now), true);
   assert.equal(afterFailure(s, now, false).nextGhAt - now, 60_000);
+});
+
+test("マージ・クローズ済みの PR は、時間が経っても手元が変わるまで取り直さない", () => {
+  const s = park(afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now));
+  assert.equal(due(observeLocal(s, "b h1 u1"), now + 3_600_000), false);
+  assert.equal(due(observeLocal(s, "b h2 u1"), now), true);
+});
+
+test("止めていても明示の取り直しでは取りに行く", () => {
+  const s = park(afterSuccess(initialSchedule, now));
+  assert.equal(due(forced(s), now), true);
 });
