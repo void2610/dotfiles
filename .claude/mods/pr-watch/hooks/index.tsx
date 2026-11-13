@@ -8,6 +8,7 @@ import {
   observeLocal,
   park,
   type Schedule,
+  slowDown,
 } from "./schedule";
 
 type CiState = "pass" | "fail" | "pending" | "none";
@@ -248,6 +249,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     (ci === "pass" || ci === "none") &&
     threads !== undefined &&
     threads.total - threads.resolved === 0;
+  if (allDone) schedule = slowDown(schedule, Date.now());
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
     ciColor,

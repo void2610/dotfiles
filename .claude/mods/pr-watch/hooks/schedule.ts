@@ -1,5 +1,7 @@
 // gh pr view は 1 回 GraphQL 1 ポイントだが、15 秒 × 複数セッションで上限 (5000/時) を実際に枯渇させたため 60 秒にする
 export const MIN_GH_INTERVAL_MS = 60000;
+// 片付いた PR で次に動くのは人のレビューやマージで急ぐ通知ではなく、自分の push は手元の変化で即座に拾うため 5 分にする
+const SETTLED_GH_INTERVAL_MS = 300000;
 const MAX_BACKOFF_MS = 900000;
 const RATE_LIMIT_BACKOFF_MS = 600000;
 
@@ -41,6 +43,10 @@ export function afterFailure(
 export function observeLocal(s: Schedule, key: string): Schedule {
   if (key === s.localKey) return s;
   return { ...s, localKey: key, nextGhAt: 0, backoffMs: 0, parked: false };
+}
+
+export function slowDown(s: Schedule, now: number): Schedule {
+  return { ...s, nextGhAt: now + SETTLED_GH_INTERVAL_MS };
 }
 
 export function park(s: Schedule): Schedule {
