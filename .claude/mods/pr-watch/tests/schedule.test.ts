@@ -6,6 +6,7 @@ import {
   due,
   forced,
   initialSchedule,
+  observeLocal,
 } from "../hooks/schedule.ts";
 
 const now = 1_000_000;
@@ -51,4 +52,17 @@ test("取れたら失敗の空け幅を戻す", () => {
 test("明示の取り直しは待ちを捨てる", () => {
   const s = forced(afterFailure(initialSchedule, now, true));
   assert.equal(due(s, now), true);
+});
+
+test("手元が変わらなければ間隔どおり待つ", () => {
+  const s = afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now);
+  assert.equal(due(observeLocal(s, "b h1 u1"), now + 1), false);
+});
+
+test("push やコミットで手元が変わったら、待ちと失敗の空け幅を捨てて取り直す", () => {
+  let s = observeLocal(initialSchedule, "b h1 u1");
+  s = afterFailure(afterFailure(s, now, false), now, false);
+  s = observeLocal(s, "b h1 u2");
+  assert.equal(due(s, now), true);
+  assert.equal(afterFailure(s, now, false).nextGhAt - now, 60_000);
 });
