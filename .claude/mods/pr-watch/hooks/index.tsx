@@ -5,6 +5,7 @@ import {
   due,
   forced,
   initialSchedule,
+  observeLocal,
   type Schedule,
 } from "./schedule";
 
@@ -99,13 +100,17 @@ async function refetch($: EngineInterface): Promise<void> {
 }
 
 async function pollOnce($: EngineInterface): Promise<void> {
-  if (!due(schedule, Date.now())) return;
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
     return r.exitCode === 0 ? r.stdout.trim() : undefined;
   };
 
   const branch = await run(["git", "rev-parse", "--abbrev-ref", "HEAD"]);
+  const head = await run(["git", "rev-parse", "HEAD"]);
+  const upstream = await run(["git", "rev-parse", "@{upstream}"]);
+  schedule = observeLocal(schedule, [branch, head, upstream].join(" "));
+  if (!due(schedule, Date.now())) return;
+
   const defaultBranch = (
     (await run([
       "git",

@@ -6,6 +6,8 @@ const RATE_LIMIT_BACKOFF_MS = 600000;
 export type Schedule = {
   nextGhAt: number;
   backoffMs: number;
+  // 直近に見た手元のブランチ・HEAD・upstream の組
+  localKey?: string;
 };
 
 export const initialSchedule: Schedule = { nextGhAt: 0, backoffMs: 0 };
@@ -31,6 +33,12 @@ export function afterFailure(
         MAX_BACKOFF_MS,
       );
   return { ...s, nextGhAt: now + backoffMs, backoffMs };
+}
+
+// push・コミット・fetch で手元が変われば PR 側の CI やレビューも動き出すので、間隔もバックオフも待たずに取り直す
+export function observeLocal(s: Schedule, key: string): Schedule {
+  if (key === s.localKey) return s;
+  return { ...s, localKey: key, nextGhAt: 0, backoffMs: 0 };
 }
 
 // 明示操作 (/pr-watch・↻ ボタン) は間隔待ちを飛ばして即時取得する
