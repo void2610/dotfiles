@@ -6,6 +6,7 @@ import {
   forced,
   initialSchedule,
   observeLocal,
+  park,
   type Schedule,
 } from "./schedule";
 
@@ -162,6 +163,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
   if (pr.state !== "OPEN") {
+    schedule = park(schedule);
     watched = undefined;
     setHint($, undefined);
     return;

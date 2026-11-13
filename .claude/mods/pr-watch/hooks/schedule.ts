@@ -8,12 +8,14 @@ export type Schedule = {
   backoffMs: number;
   // 直近に見た手元のブランチ・HEAD・upstream の組
   localKey?: string;
+  // マージ・クローズ済みの PR は待っても変わらないので、手元が変わるか明示の取り直しまで止める
+  parked?: boolean;
 };
 
 export const initialSchedule: Schedule = { nextGhAt: 0, backoffMs: 0 };
 
 export function due(s: Schedule, now: number): boolean {
-  return now >= s.nextGhAt;
+  return !s.parked && now >= s.nextGhAt;
 }
 
 export function afterSuccess(s: Schedule, now: number): Schedule {
@@ -38,10 +40,14 @@ export function afterFailure(
 // push・コミット・fetch で手元が変われば PR 側の CI やレビューも動き出すので、間隔もバックオフも待たずに取り直す
 export function observeLocal(s: Schedule, key: string): Schedule {
   if (key === s.localKey) return s;
-  return { ...s, localKey: key, nextGhAt: 0, backoffMs: 0 };
+  return { ...s, localKey: key, nextGhAt: 0, backoffMs: 0, parked: false };
+}
+
+export function park(s: Schedule): Schedule {
+  return { ...s, parked: true };
 }
 
 // 明示操作 (/pr-watch・↻ ボタン) は間隔待ちを飛ばして即時取得する
 export function forced(s: Schedule): Schedule {
-  return { ...s, nextGhAt: 0 };
+  return { ...s, nextGhAt: 0, parked: false };
 }
