@@ -32,6 +32,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 ## 開発メモ
 
 - 検証 3 段: `claude plugin validate <dir>` / `cd .claude/mods && biome check <dir>` / `npx -y -p typescript tsc -p tsconfig.json --noEmit`
+- テスト: 判断は `hooks/` の副作用のない `.ts` に切り出し、`<mod>/tests/*.test.ts` に node:test で書く。`cd .claude/mods && node --test */tests/*.test.ts` で走る (Node の型除去で `.ts` を直接読むので、テストからは拡張子付きで import する)
 - 型生成: `claude -p "/plugin-types .claude/mods/types"` (`types/` と `node_modules/` は gitignore)
 - biome はリポジトリルートから実行すると nested root エラーになるため、この `mods/` ディレクトリから実行する
 - 同一イベントの matcher なし重複登録はエンジンに拒否されるため、イベント登録は各 Mod の `index.ts(x)` に束ねる
