@@ -9,7 +9,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | --- | --- | --- |
 | `git-context` | `prompt.context` | 現在ブランチ・`git status --short`・main からの差分コミットを毎ターンのコンテキストに注入 |
 | `guards` | `prompt.submit` / `tool.call` | ガード集約 (下表参照)。イベント登録は `index.ts` に一本化し、機能は 1 ファイル 1 ガード |
-| `pr-watch` | `clock` / `prompt.submit` / `ui.render` | 現在ブランチの OPEN PR を常駐監視 (gh 60 秒間隔 + バックオフ)。CI fail / Copilot レビュー未解決スレッドで `$.prompt.submit` によりセッションを自動起床。プロンプト直上の監視行はボタンで、押すと PR の checks ページを開く。`/pr-watch` で即時更新 |
+| `pr-watch` | `clock` / `prompt.submit` / `ui.render` | 現在ブランチの OPEN PR を常駐監視 (gh 60 秒間隔 + バックオフ。CI が通り Copilot レビューの未解決スレッドも無い PR は 5 分間隔。push・コミット・fetch で HEAD か upstream が変わったら即時。マージ・クローズ済みの PR は手元が変わるか `/pr-watch`・↻ まで取り直さない)。CI fail / Copilot レビュー未解決スレッドで `$.prompt.submit` によりセッションを自動起床。プロンプト直上の監視行はボタンで、押すと PR の checks ページを開く。`/pr-watch` で即時更新 |
 | `ship-hud` | `ui.render` / `command.run` | ship 状態機械をプロンプト直上 (AbovePrompt) に常時表示 (goal・フェーズ列・report の approve ボタン)。`/ship-hud` で表示トグル、`mcp__ship-hud__status` 等のツールも提供 |
 | `scratchpad-open` | `ui.render` / `command.run` / `clock` | scratchpad にファイルがある時だけプロンプト直上に `scratchpad (N)` ボタンを表示し、押すと Finder で開く。`/scratchpad` コマンドも同じ動作 |
 | `artifact-archive` | `tool.call` | 一時ディレクトリ (`/tmp`・`/var/folders` = scratchpad) からの Artifact publish を deny し、`~/Documents/claude-artifacts/` への保存へ誘導 |
@@ -24,7 +24,6 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | `git-skill-enforcer.ts` | Bash | `git commit` / `git push` / `gh pr create` の直接実行を deny し、`CLAUDE_GIT_SKILL=<skill>` マーカー付き (スキル経由) のみ許可。コマンドの位置に来たものだけを見るので、grep のパターン等の引数中の語では止めない |
 | `branch-track-guard.ts` | Bash | `origin/main` 起点のブランチ作成 (`--no-track` なし) と upstream の main 向け変更を deny |
 | `comment-style-guard.ts` | Edit / Write | 複数行コメントブロックの追加を検知し、CLAUDE.md の Comments ルールに沿った削減ワークフローを注入 |
-| `feedback-memory-router.ts` | Edit / Write | feedback メモリ保存時に適用スコープの再配置判断 (hook 化提案 / repo 配置 / メモリ維持) を注入 |
 | `task-contract-trigger.ts` | prompt.submit | 開放的依頼の語彙を検知し task-contract スキルの発動を指示 |
 | `explain-diff-trigger.ts` | prompt.submit | PR のレビュー・解説の依頼 (同じ文の中の #番号・PR・URL とレビュー・解説の語) を検知し explain-diff-html スキルの発動を指示。一覧の依頼・質問と、人が送っていない投入 (pr-watch の起床・タスク通知等) は除く |
 | `reset-restack-hint.ts` | prompt.submit | reset / 積み直し系の依頼で「破壊的操作をせずコミットを積み直せ」と注入 |
@@ -33,6 +32,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 ## 開発メモ
 
 - 検証 3 段: `claude plugin validate <dir>` / `cd .claude/mods && biome check <dir>` / `npx -y -p typescript tsc -p tsconfig.json --noEmit`
+- テスト: 判断は `hooks/` の副作用のない `.ts` に切り出し、`<mod>/tests/*.test.ts` に node:test で書く。`cd .claude/mods && node --test */tests/*.test.ts` で走る (Node の型除去で `.ts` を直接読むので、テストからは拡張子付きで import する)
 - 型生成: `claude -p "/plugin-types .claude/mods/types"` (`types/` と `node_modules/` は gitignore)
 - biome はリポジトリルートから実行すると nested root エラーになるため、この `mods/` ディレクトリから実行する
 - 同一イベントの matcher なし重複登録はエンジンに拒否されるため、イベント登録は各 Mod の `index.ts(x)` に束ねる

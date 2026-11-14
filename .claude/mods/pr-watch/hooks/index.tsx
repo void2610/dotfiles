@@ -1,4 +1,15 @@
 import type { EngineInterface, Register } from "claude-code";
+import {
+  afterFailure,
+  afterSuccess,
+  due,
+  forced,
+  initialSchedule,
+  observeLocal,
+  park,
+  type Schedule,
+  slowDown,
+} from "./schedule";
 
 type CiState = "pass" | "fail" | "pending" | "none";
 
@@ -19,12 +30,7 @@ let watched: Watched | undefined;
 let pollerStarted = false;
 // タイマーと prompt.submit から同時に走ると通知が多重化するため直列化する
 let polling = false;
-// gh pr view は GraphQL で 1 回あたりの消費が大きく、15 秒 × 複数セッションで上限 (5000/時) を実際に枯渇させたため 60 秒にする
-const MIN_GH_INTERVAL_MS = 60000;
-const MAX_BACKOFF_MS = 900000;
-const RATE_LIMIT_BACKOFF_MS = 600000;
-let nextGhAt = 0;
-let backoffMs = 0;
+let schedule: Schedule = initialSchedule;
 let tick = 0;
 let hint: string | undefined;
 // 部位別配色用。監視中のみ設定し、エラー表示等では undefined (hint を dim 単色で出す)
@@ -90,21 +96,23 @@ async function poll($: EngineInterface): Promise<void> {
   }
 }
 
-// 明示操作 (/pr-watch・↻ ボタン) は間隔待ちを飛ばして即時取得する
 async function refetch($: EngineInterface): Promise<void> {
-  nextGhAt = 0;
+  schedule = forced(schedule);
   await poll($);
 }
 
 async function pollOnce($: EngineInterface): Promise<void> {
-  const now = Date.now();
-  if (now < nextGhAt) return;
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
     return r.exitCode === 0 ? r.stdout.trim() : undefined;
   };
 
   const branch = await run(["git", "rev-parse", "--abbrev-ref", "HEAD"]);
+  const head = await run(["git", "rev-parse", "HEAD"]);
+  const upstream = await run(["git", "rev-parse", "@{upstream}"]);
+  schedule = observeLocal(schedule, [branch, head, upstream].join(" "));
+  if (!due(schedule, Date.now())) return;
+
   const defaultBranch = (
     (await run([
       "git",
@@ -128,27 +136,17 @@ async function pollOnce($: EngineInterface): Promise<void> {
   ]);
   const json = view.exitCode === 0 ? view.stdout.trim() : undefined;
   if (!json) {
-    // 上限超過は分単位で回復しないため、通常の失敗より強く間隔を空ける
-    if (/rate limit/i.test(view.stderr)) {
-      backoffMs = RATE_LIMIT_BACKOFF_MS;
-      nextGhAt = Date.now() + backoffMs;
-      setHint($, "pr-watch 停止中 (GitHub API 上限、10 分後に再試行)");
-      return;
-    }
-    // 失敗の多くは API 上限。間隔を広げて枯渇を助長しない
-    backoffMs = Math.min(
-      backoffMs ? backoffMs * 2 : MIN_GH_INTERVAL_MS,
-      MAX_BACKOFF_MS,
-    );
-    nextGhAt = Date.now() + backoffMs;
+    const rateLimited = /rate limit/i.test(view.stderr);
+    schedule = afterFailure(schedule, Date.now(), rateLimited);
     setHint(
       $,
-      `pr-watch 待機中 (gh 失敗、${Math.round(backoffMs / 1000)}s 後に再試行)`,
+      rateLimited
+        ? `pr-watch 停止中 (GitHub API 上限、${Math.round(schedule.backoffMs / 60000)} 分後に再試行)`
+        : `pr-watch 待機中 (gh 失敗、${Math.round(schedule.backoffMs / 1000)}s 後に再試行)`,
     );
     return;
   }
-  backoffMs = 0;
-  nextGhAt = Date.now() + MIN_GH_INTERVAL_MS;
+  schedule = afterSuccess(schedule, Date.now());
   let pr: {
     number: number;
     state: string;
@@ -166,6 +164,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
   if (pr.state !== "OPEN") {
+    schedule = park(schedule);
     watched = undefined;
     setHint($, undefined);
     return;
@@ -257,6 +256,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
     (ci === "pass" || ci === "none") &&
     threads !== undefined &&
     threads.total - threads.resolved === 0;
+  if (allDone) schedule = slowDown(schedule, Date.now());
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
     ciColor,

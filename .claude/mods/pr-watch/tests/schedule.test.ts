@@ -1,0 +1,95 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import {
+  afterFailure,
+  afterSuccess,
+  due,
+  forced,
+  initialSchedule,
+  observeLocal,
+  park,
+  slowDown,
+} from "../hooks/schedule.ts";
+
+const now = 1_000_000;
+
+test("起動直後はすぐ取りに行く", () => {
+  assert.equal(due(initialSchedule, now), true);
+});
+
+test("取れたら 60 秒は取り直さない", () => {
+  const s = afterSuccess(initialSchedule, now);
+  assert.equal(due(s, now + 59_999), false);
+  assert.equal(due(s, now + 60_000), true);
+});
+
+test("失敗が続くと 60 秒から倍々に空け、15 分で頭打ちにする", () => {
+  let s = initialSchedule;
+  const waits: number[] = [];
+  for (let i = 0; i < 6; i++) {
+    s = afterFailure(s, now, false);
+    waits.push(s.nextGhAt - now);
+  }
+  assert.deepEqual(
+    waits,
+    [60_000, 120_000, 240_000, 480_000, 900_000, 900_000],
+  );
+});
+
+test("API の上限に当たったら 10 分空ける", () => {
+  const s = afterFailure(initialSchedule, now, true);
+  assert.equal(s.nextGhAt - now, 600_000);
+});
+
+test("取れたら失敗の空け幅を戻す", () => {
+  const failed = afterFailure(
+    afterFailure(initialSchedule, now, false),
+    now,
+    false,
+  );
+  const s = afterFailure(afterSuccess(failed, now), now, false);
+  assert.equal(s.nextGhAt - now, 60_000);
+});
+
+test("明示の取り直しは待ちを捨てる", () => {
+  const s = forced(afterFailure(initialSchedule, now, true));
+  assert.equal(due(s, now), true);
+});
+
+test("手元が変わらなければ間隔どおり待つ", () => {
+  const s = afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now);
+  assert.equal(due(observeLocal(s, "b h1 u1"), now + 1), false);
+});
+
+test("push やコミットで手元が変わったら、待ちと失敗の空け幅を捨てて取り直す", () => {
+  let s = observeLocal(initialSchedule, "b h1 u1");
+  s = afterFailure(afterFailure(s, now, false), now, false);
+  s = observeLocal(s, "b h1 u2");
+  assert.equal(due(s, now), true);
+  assert.equal(afterFailure(s, now, false).nextGhAt - now, 60_000);
+});
+
+test("マージ・クローズ済みの PR は、時間が経っても手元が変わるまで取り直さない", () => {
+  const s = park(afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now));
+  assert.equal(due(observeLocal(s, "b h1 u1"), now + 3_600_000), false);
+  assert.equal(due(observeLocal(s, "b h2 u1"), now), true);
+});
+
+test("止めていても明示の取り直しでは取りに行く", () => {
+  const s = park(afterSuccess(initialSchedule, now));
+  assert.equal(due(forced(s), now), true);
+});
+
+test("CI とレビューが片付いた PR は 5 分おきに取り直す", () => {
+  const s = slowDown(afterSuccess(initialSchedule, now), now);
+  assert.equal(due(s, now + 299_999), false);
+  assert.equal(due(s, now + 300_000), true);
+});
+
+test("片付いた PR でも push やコミットで手元が変わったらすぐ取り直す", () => {
+  const s = slowDown(
+    afterSuccess(observeLocal(initialSchedule, "b h1 u1"), now),
+    now,
+  );
+  assert.equal(due(observeLocal(s, "b h1 u2"), now), true);
+});

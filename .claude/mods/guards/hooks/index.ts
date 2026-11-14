@@ -1,9 +1,8 @@
 import type { Register } from "claude-code";
 import { branchTrackDeny } from "./branch-track-guard";
-import type { ReadFile, Run } from "./caps";
+import type { Run } from "./caps";
 import { commentStyleNote } from "./comment-style-guard";
 import { explainDiffNote } from "./explain-diff-trigger";
-import { feedbackMemoryNote } from "./feedback-memory-router";
 import { ghStackHelpNote } from "./gh-stack-help";
 import { gitSkillDeny } from "./git-skill-enforcer";
 import { resetRestackNote } from "./reset-restack-hint";
@@ -42,31 +41,23 @@ export const register: Register = (on) => {
     const r = await next(e);
     if (r.deny !== undefined || r.isError) return r;
     const run: Run = (argv, init) => $.process.run(argv, init);
-    const readFile: ReadFile = (path) => $.fs.read(path);
-    const notes = [
-      await commentStyleNote(
-        run,
-        e.file_path,
-        e.new_string,
-        e.old_string,
-        false,
-      ),
-      await feedbackMemoryNote(readFile, e.file_path),
-    ].filter((n): n is string => n !== undefined);
-    if (notes.length === 0) return r;
-    return { ...r, context: [...(r.context ?? []), ...notes] };
+    const note = await commentStyleNote(
+      run,
+      e.file_path,
+      e.new_string,
+      e.old_string,
+      false,
+    );
+    if (note === undefined) return r;
+    return { ...r, context: [...(r.context ?? []), note] };
   });
 
   on("tool.call", { tool: "Write" }, async ($, e, next) => {
     const r = await next(e);
     if (r.deny !== undefined || r.isError) return r;
     const run: Run = (argv, init) => $.process.run(argv, init);
-    const readFile: ReadFile = (path) => $.fs.read(path);
-    const notes = [
-      await commentStyleNote(run, e.file_path, e.content, "", true),
-      await feedbackMemoryNote(readFile, e.file_path),
-    ].filter((n): n is string => n !== undefined);
-    if (notes.length === 0) return r;
-    return { ...r, context: [...(r.context ?? []), ...notes] };
+    const note = await commentStyleNote(run, e.file_path, e.content, "", true);
+    if (note === undefined) return r;
+    return { ...r, context: [...(r.context ?? []), note] };
   });
 };
