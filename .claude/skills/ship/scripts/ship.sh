@@ -33,11 +33,18 @@ stack_position() {
   ' "$stack_file" 2>/dev/null || true
 }
 
-# PR を一度も通していないリポジトリは main へ直接コミットする運用なので、ship の対象外にする
+# 過去に PR が数件あっても直近が main 直コミット中心なら直コミット運用なので、ship の対象外にする
 uses_prs() {
-  git log --merges -1 --format=%H "origin/$default_branch" 2>/dev/null | grep -q . && return 0
-  local n; n=$(gh pr list --state all --limit 1 --json number -q length 2>/dev/null) || return 0
-  [[ "$n" != 0 ]]
+  local recent pr_commits hits=0 total=0 sha
+  recent=$(git log --first-parent -20 --format=%H "origin/$default_branch" 2>/dev/null) || return 0
+  [[ -n "$recent" ]] || return 1
+  # squash / rebase マージは merge commit にならないため、PR の mergeCommit と突き合わせて数える
+  pr_commits=$(gh pr list --state merged --limit 100 --json mergeCommit -q '.[].mergeCommit.oid' 2>/dev/null) || return 0
+  for sha in $recent; do
+    total=$((total + 1))
+    grep -qx "$sha" <<<"$pr_commits" && hits=$((hits + 1))
+  done
+  ((hits * 2 >= total))
 }
 
 require_state() { [[ -f "$state_file" ]] || die "状態ファイルがない。先に ship.sh init \"<goal>\" を実行すること"; }
@@ -205,7 +212,7 @@ case "$cmd" in
       if uses_prs; then
         echo "状態ファイルなし。新規フローは ship.sh init \"<goal>\" から"
       else
-        echo "PR を使わないリポジトリ (マージも PR も無い)。ship は使わず $default_branch で直接作業すること"
+        echo "PR を使わないリポジトリ (直近の $default_branch は直コミットが中心)。ship は使わず $default_branch で直接作業すること"
       fi
       exit 0
     fi
