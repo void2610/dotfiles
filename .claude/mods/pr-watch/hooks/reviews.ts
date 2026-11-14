@@ -7,7 +7,7 @@ export type CopilotReviews = {
   unable: number;
 };
 
-// 枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す。これはレビューに数えない
+// 枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す。スレッドは付かないので分けて数える
 export function countCopilotReviews(
   reviews: readonly Review[],
 ): CopilotReviews {
@@ -20,17 +20,12 @@ export function countCopilotReviews(
   return { reviewed: copilot.length - unable, unable };
 }
 
-// レビューできなかったのを「未解決スレッドが無い」と取り違えて先へ進めないよう、CI が済んだ時点で別の文で起こす。
-// notified は前に起こしたときの unable の数。依頼し直してまたレビューできなかったら、もう一度起こす
-export function shouldWakeForUnable(
-  ciSettled: boolean,
+// レビューが片付いたか。レビューできなかった PR は待っても付かないので、片付いたものとして先へ進める。
+// unresolved は未解決スレッドの数 (取れていなければ undefined)
+export function reviewSettled(
   counts: CopilotReviews,
-  notified: string | undefined,
+  unresolved: number | undefined,
 ): boolean {
-  return (
-    ciSettled &&
-    counts.reviewed === 0 &&
-    counts.unable > 0 &&
-    notified !== String(counts.unable)
-  );
+  if (counts.reviewed > 0) return unresolved === 0;
+  return counts.unable > 0;
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { countCopilotReviews, shouldWakeForUnable } from "../hooks/reviews.ts";
+import { countCopilotReviews, reviewSettled } from "../hooks/reviews.ts";
 
 const copilot = { login: "copilot-pull-request-reviewer" };
 const unable = {
@@ -9,7 +9,7 @@ const unable = {
 };
 const reviewed = { author: copilot, body: "## Pull request overview" };
 
-test("レビューできなかった旨だけのレビューはレビューに数えない", () => {
+test("レビューできなかった旨だけのレビューは分けて数える", () => {
   assert.deepEqual(countCopilotReviews([unable]), { reviewed: 0, unable: 1 });
 });
 
@@ -21,22 +21,19 @@ test("中身のあるレビューと人のレビューを分けて数える", ()
   });
 });
 
-test("CI が済んでレビューできなかっただけなら起こす", () => {
-  assert.equal(shouldWakeForUnable(true, { reviewed: 0, unable: 1 }, undefined), true);
+test("レビューできなかった PR は片付いたものとして扱う", () => {
+  assert.equal(reviewSettled({ reviewed: 0, unable: 1 }, undefined), true);
 });
 
-test("同じ状態では二度起こさない", () => {
-  assert.equal(shouldWakeForUnable(true, { reviewed: 0, unable: 1 }, "1"), false);
+test("レビューがまだ届いていなければ片付いていない", () => {
+  assert.equal(reviewSettled({ reviewed: 0, unable: 0 }, undefined), false);
 });
 
-test("依頼し直してまたレビューできなかったら、もう一度起こす", () => {
-  assert.equal(shouldWakeForUnable(true, { reviewed: 0, unable: 2 }, "1"), true);
+test("レビューが付いたら未解決スレッドが無くなるまで片付いていない", () => {
+  assert.equal(reviewSettled({ reviewed: 1, unable: 0 }, 2), false);
+  assert.equal(reviewSettled({ reviewed: 1, unable: 0 }, 0), true);
 });
 
-test("CI が終わっていない間は起こさない", () => {
-  assert.equal(shouldWakeForUnable(false, { reviewed: 0, unable: 1 }, undefined), false);
-});
-
-test("中身のあるレビューが付いていれば、レビューできなかった件では起こさない", () => {
-  assert.equal(shouldWakeForUnable(true, { reviewed: 1, unable: 1 }, undefined), false);
+test("レビューが付いていてスレッドの数が取れていなければ片付いていない", () => {
+  assert.equal(reviewSettled({ reviewed: 1, unable: 1 }, undefined), false);
 });

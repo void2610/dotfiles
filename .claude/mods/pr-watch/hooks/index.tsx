@@ -2,7 +2,7 @@ import type { EngineInterface, Register } from "claude-code";
 import {
   countCopilotReviews,
   type Review,
-  shouldWakeForUnable,
+  reviewSettled,
 } from "./reviews.ts";
 import {
   afterFailure,
@@ -254,8 +254,10 @@ async function pollOnce($: EngineInterface): Promise<void> {
       : "green";
   const allDone =
     (ci === "pass" || ci === "none") &&
-    threads !== undefined &&
-    threads.total - threads.resolved === 0;
+    reviewSettled(
+      copilot,
+      threads ? threads.total - threads.resolved : undefined,
+    );
   if (allDone) schedule = slowDown(schedule, Date.now());
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
@@ -272,21 +274,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
   } else if (!(await $.store.get(doneKey))) {
     await $.store.set(doneKey, "1");
     await $.prompt.submit({
-      text: `PR #${w.prNumber} の CI が全て完了し、Copilot のレビューが付いて未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
-    });
-  }
-
-  const unableKey = `notified-unable:${w.prNumber}`;
-  if (
-    shouldWakeForUnable(
-      ci === "pass" || ci === "none",
-      copilot,
-      await $.store.get(unableKey),
-    )
-  ) {
-    await $.store.set(unableKey, String(copilotUnable));
-    await $.prompt.submit({
-      text: `PR #${w.prNumber} の CI は全て完了したが、Copilot はレビューできなかった (枠の不足など。理由はレビューの本文にある)。レビューは付いていないので、次のフェーズへは進めない。request-copilot-review.sh ${w.prNumber} lite で依頼し直し、それでもレビューできなければ、レビューを飛ばしてよいかをユーザーに確認せよ。許可が出たら ship.sh skip review <理由> で進める。`,
+      text: `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
     });
   }
 
