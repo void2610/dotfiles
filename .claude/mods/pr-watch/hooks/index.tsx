@@ -158,7 +158,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
       conclusion?: string;
       status?: string;
     }[];
-    reviews?: { author?: { login?: string } }[];
+    reviews?: { author?: { login?: string }; body?: string }[];
   };
   try {
     pr = JSON.parse(json);
@@ -171,9 +171,14 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
 
-  const copilotReviews = (pr.reviews ?? []).filter((r) =>
+  // 枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す。これはレビューに数えない
+  const copilotAll = (pr.reviews ?? []).filter((r) =>
     (r.author?.login ?? "").startsWith("copilot"),
+  );
+  const copilotUnable = copilotAll.filter((r) =>
+    (r.body ?? "").startsWith("Copilot was unable to review"),
   ).length;
+  const copilotReviews = copilotAll.length - copilotUnable;
 
   if (!watched || watched.prNumber !== pr.number) {
     watched = {
@@ -231,7 +236,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
       ? "レビュー通知済"
       : copilotReviews > 0
         ? "レビュー到着"
-        : "レビュー待ち";
+        : copilotUnable > 0
+          ? "レビュー不可"
+          : "レビュー待ち";
   const ciLabel = total > 0 ? `CI:${ci} ${done}/${total}` : `CI:${ci}`;
   const ciColor =
     ci === "pass" || ci === "none"
@@ -265,7 +272,21 @@ async function pollOnce($: EngineInterface): Promise<void> {
   } else if (!(await $.store.get(doneKey))) {
     await $.store.set(doneKey, "1");
     await $.prompt.submit({
-      text: `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
+      text: `PR #${w.prNumber} の CI が全て完了し、Copilot のレビューが付いて未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
+    });
+  }
+
+  // レビューできなかったのを「未解決スレッドが無い」と取り違えて先へ進めないよう、別の文で一度だけ起こす
+  const unableKey = `notified-unable:${w.prNumber}`;
+  if (
+    (ci === "pass" || ci === "none") &&
+    copilotReviews === 0 &&
+    copilotUnable > 0 &&
+    (await $.store.get(unableKey)) !== String(copilotUnable)
+  ) {
+    await $.store.set(unableKey, String(copilotUnable));
+    await $.prompt.submit({
+      text: `PR #${w.prNumber} の CI は全て完了したが、Copilot はレビューできなかった (枠の不足など。理由はレビューの本文にある)。レビューは付いていないので、次のフェーズへは進めない。request-copilot-review.sh ${w.prNumber} lite で依頼し直し、それでもレビューできなければ、レビューを飛ばしてよいかをユーザーに確認せよ。許可が出たら ship.sh skip review <理由> で進める。`,
     });
   }
 
