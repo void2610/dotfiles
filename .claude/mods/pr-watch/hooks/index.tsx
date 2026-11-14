@@ -1,5 +1,10 @@
 import type { EngineInterface, Register } from "claude-code";
 import {
+  countCopilotReviews,
+  type Review,
+  shouldWakeForUnable,
+} from "./reviews.ts";
+import {
   afterFailure,
   afterSuccess,
   due,
@@ -156,7 +161,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
       conclusion?: string;
       status?: string;
     }[];
-    reviews?: { author?: { login?: string }; body?: string }[];
+    reviews?: Review[];
   };
   try {
     pr = JSON.parse(json);
@@ -170,14 +175,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
 
-  // 枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す。これはレビューに数えない
-  const copilotAll = (pr.reviews ?? []).filter((r) =>
-    (r.author?.login ?? "").startsWith("copilot"),
-  );
-  const copilotUnable = copilotAll.filter((r) =>
-    (r.body ?? "").startsWith("Copilot was unable to review"),
-  ).length;
-  const copilotReviews = copilotAll.length - copilotUnable;
+  const copilot = countCopilotReviews(pr.reviews ?? []);
+  const copilotReviews = copilot.reviewed;
+  const copilotUnable = copilot.unable;
 
   if (!watched || watched.prNumber !== pr.number) {
     watched = {
@@ -276,13 +276,13 @@ async function pollOnce($: EngineInterface): Promise<void> {
     });
   }
 
-  // レビューできなかったのを「未解決スレッドが無い」と取り違えて先へ進めないよう、別の文で一度だけ起こす
   const unableKey = `notified-unable:${w.prNumber}`;
   if (
-    (ci === "pass" || ci === "none") &&
-    copilotReviews === 0 &&
-    copilotUnable > 0 &&
-    (await $.store.get(unableKey)) !== String(copilotUnable)
+    shouldWakeForUnable(
+      ci === "pass" || ci === "none",
+      copilot,
+      await $.store.get(unableKey),
+    )
   ) {
     await $.store.set(unableKey, String(copilotUnable));
     await $.prompt.submit({
