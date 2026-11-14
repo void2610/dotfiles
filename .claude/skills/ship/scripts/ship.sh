@@ -33,6 +33,13 @@ stack_position() {
   ' "$stack_file" 2>/dev/null || true
 }
 
+# PR を一度も通していないリポジトリは main へ直接コミットする運用なので、ship の対象外にする
+uses_prs() {
+  git log --merges -1 --format=%H "origin/$default_branch" 2>/dev/null | grep -q . && return 0
+  local n; n=$(gh pr list --state all --limit 1 --json number -q length 2>/dev/null) || return 0
+  [[ "$n" != 0 ]]
+}
+
 require_state() { [[ -f "$state_file" ]] || die "状態ファイルがない。先に ship.sh init \"<goal>\" を実行すること"; }
 
 update_state() {
@@ -185,6 +192,7 @@ shift || true
 case "$cmd" in
   init)
     [[ $# -ge 1 ]] || die "Usage: ship.sh init \"<goal>\""
+    uses_prs || die "このリポジトリは PR を使わず $default_branch へ直接コミットしている。ship は使わず $default_branch のまま実装・コミット・push すること"
     mkdir -p "$state_dir"
     jq -n --arg goal "$*" --arg branch "$branch" --arg ts "$(date -u +%FT%TZ)" \
       '{goal: $goal, branch: $branch, created: $ts, done: {}, skipped: {}, checkpoints: []}' > "$state_file"
@@ -194,7 +202,11 @@ case "$cmd" in
   status)
     if [[ ! -f "$state_file" ]]; then
       echo "state=none branch=$branch default_branch=$default_branch"
-      echo "状態ファイルなし。新規フローは ship.sh init \"<goal>\" から"
+      if uses_prs; then
+        echo "状態ファイルなし。新規フローは ship.sh init \"<goal>\" から"
+      else
+        echo "PR を使わないリポジトリ (マージも PR も無い)。ship は使わず $default_branch で直接作業すること"
+      fi
       exit 0
     fi
     echo "branch=$branch goal=$(state .goal)"
