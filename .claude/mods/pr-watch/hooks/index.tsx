@@ -4,6 +4,7 @@ import {
   type Review,
   reviewSettled,
 } from "./reviews.ts";
+import { type CiState, ciSummaryOf } from "./ci.ts";
 import {
   afterFailure,
   afterSuccess,
@@ -16,8 +17,6 @@ import {
   slowDown,
 } from "./schedule";
 
-type CiState = "pass" | "fail" | "pending" | "none";
-
 type Threads = { total: number; resolved: number };
 
 type Watched = {
@@ -26,6 +25,8 @@ type Watched = {
   lastCi?: CiState;
   notifiedReview: boolean;
   notifiedCiFail: boolean;
+  // この PR でチェックを一度でも見たか。見た後の 0 件は push 直後の未登録として待つ
+  sawChecks?: boolean;
   // reviewThreads クエリの節約用: 前回結果と、その時点の Copilot レビュー数
   threads?: Threads;
   threadsAtReviews?: number;
@@ -59,26 +60,6 @@ function staticGlyph(p: Parts | undefined): string | undefined {
 
 // 上段ドットのみのフレーム (⠋⠙…) は行の上に寄って見えるため、全 8 点を使う系列にする
 const SPINNER = ["⣷", "⣯", "⣟", "⡿", "⢿", "⣻", "⣽", "⣾"];
-
-const RUNNING_STATES = ["", "PENDING", "IN_PROGRESS", "QUEUED", "EXPECTED"];
-
-function ciSummaryOf(
-  rollup: readonly { state?: string; conclusion?: string; status?: string }[],
-): { state: CiState; done: number; total: number } {
-  const total = rollup.length;
-  if (total === 0) return { state: "none", done: 0, total };
-  const states = rollup.map((c) =>
-    (c.conclusion || c.state || c.status || "").toUpperCase(),
-  );
-  const done = states.filter((s) => !RUNNING_STATES.includes(s)).length;
-  if (
-    states.some((s) => s === "FAILURE" || s === "ERROR" || s === "TIMED_OUT")
-  ) {
-    return { state: "fail", done, total };
-  }
-  if (done < total) return { state: "pending", done, total };
-  return { state: "pass", done, total };
-}
 
 function setHint(
   $: EngineInterface,
@@ -189,7 +170,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
   const w = watched;
   w.prUrl = pr.url;
 
-  const { state: ci, done, total } = ciSummaryOf(pr.statusCheckRollup ?? []);
+  const rollup = pr.statusCheckRollup ?? [];
+  if (rollup.length > 0) w.sawChecks = true;
+  const { state: ci, done, total } = ciSummaryOf(rollup, w.sawChecks ?? false);
 
   // レビュースレッドは isResolved のみの軽量クエリで全件/解決済みを数える。
   // 新しいレビューが来たか未解決が残っている時だけ再取得する (指摘 0 件・全解決なら止める)
