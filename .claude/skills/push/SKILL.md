@@ -48,6 +48,7 @@ description: "`git push` するときは必ずこのスキルを使う。トリ�
 
 ## トラブル
 
-- **認証 / 権限エラー**: `gh auth status` と `git remote -v` の結果を添えて報告
+- **認証エラー**: ユーザーにログインを頼まず、自分で通す。`gh auth status` で原因を見て、トークンを消したり壊したりしたのが自分の操作なら、その出どころ (捨てた退避は `git show <stash の SHA>:<path>` で読める) から `gh auth login --with-token` で入れ直す。トークンは画面に出さない。キーチェーンに書けないマシンではトークンが `~/.config/gh/hosts.yml` に入るので、dotfiles では `git update-index --skip-worktree .config/gh/hosts.yml` で変更を見せない (トークンをコミットしない)
+- **権限エラー** (リポジトリへの書き込み権がない等): `gh auth status` と `git remote -v` の結果を添えて報告
 - **non-fast-forward で拒否**: 手順 2 の取り込みからやり直す。force では解決しない
 - **保護ブランチで拒否**: main へ直接送れないリポジトリなので、branch-create → pr-create の流れへ切り替える
