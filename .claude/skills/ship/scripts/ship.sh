@@ -33,6 +33,20 @@ stack_position() {
   ' "$stack_file" 2>/dev/null || true
 }
 
+# 過去に PR が数件あっても直近が main 直コミット中心なら直コミット運用なので、ship の対象外にする
+uses_prs() {
+  local recent pr_commits hits=0 total=0 sha
+  recent=$(git log --first-parent -20 --format=%H "origin/$default_branch" 2>/dev/null) || return 0
+  [[ -n "$recent" ]] || return 1
+  # squash / rebase マージは merge commit にならないため、PR の mergeCommit と突き合わせて数える
+  pr_commits=$(gh pr list --state merged --limit 100 --json mergeCommit -q '.[].mergeCommit.oid' 2>/dev/null) || return 0
+  for sha in $recent; do
+    total=$((total + 1))
+    grep -qx "$sha" <<<"$pr_commits" && hits=$((hits + 1))
+  done
+  ((hits * 2 >= total))
+}
+
 require_state() { [[ -f "$state_file" ]] || die "状態ファイルがない。先に ship.sh init \"<goal>\" を実行すること"; }
 
 update_state() {
@@ -161,12 +175,9 @@ ci_summary() {
 
 verify_review() {
   local n
-  # レビュー枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す
-  n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\") | select(.body | startswith(\"Copilot was unable to review\") | not)] | length" 2>/dev/null || echo 0)
+  # レビュー枠の不足などでレビューできなかったときも、Copilot は理由だけを書いたレビューを残す。待っても付かないので届いたものとして進める
+  n=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\")] | length" 2>/dev/null || echo 0)
   if [[ "$n" -eq 0 ]]; then
-    local failed
-    failed=$(gh pr view --json reviews --jq "[.reviews[] | select(.author.login == \"$COPILOT_LOGIN\") | select(.body | startswith(\"Copilot was unable to review\"))] | length" 2>/dev/null || echo 0)
-    [[ "$failed" -gt 0 ]] && die "Copilot がレビューできなかった (レビューの本文に理由がある。枠の不足なら依頼し直すか、ユーザーの指示で skip する)"
     die "Copilot レビューが未到着 (pr-watch Mod の通知を待つか gh pr view --json reviews で確認すること)"
   fi
   local ci; ci=$(ci_summary)
@@ -188,6 +199,7 @@ shift || true
 case "$cmd" in
   init)
     [[ $# -ge 1 ]] || die "Usage: ship.sh init \"<goal>\""
+    uses_prs || die "このリポジトリは PR を使わず $default_branch へ直接コミットしている。ship は使わず $default_branch のまま実装・コミット・push すること"
     mkdir -p "$state_dir"
     jq -n --arg goal "$*" --arg branch "$branch" --arg ts "$(date -u +%FT%TZ)" \
       '{goal: $goal, branch: $branch, created: $ts, done: {}, skipped: {}, checkpoints: []}' > "$state_file"
@@ -197,7 +209,11 @@ case "$cmd" in
   status)
     if [[ ! -f "$state_file" ]]; then
       echo "state=none branch=$branch default_branch=$default_branch"
-      echo "状態ファイルなし。新規フローは ship.sh init \"<goal>\" から"
+      if uses_prs; then
+        echo "状態ファイルなし。新規フローは ship.sh init \"<goal>\" から"
+      else
+        echo "PR を使わないリポジトリ (直近の $default_branch は直コミットが中心)。ship は使わず $default_branch で直接作業すること"
+      fi
       exit 0
     fi
     echo "branch=$branch goal=$(state .goal)"

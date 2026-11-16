@@ -1,5 +1,10 @@
 import type { EngineInterface, Register } from "claude-code";
 import {
+  countCopilotReviews,
+  type Review,
+  reviewSettled,
+} from "./reviews.ts";
+import {
   afterFailure,
   afterSuccess,
   due,
@@ -156,7 +161,7 @@ async function pollOnce($: EngineInterface): Promise<void> {
       conclusion?: string;
       status?: string;
     }[];
-    reviews?: { author?: { login?: string } }[];
+    reviews?: Review[];
   };
   try {
     pr = JSON.parse(json);
@@ -170,9 +175,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
 
-  const copilotReviews = (pr.reviews ?? []).filter((r) =>
-    (r.author?.login ?? "").startsWith("copilot"),
-  ).length;
+  const copilot = countCopilotReviews(pr.reviews ?? []);
+  const copilotReviews = copilot.reviewed;
+  const copilotUnable = copilot.unable;
 
   if (!watched || watched.prNumber !== pr.number) {
     watched = {
@@ -230,7 +235,9 @@ async function pollOnce($: EngineInterface): Promise<void> {
       ? "レビュー通知済"
       : copilotReviews > 0
         ? "レビュー到着"
-        : "レビュー待ち";
+        : copilotUnable > 0
+          ? "レビュー不可"
+          : "レビュー待ち";
   const ciLabel = total > 0 ? `CI:${ci} ${done}/${total}` : `CI:${ci}`;
   const ciColor =
     ci === "pass" || ci === "none"
@@ -247,8 +254,10 @@ async function pollOnce($: EngineInterface): Promise<void> {
       : "green";
   const allDone =
     (ci === "pass" || ci === "none") &&
-    threads !== undefined &&
-    threads.total - threads.resolved === 0;
+    reviewSettled(
+      copilot,
+      threads ? threads.total - threads.resolved : undefined,
+    );
   if (allDone) schedule = slowDown(schedule, Date.now());
   setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
     ci: ciLabel,
