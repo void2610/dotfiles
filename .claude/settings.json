@@ -89,7 +89,8 @@
     "statusline@akari-awesome-cc-plugins": true,
     "warp@claude-code-warp": true,
     "swift-lsp@claude-plugins-official": true,
-    "learning-output-style@claude-plugins-official": true
+    "learning-output-style@claude-plugins-official": true,
+    "discord@claude-plugins-official": false
   },
   "extraKnownMarketplaces": {
     "akari-awesome-cc-plugins": {
