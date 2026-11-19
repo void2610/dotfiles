@@ -65,3 +65,48 @@ test("開いた PR を購読し、別のブランチへ移ってからのマー�
   );
   expect(store.get("subs:s1")).toEqual([]);
 });
+
+test("/pr-watch で取り直したときも、CI の失敗でセッションを起こす", async ($, on) => {
+  const submitted: string[] = [];
+  const clock = mock.clock(on);
+  const store = new Map<string, unknown>();
+  on("store.get", (_, e) => ({ value: store.get(e.key) }));
+  on("store.set", (_, e) => {
+    store.set(e.key, e.value);
+    return { value: undefined };
+  });
+  on("session.id", () => ({ value: "s1" }));
+  on("ui.invalidate", () => ({ value: undefined }));
+  on("prompt.submit", (_, e) => {
+    submitted.push(e.text);
+    return { text: e.text };
+  });
+  on("process.run", (_, e) => {
+    const a = e.argv.join(" ");
+    const ok = (stdout: string) => ({
+      value: { exitCode: 0, stdout, stderr: "" },
+    });
+    if (a === "git rev-parse --abbrev-ref HEAD") return ok("feat/x");
+    if (a.startsWith("git rev-parse")) return ok("sha");
+    if (a.startsWith("git symbolic-ref")) return ok("origin/main");
+    if (a.startsWith("gh pr view")) {
+      return ok(
+        JSON.stringify({
+          number: 353,
+          state: "OPEN",
+          url: URL,
+          statusCheckRollup: [{ conclusion: "FAILURE" }],
+          reviews: [],
+        }),
+      );
+    }
+    return { value: { exitCode: 1, stdout: "", stderr: "" } };
+  });
+
+  const r = await $.command.run({ command: "pr-watch", args: "" });
+  expect(r.text).toContain("pr-watch #353 CI:fail");
+  await clock.settle();
+  expect(submitted.some((t) => t.includes("PR #353 の CI が fail した"))).toBe(
+    true,
+  );
+});

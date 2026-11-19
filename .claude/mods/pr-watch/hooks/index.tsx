@@ -88,6 +88,17 @@ async function poll($: EngineInterface): Promise<void> {
   }
 }
 
+// /pr-watch の処理中に起こすと、そのコマンドが抱えるターンを待つ形になりエンジンに拒否されるので、コマンドを返した後へ回す
+let inCommand = false;
+
+async function wake($: EngineInterface, text: string): Promise<void> {
+  if (inCommand) {
+    $.clock.after(0, () => void $.prompt.submit({ text }));
+    return;
+  }
+  await $.prompt.submit({ text });
+}
+
 async function refetch($: EngineInterface): Promise<void> {
   schedule = forced(schedule);
   await poll($);
@@ -144,7 +155,7 @@ async function onClosed($: EngineInterface, pr: PrView): Promise<void> {
   await saveSubs($, unsubscribe(subs, pr.number));
   watchedByNumber.delete(pr.number);
   const notice = closedNotice(pr.number, pr.state);
-  if (notice) await $.prompt.submit({ text: notice });
+  if (notice) await wake($, notice);
 }
 
 async function pollOnce($: EngineInterface): Promise<void> {
@@ -329,9 +340,10 @@ async function onOpen(
     if (await $.store.get(doneKey)) await $.store.set(doneKey, "");
   } else if (!(await $.store.get(doneKey))) {
     await $.store.set(doneKey, "1");
-    await $.prompt.submit({
-      text: `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
-    });
+    await wake(
+      $,
+      `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
+    );
   }
 
   if (ci !== w.lastCi) {
@@ -339,9 +351,10 @@ async function onOpen(
     if (ci !== "fail") w.notifiedCiFail = false;
     if (ci === "fail" && !w.notifiedCiFail) {
       w.notifiedCiFail = true;
-      await $.prompt.submit({
-        text: `PR #${w.prNumber} の CI が fail した。gh pr checks ${w.prNumber} で原因を確認し、修正して push せよ。`,
-      });
+      await wake(
+        $,
+        `PR #${w.prNumber} の CI が fail した。gh pr checks ${w.prNumber} で原因を確認し、修正して push せよ。`,
+      );
     }
     w.lastCi = ci;
   }
@@ -361,9 +374,10 @@ async function onOpen(
     if ((await $.store.get(notifyKey)) === unresolved) return;
     await $.store.set(notifyKey, unresolved);
     w.notifiedReview = true;
-    await $.prompt.submit({
-      text: `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
-    });
+    await wake(
+      $,
+      `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
+    );
   }
 }
 
@@ -392,7 +406,12 @@ export const register: Register = (on) => {
   });
 
   on("command.run", { command: "pr-watch" }, async ($, _e, _next) => {
-    await refetch($);
+    inCommand = true;
+    try {
+      await refetch($);
+    } finally {
+      inCommand = false;
+    }
     return {
       text: hint ?? "pr-watch: 監視対象なし (PR のあるブランチにいない)",
     };
