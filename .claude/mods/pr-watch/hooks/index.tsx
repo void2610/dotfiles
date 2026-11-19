@@ -1,10 +1,7 @@
 import type { EngineInterface, Register } from "claude-code";
-import {
-  countCopilotReviews,
-  type Review,
-  reviewSettled,
-} from "./reviews.ts";
 import { type CiState, ciSummaryOf } from "./ci.ts";
+import { closedNotice } from "./closed";
+import { countCopilotReviews, type Review, reviewSettled } from "./reviews.ts";
 import {
   afterFailure,
   afterSuccess,
@@ -149,12 +146,25 @@ async function pollOnce($: EngineInterface): Promise<void> {
   } catch {
     return;
   }
+  const seenOpenKey = `seen-open:${pr.number}`;
   if (pr.state !== "OPEN") {
     schedule = park(schedule);
     watched = undefined;
     setHint($, undefined);
+    const closedKey = `notified-closed:${pr.number}`;
+    const notice = closedNotice(
+      pr.number,
+      pr.state,
+      Boolean(await $.store.get(seenOpenKey)),
+      Boolean(await $.store.get(closedKey)),
+    );
+    if (notice) {
+      await $.store.set(closedKey, "1");
+      await $.prompt.submit({ text: notice });
+    }
     return;
   }
+  if (!(await $.store.get(seenOpenKey))) await $.store.set(seenOpenKey, "1");
 
   const copilot = countCopilotReviews(pr.reviews ?? []);
   const copilotReviews = copilot.reviewed;
