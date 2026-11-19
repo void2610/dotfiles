@@ -1,11 +1,5 @@
 import type { Register } from "claude-code";
 import { branchTrackDeny } from "./branch-track-guard";
-import {
-  type BuildPermit,
-  buildDeny,
-  isBuildCommand,
-  nextPermit,
-} from "./build-guard";
 import type { Run } from "./caps";
 import { commentStyleNote } from "./comment-style-guard";
 import { explainDiffNote } from "./explain-diff-trigger";
@@ -18,10 +12,7 @@ import { enterWorktreeDeny, worktreeAddDeny } from "./worktree-guard";
 // エンジンは同一イベントの重複登録を拒否し、検証器は $ を import 越しに追えない。
 // そのためイベント登録と $ の呼び出しは本ファイルに閉じ、機能本体は各ファイルの純関数に置く
 export const register: Register = (on) => {
-  let permit: BuildPermit = { asked: false, built: false };
-
   on("prompt.submit", async ($, e, next) => {
-    permit = nextPermit(permit, e.text, e.origin.kind);
     const run: Run = (argv, init) => $.process.run(argv, init);
     const notes = [
       taskContractNote(e.text),
@@ -37,10 +28,8 @@ export const register: Register = (on) => {
     const deny =
       gitSkillDeny(e.command) ??
       branchTrackDeny(e.command) ??
-      worktreeAddDeny(e.command) ??
-      buildDeny(e.command, permit);
+      worktreeAddDeny(e.command);
     if (deny !== undefined) return { deny };
-    if (isBuildCommand(e.command)) permit = { ...permit, built: true };
     return next(e);
   });
 
