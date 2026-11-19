@@ -27,29 +27,9 @@ bundle_id = 'com.unity3d.UnityEditor5.x'
 key = 'cmd+ctrl+u'
 
 [[launch]]
-bundle_id = 'company.thebrowser.Browser'
+bundle_id = 'dev.serafim.fast'
 key = 'cmd+ctrl+a'
 
 [[launch]]
 bundle_id = 'com.mitchellh.ghostty'
 key = 'cmd+ctrl+w'
-
-[[launch]]
-bundle_id = 'dev.zed.Zed'
-key = 'cmd+ctrl+z'
-
-[[launch]]
-bundle_id = 'com.spotify.client'
-key = 'cmd+ctrl+s'
-
-[[launch]]
-bundle_id = 'com.jetbrains.rider'
-key = 'cmd+ctrl+r'
-
-[[launch]]
-bundle_id = 'com.github.GitHubClient'
-key = 'cmd+ctrl+g'
-
-[[launch]]
-key = 'cmd+ctrl+m'
-path = '~/Documents/GitHub/melchior/build/melchior_main'
