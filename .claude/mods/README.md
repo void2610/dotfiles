@@ -22,6 +22,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | ファイル | 発火 | 内容 |
 | --- | --- | --- |
 | `git-skill-enforcer.ts` | Bash | `git commit` / `git push` / `gh pr create` の直接実行を deny し、`CLAUDE_GIT_SKILL=<skill>` マーカー付き (スキル経由) のみ許可。コマンドの位置に来たものだけを見るので、grep のパターン等の引数中の語では止めない |
+| `build-guard.ts` | prompt.submit / Bash | Unity のビルド (`MacBuild.Build*`・`BuildPipeline.BuildPlayer`) と `tailscale file cp` の送信を、人がその回の入力で頼んだとき (「ビルド」「送って」等。質問と止める言い方は除く) だけ許す。1 回の依頼でビルドは 1 回まで (送信は何度でも) |
 | `branch-track-guard.ts` | Bash | `origin/main` 起点のブランチ作成 (`--no-track` なし) と upstream の main 向け変更を deny |
 | `comment-style-guard.ts` | Edit / Write | 複数行コメントブロックの追加を検知し、CLAUDE.md の Comments ルールに沿った削減ワークフローを注入 |
 | `task-contract-trigger.ts` | prompt.submit | 開放的依頼の語彙を検知し task-contract スキルの発動を指示 |
