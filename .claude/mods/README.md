@@ -9,7 +9,7 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 | --- | --- | --- |
 | `git-context` | `prompt.context` | 現在ブランチ・`git status --short`・main からの差分コミットを毎ターンのコンテキストに注入 |
 | `guards` | `prompt.submit` / `tool.call` | ガード集約 (下表参照)。イベント登録は `index.ts` に一本化し、機能は 1 ファイル 1 ガード |
-| `pr-watch` | `clock` / `prompt.submit` / `ui.render` | 現在ブランチの OPEN PR を常駐監視 (gh 60 秒間隔 + バックオフ。CI が通り Copilot レビューの未解決スレッドも無い PR は 5 分間隔。push・コミット・fetch で HEAD か upstream が変わったら即時。マージ・クローズ済みの PR は手元が変わるか `/pr-watch`・↻ まで取り直さない)。CI fail / Copilot レビュー未解決スレッド / 監視中に開いていた PR のマージ・クローズで `$.prompt.submit` によりセッションを自動起床。プロンプト直上の監視行はボタンで、押すと PR の checks ページを開く。`/pr-watch` で即時更新。Copilot が枠の不足などでレビューできなかった PR は、待っても付かないので CI が通った時点で片付いたものとして起こす |
+| `pr-watch` | `clock` / `prompt.submit` / `ui.render` | セッションが開いた PR を購読して常駐監視 (今いるブランチに OPEN な PR があれば購読し、ブランチを移っても PR 単位で追い続ける。今いるブランチ以外の購読中の PR は 5 分間隔。購読はセッションごとに store へ持つ)。今いるブランチの PR は (gh 60 秒間隔 + バックオフ。CI が通り Copilot レビューの未解決スレッドも無い PR は 5 分間隔。push・コミット・fetch で HEAD か upstream が変わったら即時。マージ・クローズ済みの PR は手元が変わるか `/pr-watch`・↻ まで取り直さない)。購読中の PR の CI fail / Copilot レビュー未解決スレッド / マージ・クローズ (購読をやめる) で `$.prompt.submit` によりセッションを自動起床。プロンプト直上の監視行はボタンで、押すと PR の checks ページを開く。`/pr-watch` で即時更新。Copilot が枠の不足などでレビューできなかった PR は、待っても付かないので CI が通った時点で片付いたものとして起こす |
 | `ship-hud` | `ui.render` / `command.run` | ship 状態機械をプロンプト直上 (AbovePrompt) に常時表示 (goal・フェーズ列・report の approve ボタン)。`/ship-hud` で表示トグル、`mcp__ship-hud__status` 等のツールも提供 |
 | `scratchpad-open` | `ui.render` / `command.run` / `clock` | scratchpad にファイルがある時だけプロンプト直上に `scratchpad (N)` ボタンを表示し、押すと Finder で開く。`/scratchpad` コマンドも同じ動作 |
 | `artifact-archive` | `tool.call` | 一時ディレクトリ (`/tmp`・`/var/folders` = scratchpad) からの Artifact publish を deny し、`~/Documents/claude-artifacts/` への保存へ誘導 |
@@ -33,6 +33,8 @@ Claude Code の function hooks (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`) で動く
 
 - 検証 3 段: `claude plugin validate <dir>` / `cd .claude/mods && biome check <dir>` / `npx -y -p typescript tsc -p tsconfig.json --noEmit`
 - テスト: 判断は `hooks/` の副作用のない `.ts` に切り出し、`<mod>/tests/*.test.ts` に node:test で書く。`cd .claude/mods && node --test */tests/*.test.ts` で走る (Node の型除去で `.ts` を直接読むので、テストからは拡張子付きで import する)
+- フックの流れ (gh の応答・ブランチ移動・起こす文面) は `<mod>/*.test.ts` (Mod 直下) に `claude-code/testing` で書き、`claude plugin test <mod>` で走らせる。`$.process.run` / `$.store` を test の `on` で答え、タイマーは `mock.clock` で進める。この実行は `tests/` の node:test も読もうとして load 失敗を出すので、Mod 直下のファイルの結果だけを見る
+- `~/.claude/mods` の Mod は起動時に読み込まれ、編集は動いているセッションに反映されない。実地で確かめるのは新しいセッションから
 - 型生成: `claude -p "/plugin-types .claude/mods/types"` (`types/` と `node_modules/` は gitignore)
 - biome はリポジトリルートから実行すると nested root エラーになるため、この `mods/` ディレクトリから実行する
 - 同一イベントの matcher なし重複登録はエンジンに拒否されるため、イベント登録は各 Mod の `index.ts(x)` に束ねる

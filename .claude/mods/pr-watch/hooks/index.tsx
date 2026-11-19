@@ -1,6 +1,5 @@
 import type { EngineInterface, Register } from "claude-code";
 import { type CiState, ciSummaryOf } from "./ci.ts";
-import { closedNotice } from "./closed";
 import { countCopilotReviews, type Review, reviewSettled } from "./reviews.ts";
 import {
   afterFailure,
@@ -13,6 +12,14 @@ import {
   type Schedule,
   slowDown,
 } from "./schedule";
+import {
+  closedNotice,
+  deferred,
+  dueOthers,
+  type Sub,
+  subscribe,
+  unsubscribe,
+} from "./subscriptions";
 
 type Threads = { total: number; resolved: number };
 
@@ -29,7 +36,9 @@ type Watched = {
   threadsAtReviews?: number;
 };
 
-let watched: Watched | undefined;
+const watchedByNumber = new Map<number, Watched>();
+// 今いるブランチの OPEN な PR。監視行に出すのはこの PR だけ
+let currentNumber: number | undefined;
 let pollerStarted = false;
 // タイマーと prompt.submit から同時に走ると通知が多重化するため直列化する
 let polling = false;
@@ -84,6 +93,60 @@ async function refetch($: EngineInterface): Promise<void> {
   await poll($);
 }
 
+type PrView = {
+  number: number;
+  state: string;
+  url?: string;
+  statusCheckRollup?: {
+    state?: string;
+    conclusion?: string;
+    status?: string;
+  }[];
+  reviews?: Review[];
+};
+
+type ViewResult = { pr?: PrView; rateLimited: boolean };
+
+// target 省略時は今いるブランチの PR、指定時はその URL の PR を取る
+async function viewPr(
+  $: EngineInterface,
+  target?: string,
+): Promise<ViewResult> {
+  const argv = ["gh", "pr", "view"];
+  if (target) argv.push(target);
+  argv.push("--json", "number,state,url,statusCheckRollup,reviews");
+  const r = await $.process.run(argv);
+  const json = r.exitCode === 0 ? r.stdout.trim() : "";
+  if (!json) return { rateLimited: /rate limit/i.test(r.stderr) };
+  try {
+    return { pr: JSON.parse(json) as PrView, rateLimited: false };
+  } catch {
+    return { rateLimited: false };
+  }
+}
+
+async function loadSubs($: EngineInterface): Promise<Sub[]> {
+  return ((await $.store.get(await subsKey($))) as Sub[] | undefined) ?? [];
+}
+
+async function saveSubs($: EngineInterface, subs: Sub[]): Promise<void> {
+  await $.store.set(await subsKey($), subs);
+}
+
+// store はセッションをまたいで共有されるので、購読はセッションごとに分ける
+async function subsKey($: EngineInterface): Promise<string> {
+  return `subs:${await $.session.id()}`;
+}
+
+async function onClosed($: EngineInterface, pr: PrView): Promise<void> {
+  const subs = await loadSubs($);
+  if (!subs.some((s) => s.number === pr.number)) return;
+  await saveSubs($, unsubscribe(subs, pr.number));
+  watchedByNumber.delete(pr.number);
+  const notice = closedNotice(pr.number, pr.state);
+  if (notice) await $.prompt.submit({ text: notice });
+}
+
 async function pollOnce($: EngineInterface): Promise<void> {
   const run = async (argv: readonly string[]) => {
     const r = await $.process.run(argv);
@@ -94,8 +157,15 @@ async function pollOnce($: EngineInterface): Promise<void> {
   const head = await run(["git", "rev-parse", "HEAD"]);
   const upstream = await run(["git", "rev-parse", "@{upstream}"]);
   schedule = observeLocal(schedule, [branch, head, upstream].join(" "));
-  if (!due(schedule, Date.now())) return;
+  if (due(schedule, Date.now())) await pollCurrent($, run, branch);
+  await pollOthers($);
+}
 
+async function pollCurrent(
+  $: EngineInterface,
+  run: (argv: readonly string[]) => Promise<string | undefined>,
+  branch: string | undefined,
+): Promise<void> {
   const defaultBranch = (
     (await run([
       "git",
@@ -105,21 +175,13 @@ async function pollOnce($: EngineInterface): Promise<void> {
     ])) ?? ""
   ).replace(/^origin\//, "");
   if (!branch || branch === defaultBranch) {
-    watched = undefined;
+    currentNumber = undefined;
     setHint($, undefined);
     return;
   }
 
-  const view = await $.process.run([
-    "gh",
-    "pr",
-    "view",
-    "--json",
-    "number,state,url,statusCheckRollup,reviews",
-  ]);
-  const json = view.exitCode === 0 ? view.stdout.trim() : undefined;
-  if (!json) {
-    const rateLimited = /rate limit/i.test(view.stderr);
+  const { pr, rateLimited } = await viewPr($);
+  if (!pr) {
     schedule = afterFailure(schedule, Date.now(), rateLimited);
     setHint(
       $,
@@ -130,54 +192,53 @@ async function pollOnce($: EngineInterface): Promise<void> {
     return;
   }
   schedule = afterSuccess(schedule, Date.now());
-  let pr: {
-    number: number;
-    state: string;
-    url?: string;
-    statusCheckRollup?: {
-      state?: string;
-      conclusion?: string;
-      status?: string;
-    }[];
-    reviews?: Review[];
-  };
-  try {
-    pr = JSON.parse(json);
-  } catch {
-    return;
-  }
-  const seenOpenKey = `seen-open:${pr.number}`;
   if (pr.state !== "OPEN") {
     schedule = park(schedule);
-    watched = undefined;
+    currentNumber = undefined;
     setHint($, undefined);
-    const closedKey = `notified-closed:${pr.number}`;
-    const notice = closedNotice(
-      pr.number,
-      pr.state,
-      Boolean(await $.store.get(seenOpenKey)),
-      Boolean(await $.store.get(closedKey)),
-    );
-    if (notice) {
-      await $.store.set(closedKey, "1");
-      await $.prompt.submit({ text: notice });
-    }
+    await onClosed($, pr);
     return;
   }
-  if (!(await $.store.get(seenOpenKey))) await $.store.set(seenOpenKey, "1");
+  currentNumber = pr.number;
+  if (pr.url)
+    await saveSubs($, subscribe(await loadSubs($), pr.number, pr.url));
+  await onOpen($, pr, true);
+}
 
+// 今いるブランチ以外の購読中の PR も、マージ・クローズ・CI・レビューを拾う
+async function pollOthers($: EngineInterface): Promise<void> {
+  let subs = await loadSubs($);
+  const targets = dueOthers(subs, currentNumber, Date.now());
+  if (targets.length === 0) return;
+  for (const s of targets) {
+    subs = deferred(subs, s.number, Date.now());
+    const { pr } = await viewPr($, s.url);
+    if (!pr) continue;
+    if (pr.state !== "OPEN") {
+      await saveSubs($, subs);
+      await onClosed($, pr);
+      subs = await loadSubs($);
+      continue;
+    }
+    await onOpen($, pr, false);
+  }
+  await saveSubs($, subs);
+}
+
+async function onOpen(
+  $: EngineInterface,
+  pr: PrView,
+  isCurrent: boolean,
+): Promise<void> {
   const copilot = countCopilotReviews(pr.reviews ?? []);
   const copilotReviews = copilot.reviewed;
   const copilotUnable = copilot.unable;
 
-  if (!watched || watched.prNumber !== pr.number) {
-    watched = {
-      prNumber: pr.number,
-      notifiedReview: false,
-      notifiedCiFail: false,
-    };
+  let w = watchedByNumber.get(pr.number);
+  if (!w) {
+    w = { prNumber: pr.number, notifiedReview: false, notifiedCiFail: false };
+    watchedByNumber.set(pr.number, w);
   }
-  const w = watched;
   w.prUrl = pr.url;
 
   const rollup = pr.statusCheckRollup ?? [];
@@ -251,14 +312,16 @@ async function pollOnce($: EngineInterface): Promise<void> {
       copilot,
       threads ? threads.total - threads.resolved : undefined,
     );
-  if (allDone) schedule = slowDown(schedule, Date.now());
-  setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
-    ci: ciLabel,
-    ciColor,
-    review,
-    reviewColor,
-    done: allDone,
-  });
+  if (isCurrent) {
+    if (allDone) schedule = slowDown(schedule, Date.now());
+    setHint($, `pr-watch #${w.prNumber} ${ciLabel} ${review}`, {
+      ci: ciLabel,
+      ciColor,
+      review,
+      reviewColor,
+      done: allDone,
+    });
+  }
 
   // 全完了は一度だけ起こす。未完了に戻ったら (再 push 等) 次の完了も拾えるよう解除する
   const doneKey = `notified-done:${w.prNumber}`;
@@ -345,6 +408,10 @@ export const register: Register = (on) => {
   on("ui.render", { component: "AbovePrompt" }, ($, e, next) => {
     if (!hint) return next(e);
     const { Box, Text, Button } = $.ui.resolve(e);
+    const watched =
+      currentNumber === undefined
+        ? undefined
+        : watchedByNumber.get(currentNumber);
     const url = watched?.prUrl;
     if (!parts || !watched) {
       return <Text dimColor>{`${SPINNER[tick]} ${hint}`}</Text>;
