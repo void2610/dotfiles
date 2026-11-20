@@ -110,6 +110,7 @@
   "language": "日本語",
   "effortLevel": "low",
   "autoUpdatesChannel": "stable",
+  "cleanupPeriodDays": 36500,
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "dark",
