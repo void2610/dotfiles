@@ -40,7 +40,7 @@ export function closedNotice(
   state: string,
 ): string | undefined {
   if (state === "MERGED") {
-    return `PR #${number} がマージされた。デフォルトブランチへ戻って同期し、マージ済みのブランチと ship の状態を片付けよ。タスク管理や報告には、この PR をマージ済みとして書け。`;
+    return `PR #${number} がマージされた。デフォルトブランチへ戻って同期し、マージ済みのブランチと flow の状態を片付けよ。タスク管理や報告には、この PR をマージ済みとして書け。`;
   }
   if (state === "CLOSED") {
     return `PR #${number} がマージされずにクローズされた。gh pr view ${number} で経緯を確認し、タスク管理や報告には未マージのクローズとして書け。`;

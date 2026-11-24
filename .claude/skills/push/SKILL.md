@@ -1,6 +1,6 @@
 ---
 name: push
-description: "`git push` するときは必ずこのスキルを使う。トリガー: 「push して」「プッシュして」「リモートに上げて」等のユーザー指示、およびコミット後に push が要るとき。pr-create・pr-review-fix・ship の中の push もこのスキルで行う。force push は扱わない。"
+description: "`git push` するときは必ずこのスキルを使う。トリガー: 「push して」「プッシュして」「リモートに上げて」等のユーザー指示、およびコミット後に push が要るとき。pr-create・pr-review-fix・flow の中の push もこのスキルで行う。force push は扱わない。"
 ---
 
 # push

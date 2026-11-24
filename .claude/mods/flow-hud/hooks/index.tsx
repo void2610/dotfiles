@@ -8,7 +8,7 @@ import type {
 } from "claude-code";
 
 type Phase = { name: string; state: string };
-type ShipStatus =
+type FlowStatus =
   | { active: false }
   | {
       active: true;
@@ -18,7 +18,7 @@ type ShipStatus =
       extras: Record<string, string>;
     };
 
-function parseStatus(out: string): ShipStatus {
+function parseStatus(out: string): FlowStatus {
   const lines = out.split("\n");
   const head = (lines[0] ?? "").match(/^branch=(\S+) goal=(.*)$/);
   if (!head) return { active: false };
@@ -43,7 +43,7 @@ function parseStatus(out: string): ShipStatus {
 }
 
 // モジュール環境はセッション中維持される。ポーリングとレンダの共有状態
-let status: ShipStatus = { active: false };
+let status: FlowStatus = { active: false };
 let raw = "";
 let hudHidden = false;
 
@@ -52,7 +52,7 @@ async function refresh($: EngineInterface): Promise<boolean> {
   if (!home) return false;
   const r = await $.process.run([
     "bash",
-    `${home}/.claude/skills/ship/scripts/ship.sh`,
+    `${home}/.claude/skills/flow/scripts/flow.sh`,
     "status",
   ]);
   const out = (r.stdout + r.stderr).trim();
@@ -89,7 +89,7 @@ function renderHud($: EngineInterface, ui: Resolved) {
   const { Box, Text, Button } = ui;
   const s = status;
   if (!s.active) {
-    return <Text dimColor>ship フローなし (ship.sh init で開始)</Text>;
+    return <Text dimColor>flow なし (flow.sh init で開始)</Text>;
   }
   const shown = s.phases.filter((p) => p.state !== "skip");
   const cur = shown.findIndex(isPending);
@@ -102,7 +102,7 @@ function renderHud($: EngineInterface, ui: Resolved) {
           if (!home) return;
           await $.process.run([
             "bash",
-            `${home}/.claude/skills/ship/scripts/ship.sh`,
+            `${home}/.claude/skills/flow/scripts/flow.sh`,
             approvable,
             "approve",
           ]);
@@ -115,7 +115,7 @@ function renderHud($: EngineInterface, ui: Resolved) {
     if (!home) return;
     await $.process.run([
       "bash",
-      `${home}/.claude/skills/ship/scripts/ship.sh`,
+      `${home}/.claude/skills/flow/scripts/flow.sh`,
       "abort",
     ]);
     await refresh($);
@@ -135,7 +135,7 @@ function renderHud($: EngineInterface, ui: Resolved) {
         </Box>
         <Box flexShrink={0} marginLeft={1}>
           <Button
-            key="ship-abort"
+            key="flow-abort"
             label="[解除]"
             plain
             dimColor
@@ -163,7 +163,7 @@ function renderHud($: EngineInterface, ui: Resolved) {
       )}
       {approve && (
         <Button
-          key="ship-approve"
+          key="flow-approve"
           label={`${approvable} approve`}
           onPress={approve}
         />
@@ -177,12 +177,12 @@ export const register: Register = (on) => {
     await $.tool.register({
       name: "status",
       description:
-        "ship フロー (開発パイプライン状態機械) の現在状態を返す。ship.sh status と同等の出力。Bash で ship.sh status を叩く代わりに使える。",
+        "flow (開発パイプライン状態機械) の現在状態を返す。flow.sh status と同等の出力。Bash で flow.sh status を叩く代わりに使える。",
     });
     await $.tool.register({
       name: "init",
       description:
-        "ship フローを開始する (ship.sh init)。goal に開発目標を渡す。",
+        "flow を開始する (flow.sh init)。goal に開発目標を渡す。",
       inputSchema: {
         type: "object",
         properties: { goal: { type: "string" } },
@@ -192,7 +192,7 @@ export const register: Register = (on) => {
     await $.tool.register({
       name: "done",
       description:
-        "ship フローのフェーズ完了を検証して次へ進める (ship.sh done <phase>)。postcondition NG なら理由が返る。",
+        "flow のフェーズ完了を検証して次へ進める (flow.sh done <phase>)。postcondition NG なら理由が返る。",
       inputSchema: {
         type: "object",
         properties: { phase: { type: "string" } },
@@ -202,7 +202,7 @@ export const register: Register = (on) => {
     await $.tool.register({
       name: "skip",
       description:
-        "ship フローのフェーズを理由付きで skip する (ship.sh skip <phase> <理由>)。ユーザー指示がある場合のみ使う。",
+        "flow のフェーズを理由付きで skip する (flow.sh skip <phase> <理由>)。ユーザー指示がある場合のみ使う。",
       inputSchema: {
         type: "object",
         properties: { phase: { type: "string" }, reason: { type: "string" } },
@@ -210,8 +210,8 @@ export const register: Register = (on) => {
       },
     });
     await $.command.register({
-      name: "ship-hud",
-      description: "ship フローの HUD 表示を切り替える",
+      name: "flow-hud",
+      description: "flow の HUD 表示を切り替える",
     });
     ensurePoller($);
     await poll($);
@@ -223,24 +223,24 @@ export const register: Register = (on) => {
     return next(e);
   });
 
-  on("command.run", { command: "ship-hud" }, async ($, _e, _next) => {
+  on("command.run", { command: "flow-hud" }, async ($, _e, _next) => {
     hudHidden = !hudHidden;
     if (!hudHidden) await refresh($);
     $.ui.invalidate("ui.render");
     return {
-      text: hudHidden ? "ship HUD を閉じました" : "ship HUD を開きました",
+      text: hudHidden ? "flow HUD を閉じました" : "flow HUD を開きました",
     };
   });
 
   // 自前登録ツールは生成済み型の union に無いため RegExp matcher で束ねる
-  on("tool.call", { tool: /^mcp__ship-hud__status$/ }, async ($, _e, _next) => {
+  on("tool.call", { tool: /^mcp__flow-hud__status$/ }, async ($, _e, _next) => {
     await refresh($);
     return { result: raw };
   });
 
   on(
     "tool.call",
-    { tool: /^mcp__ship-hud__(init|done|skip)$/ },
+    { tool: /^mcp__flow-hud__(init|done|skip)$/ },
     async ($, e, _next) => {
       const a = e as unknown as {
         tool: string;
@@ -250,13 +250,13 @@ export const register: Register = (on) => {
       };
       const home = await $.env.get("HOME");
       if (!home) return { deny: "HOME が取得できません" };
-      const ship = `${home}/.claude/skills/ship/scripts/ship.sh`;
+      const flow = `${home}/.claude/skills/flow/scripts/flow.sh`;
       const argv =
-        a.tool === "mcp__ship-hud__init"
-          ? [ship, "init", a.goal ?? ""]
-          : a.tool === "mcp__ship-hud__done"
-            ? [ship, "done", a.phase ?? ""]
-            : [ship, "skip", a.phase ?? "", a.reason ?? ""];
+        a.tool === "mcp__flow-hud__init"
+          ? [flow, "init", a.goal ?? ""]
+          : a.tool === "mcp__flow-hud__done"
+            ? [flow, "done", a.phase ?? ""]
+            : [flow, "skip", a.phase ?? "", a.reason ?? ""];
       const r = await $.process.run(["bash", ...argv]);
       await refresh($);
       $.ui.invalidate("ui.render");

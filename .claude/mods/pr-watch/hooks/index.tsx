@@ -342,7 +342,7 @@ async function onOpen(
     await $.store.set(doneKey, "1");
     await wake(
       $,
-      `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。ship フロー中なら ship の手順に従い次のフェーズへ進め。`,
+      `PR #${w.prNumber} の CI が全て完了し、Copilot レビューの未解決スレッドも無い。flow 中なら flow の手順に従い次のフェーズへ進め。`,
     );
   }
 
@@ -376,7 +376,7 @@ async function onOpen(
     w.notifiedReview = true;
     await wake(
       $,
-      `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。ship フロー中なら ship の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
+      `PR #${w.prNumber} に Copilot レビューの未解決スレッドが ${unresolved} 件ある。flow 中なら flow の手順に従い、pr-review-fix スキルで対応せよ。件数が ? (取得失敗) の場合は fetch_unresolved_threads.sh で確認してから判断すること。`,
     );
   }
 }

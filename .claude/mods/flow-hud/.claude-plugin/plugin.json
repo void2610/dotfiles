@@ -1,0 +1,6 @@
+{
+  "name": "flow-hud",
+  "author": { "name": "void2610" },
+  "description": "flow の状態機械をペインで可視化する。/flow-hud でトグル、進行中フローがあれば自動で開く。モデル向けに status ツールも提供",
+  "version": "0.1.0"
+}

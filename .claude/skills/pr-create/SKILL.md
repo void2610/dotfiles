@@ -152,8 +152,8 @@ bash "$HOME/.claude/skills/pr-create/scripts/request-copilot-review.sh" <PR番�
 
 pr-watch Mod は CI fail / レビュー到着を検知すると、指示文を prompt として自動投入しセッションを起こす。投入された指示に従って動く:
 
-- **CI fail 起床** → `gh pr checks <N>` で失敗原因を確認・修正して push (レビュー指摘対応と重なる場合はまとめて対応してよい)。ship フローの最中は CI が fail のままだと `ship.sh done review` が通らない。再監視は Mod が継続する
-- **レビュー到着起床 (未解決 > 0)** → **pr-review-fix スキルを起動**して対応を開始する (修正計画の承認は pr-review-fix 内のフローが担うため、起動自体に確認は不要)。ship フローの最中なら先に `ship.sh done review` を打つ (CI が未完 / fail だと通らない点に注意)
+- **CI fail 起床** → `gh pr checks <N>` で失敗原因を確認・修正して push (レビュー指摘対応と重なる場合はまとめて対応してよい)。flow の最中は CI が fail のままだと `flow.sh done review` が通らない。再監視は Mod が継続する
+- **レビュー到着起床 (未解決 > 0)** → **pr-review-fix スキルを起動**して対応を開始する (修正計画の承認は pr-review-fix 内のフローが担うため、起動自体に確認は不要)。flow の最中なら先に `flow.sh done review` を打つ (CI が未完 / fail だと通らない点に注意)
 - 未解決 0 件は toast 通知のみで起床しない。未解決数が `?` (取得失敗) の場合は `fetch_unresolved_threads.sh` を手動実行して確認してから判断する (0 件と誤認しない)
 
 ## トラブルシューティング
