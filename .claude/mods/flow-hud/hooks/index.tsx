@@ -6,6 +6,7 @@ import type {
   Register,
   TextProps,
 } from "claude-code";
+import { missingTools } from "./tool-presence";
 
 type Phase = { name: string; state: string };
 type FlowStatus =
@@ -172,43 +173,70 @@ function renderHud($: EngineInterface, ui: Resolved) {
   );
 }
 
+const TOOL_SPECS = [
+  {
+    name: "status",
+    description:
+      "flow (開発パイプライン状態機械) の現在状態を返す。flow.sh status と同等の出力。Bash で flow.sh status を叩く代わりに使える。",
+  },
+  {
+    name: "init",
+    description: "flow を開始する (flow.sh init)。goal に開発目標を渡す。",
+    inputSchema: {
+      type: "object",
+      properties: { goal: { type: "string" } },
+      required: ["goal"],
+    },
+  },
+  {
+    name: "done",
+    description:
+      "flow のフェーズ完了を検証して次へ進める (flow.sh done <phase>)。postcondition NG なら理由が返る。",
+    inputSchema: {
+      type: "object",
+      properties: { phase: { type: "string" } },
+      required: ["phase"],
+    },
+  },
+  {
+    name: "skip",
+    description:
+      "flow のフェーズを理由付きで skip する (flow.sh skip <phase> <理由>)。ユーザー指示がある場合のみ使う。",
+    inputSchema: {
+      type: "object",
+      properties: { phase: { type: "string" }, reason: { type: "string" } },
+      required: ["phase", "reason"],
+    },
+  },
+];
+
+let toolsRegistered = false;
+let restoringTools = false;
+
+async function registerTools($: EngineInterface): Promise<void> {
+  for (const spec of TOOL_SPECS) await $.tool.register(spec);
+  toolsRegistered = true;
+}
+
+// Remote Control のセッションでは本体が登録済みの MCP サーバーを外すことがあり、session.start は再発火しない
+function restoreToolsIfMissing($: EngineInterface, listed: string[]): void {
+  if (!toolsRegistered || restoringTools) return;
+  const missing = missingTools(
+    listed,
+    TOOL_SPECS.map((spec) => spec.name),
+  );
+  if (missing.length === 0) return;
+  restoringTools = true;
+  void registerTools($)
+    .catch(() => undefined)
+    .finally(() => {
+      restoringTools = false;
+    });
+}
+
 export const register: Register = (on) => {
   on("session.start", async ($, e, next) => {
-    await $.tool.register({
-      name: "status",
-      description:
-        "flow (開発パイプライン状態機械) の現在状態を返す。flow.sh status と同等の出力。Bash で flow.sh status を叩く代わりに使える。",
-    });
-    await $.tool.register({
-      name: "init",
-      description:
-        "flow を開始する (flow.sh init)。goal に開発目標を渡す。",
-      inputSchema: {
-        type: "object",
-        properties: { goal: { type: "string" } },
-        required: ["goal"],
-      },
-    });
-    await $.tool.register({
-      name: "done",
-      description:
-        "flow のフェーズ完了を検証して次へ進める (flow.sh done <phase>)。postcondition NG なら理由が返る。",
-      inputSchema: {
-        type: "object",
-        properties: { phase: { type: "string" } },
-        required: ["phase"],
-      },
-    });
-    await $.tool.register({
-      name: "skip",
-      description:
-        "flow のフェーズを理由付きで skip する (flow.sh skip <phase> <理由>)。ユーザー指示がある場合のみ使う。",
-      inputSchema: {
-        type: "object",
-        properties: { phase: { type: "string" }, reason: { type: "string" } },
-        required: ["phase", "reason"],
-      },
-    });
+    await registerTools($);
     await $.command.register({
       name: "flow-hud",
       description: "flow の HUD 表示を切り替える",
@@ -220,7 +248,28 @@ export const register: Register = (on) => {
 
   on("prompt.submit", ($, e, next) => {
     ensurePoller($);
+    void $.tool
+      .list()
+      .then((tools) =>
+        restoreToolsIfMissing(
+          $,
+          tools.map((t) => t.name),
+        ),
+      )
+      .catch(() => undefined);
     return next(e);
+  });
+
+  // ツール名が変わると本体が呼び直すので、外れた自前ツールをここで見つける
+  on("tool.list", async ($, e, next) => {
+    const res = await next(e);
+    if (res && "value" in res && res.value) {
+      restoreToolsIfMissing(
+        $,
+        res.value.map((t) => t.name),
+      );
+    }
+    return res;
   });
 
   on("command.run", { command: "flow-hud" }, async ($, _e, _next) => {
